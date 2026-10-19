@@ -1,6 +1,0 @@
-# Điền GitHub username của owner từng phần khi đã chốt, mỗi dòng một đường dẫn.
-# Ví dụ:
-# /lib/core/                     @github-username
-# /lib/features/booking/         @github-username
-#
-# Sau khi điền, bật "Require review from Code Owners" trong branch protection.
