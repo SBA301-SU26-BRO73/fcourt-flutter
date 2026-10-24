@@ -35,6 +35,16 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
     _checkout = widget.repository.checkout(widget.arguments);
   }
 
+  @override
+  void didUpdateWidget(PaymentCheckoutScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.arguments.bookingId != widget.arguments.bookingId ||
+        oldWidget.arguments.holdToken != widget.arguments.holdToken) {
+      _checkout = widget.repository.checkout(widget.arguments);
+      _expired = false;
+    }
+  }
+
   void _message(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context)
@@ -100,6 +110,9 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
       body: FutureBuilder<PaymentCheckout>(
         future: _checkout,
         builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
           final error = snapshot.error;
           if (error is PaymentFailure && error.expired) {
             return _expiredPage().body!;
