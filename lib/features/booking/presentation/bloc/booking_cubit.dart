@@ -27,8 +27,9 @@ class BookingCubit extends Cubit<BookingState> {
     String phone,
   ) async {
     if (state.status == BookingStatus.submitting ||
-        state.status == BookingStatus.held)
+        state.status == BookingStatus.held) {
       return;
+    }
     emit(const BookingState(status: BookingStatus.submitting));
     try {
       final checkout = await holdBooking(
@@ -36,11 +37,13 @@ class BookingCubit extends Cubit<BookingState> {
         name: name,
         phone: phone,
       );
-      if (!isClosed)
+      if (!isClosed) {
         emit(BookingState(status: BookingStatus.held, checkout: checkout));
+      }
     } on BookingFailure catch (error) {
-      if (!isClosed)
+      if (!isClosed) {
         emit(BookingState(status: BookingStatus.failed, error: error.message));
+      }
     } catch (_) {
       if (!isClosed) {
         emit(
