@@ -1,3 +1,6 @@
+import '../features/payment/data/repositories/receipt_repository_impl.dart';
+import '../features/payment/data/repositories/device_receipt_picker.dart';
+import '../features/payment/domain/repositories/receipt_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/network/dio_client.dart';
 import '../core/storage/token_storage.dart';
@@ -17,12 +20,16 @@ class AppDependencies {
     required this.healthRepository,
     this.paymentRepository,
     this.qrSaver,
+    this.receiptRepository,
+    this.receiptPicker,
   });
 
   final AppConfig config;
   final HealthRepository healthRepository;
   final PaymentRepository? paymentRepository;
   final QrSaver? qrSaver;
+  final ReceiptRepository? receiptRepository;
+  final ReceiptPicker? receiptPicker;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -32,6 +39,8 @@ class AppDependencies {
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
+      receiptRepository: ReceiptRepositoryImpl(dio),
+      receiptPicker: DeviceReceiptPicker(),
     );
   }
 }

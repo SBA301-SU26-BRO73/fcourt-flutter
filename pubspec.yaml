@@ -46,6 +46,8 @@ dependencies:
   intl: ^0.20.3
   gal: ^2.3.3
   flutter_svg: ^2.3.0
+  image_picker: ^1.2.4
+  flutter_image_compress: ^2.5.1
 
 dev_dependencies:
   flutter_test:

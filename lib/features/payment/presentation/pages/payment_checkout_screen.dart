@@ -14,11 +14,13 @@ class PaymentCheckoutScreen extends StatefulWidget {
     required this.saver,
     required this.arguments,
     this.qrBuilder,
+    this.onUploadReceipt,
   });
   final PaymentRepository repository;
   final QrSaver saver;
   final CheckoutArguments arguments;
   final Widget Function(Uri)? qrBuilder;
+  final VoidCallback? onUploadReceipt;
 
   @override
   State<PaymentCheckoutScreen> createState() => _PaymentCheckoutScreenState();
@@ -214,6 +216,11 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                     ),
                     _copyRow('Nội dung chuyển khoản', checkout.transferContent),
                     const SizedBox(height: 16),
+                    if (widget.onUploadReceipt != null)
+                      FilledButton(
+                        onPressed: widget.onUploadReceipt,
+                        child: const Text('Tôi đã chuyển khoản · Gửi biên lai'),
+                      ),
                     FilledButton.icon(
                       onPressed: _saving ? null : () => _save(checkout),
                       icon: Icon(
