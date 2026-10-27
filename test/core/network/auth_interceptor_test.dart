@@ -10,8 +10,8 @@ const _oldTokens = AuthTokens(accessToken: 'a1', refreshToken: 'r1');
 
 class _Harness {
   _Harness(FakeHandler handler, {AuthTokens? tokens = _oldTokens})
-      : adapter = FakeAdapter(handler),
-        storage = InMemoryTokenStorage(tokens) {
+    : adapter = FakeAdapter(handler),
+      storage = InMemoryTokenStorage(tokens) {
     dio = Dio(BaseOptions(baseUrl: 'http://test'))..httpClientAdapter = adapter;
     final refreshDio = Dio(BaseOptions(baseUrl: 'http://test'))
       ..httpClientAdapter = adapter;
@@ -30,17 +30,42 @@ class _Harness {
   late final Dio dio;
   int sessionExpiredCount = 0;
 
-  int get refreshCalls => adapter.requests
-      .where((r) => r.path == ApiEndpoints.authRefresh)
-      .length;
+  int get refreshCalls =>
+      adapter.requests.where((r) => r.path == ApiEndpoints.authRefresh).length;
 }
 
 ResponseBody _refreshOk() => jsonResponse(200, {
-      'httpStatus': 200,
-      'data': {'accessToken': 'a2', 'refreshToken': 'r2', 'expiresIn': 900},
-    });
+  'httpStatus': 200,
+  'data': {'accessToken': 'a2', 'refreshToken': 'r2', 'expiresIn': 900},
+});
 
 void main() {
+  test(
+    'receipt multipart is cloned before retry after token refresh',
+    () async {
+      final h = _Harness((o) {
+        if (o.path == ApiEndpoints.authRefresh) return _refreshOk();
+        return o.headers['Authorization'] == 'Bearer a2'
+            ? jsonResponse(200, {'id': 1, 'status': 'PENDING'})
+            : jsonResponse(401, {'message': 'expired'});
+      });
+      final body = FormData.fromMap({
+        'file': MultipartFile.fromBytes([1, 2, 3], filename: 'receipt.jpg'),
+      });
+      final response = await h.dio.post<dynamic>(
+        '/api/payments/42/upload-receipt',
+        data: body,
+      );
+      expect(response.statusCode, 200);
+      expect(h.refreshCalls, 1);
+      expect(body.isFinalized, true);
+      expect(h.adapter.requests.last.data, isNot(same(body)));
+      expect(
+        (h.adapter.requests.last.data as FormData).files.single.value.filename,
+        'receipt.jpg',
+      );
+    },
+  );
   test('gắn Bearer token vào request', () async {
     final h = _Harness((_) => jsonResponse(200, {'ok': true}));
 
@@ -57,7 +82,10 @@ void main() {
       options: Options(extra: {AuthInterceptor.skipAuthKey: true}),
     );
 
-    expect(h.adapter.requests.single.headers.containsKey('Authorization'), isFalse);
+    expect(
+      h.adapter.requests.single.headers.containsKey('Authorization'),
+      isFalse,
+    );
   });
 
   test('gặp 401 thì refresh token rồi gửi lại request', () async {
@@ -99,9 +127,7 @@ void main() {
   });
 
   test('refresh thất bại thì xóa token và báo hết phiên', () async {
-    final h = _Harness(
-      (o) => jsonResponse(401, {'message': 'expired'}),
-    );
+    final h = _Harness((o) => jsonResponse(401, {'message': 'expired'}));
 
     await expectLater(
       h.dio.get<dynamic>('/api/x'),
@@ -113,7 +139,9 @@ void main() {
   });
 
   test('không refresh khi request đặt skipAuth', () async {
-    final h = _Harness((_) => jsonResponse(401, {'message': 'bad credentials'}));
+    final h = _Harness(
+      (_) => jsonResponse(401, {'message': 'bad credentials'}),
+    );
 
     await expectLater(
       h.dio.post<dynamic>(
