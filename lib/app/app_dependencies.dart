@@ -1,6 +1,8 @@
 import '../features/payment/data/repositories/receipt_repository_impl.dart';
 import '../features/payment/data/repositories/device_receipt_picker.dart';
 import '../features/payment/domain/repositories/receipt_repository.dart';
+import '../features/payment/data/repositories/admin_payment_repository_impl.dart';
+import '../features/payment/domain/repositories/admin_payment_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/network/dio_client.dart';
 import '../core/storage/token_storage.dart';
@@ -22,6 +24,7 @@ class AppDependencies {
     this.qrSaver,
     this.receiptRepository,
     this.receiptPicker,
+    this.adminPaymentRepository,
   });
 
   final AppConfig config;
@@ -30,6 +33,7 @@ class AppDependencies {
   final QrSaver? qrSaver;
   final ReceiptRepository? receiptRepository;
   final ReceiptPicker? receiptPicker;
+  final AdminPaymentRepository? adminPaymentRepository;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -41,6 +45,7 @@ class AppDependencies {
       qrSaver: QrGallerySaver(),
       receiptRepository: ReceiptRepositoryImpl(dio),
       receiptPicker: DeviceReceiptPicker(),
+      adminPaymentRepository: AdminPaymentRepositoryImpl(dio),
     );
   }
 }
