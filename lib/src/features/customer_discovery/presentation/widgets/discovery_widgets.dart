@@ -202,6 +202,7 @@ class DiscoveryMessage extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 24),
     child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           Icons.sports_tennis,

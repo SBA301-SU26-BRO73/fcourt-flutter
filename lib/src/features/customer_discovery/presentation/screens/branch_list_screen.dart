@@ -83,16 +83,24 @@ class _BranchListScreenState extends State<BranchListScreen> {
                                     ? cubit.refresh
                                     : cubit.loadMore,
                               ),
-                            if (!state.loading &&
-                                state.error == null &&
-                                state.branches.isEmpty)
-                              const DiscoveryMessage(
-                                message: 'Chưa tìm thấy sân phù hợp.\nThử từ khóa hoặc môn thể thao khác.',
-                              ),
                           ],
                         ),
                       ),
                     ),
+                    if (!state.loading &&
+                        state.error == null &&
+                        state.branches.isEmpty)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: DiscoveryMessage(
+                              message: 'Chưa tìm thấy sân phù hợp.\nThử từ khóa hoặc môn thể thao khác.',
+                            ),
+                          ),
+                        ),
+                      ),
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       sliver: SliverList.builder(
@@ -109,19 +117,20 @@ class _BranchListScreenState extends State<BranchListScreen> {
                         },
                       ),
                     ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: state.loadingMore
-                            ? const Center(child: CircularProgressIndicator())
-                            : state.hasNext
-                            ? OutlinedButton(
-                                onPressed: cubit.loadMore,
-                                child: const Text('Xem thêm chi nhánh'),
-                              )
-                            : const SizedBox.shrink(),
+                    if (state.loadingMore || state.hasNext)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: state.loadingMore
+                              ? const Center(child: CircularProgressIndicator())
+                              : state.hasNext
+                              ? OutlinedButton(
+                                  onPressed: cubit.loadMore,
+                                  child: const Text('Xem thêm chi nhánh'),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               );
