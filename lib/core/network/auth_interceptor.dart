@@ -55,7 +55,8 @@ class AuthInterceptor extends QueuedInterceptor {
     final request = err.requestOptions;
     final isUnauthorized = err.response?.statusCode == 401;
     final canRetry =
-        request.extra[skipAuthKey] != true && request.extra[_retriedKey] != true;
+        request.extra[skipAuthKey] != true &&
+        request.extra[_retriedKey] != true;
     if (!isUnauthorized || !canRetry) {
       return handler.next(err);
     }
@@ -77,6 +78,9 @@ class AuthInterceptor extends QueuedInterceptor {
     }
 
     try {
+      // A multipart body has already been finalized on the first upload.
+      final body = request.data;
+      if (body is FormData) request.data = body.clone();
       request.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
       request.extra[_retriedKey] = true;
       handler.resolve(await dio.fetch<dynamic>(request));

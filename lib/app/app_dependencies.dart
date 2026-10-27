@@ -3,6 +3,12 @@ import '../features/payment/data/repositories/device_receipt_picker.dart';
 import '../features/payment/domain/repositories/receipt_repository.dart';
 import '../features/payment/data/repositories/admin_payment_repository_impl.dart';
 import '../features/payment/domain/repositories/admin_payment_repository.dart';
+
+import 'package:flutter/foundation.dart';
+
+import '../features/payment/data/repositories/ticket_repository_impl.dart';
+import '../features/payment/data/repositories/ticket_gallery_saver.dart';
+import '../features/payment/domain/repositories/ticket_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/network/dio_client.dart';
 import '../core/storage/token_storage.dart';
@@ -25,6 +31,9 @@ class AppDependencies {
     this.receiptRepository,
     this.receiptPicker,
     this.adminPaymentRepository,
+    this.ticketRepository,
+    this.ticketSaver,
+    this.onBookingHistory,
   });
 
   final AppConfig config;
@@ -34,6 +43,9 @@ class AppDependencies {
   final ReceiptRepository? receiptRepository;
   final ReceiptPicker? receiptPicker;
   final AdminPaymentRepository? adminPaymentRepository;
+  final TicketRepository? ticketRepository;
+  final TicketSaver? ticketSaver;
+  final VoidCallback? onBookingHistory;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -46,6 +58,8 @@ class AppDependencies {
       receiptRepository: ReceiptRepositoryImpl(dio),
       receiptPicker: DeviceReceiptPicker(),
       adminPaymentRepository: AdminPaymentRepositoryImpl(dio),
+      ticketRepository: TicketRepositoryImpl(dio),
+      ticketSaver: TicketGallerySaver(),
     );
   }
 }
