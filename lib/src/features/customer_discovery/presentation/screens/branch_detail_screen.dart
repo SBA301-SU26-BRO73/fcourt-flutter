@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/discovery_repository.dart';
 import '../widgets/discovery_widgets.dart';
@@ -14,9 +15,18 @@ class BranchDetailScreen extends StatelessWidget {
     if (data == null || data.id != branchId) {
       return Scaffold(
         appBar: AppBar(title: const Text('Chi tiết chi nhánh')),
-        body: const Center(
-          child: DiscoveryMessage(
-            message: 'Vui lòng mở chi nhánh từ danh sách tìm kiếm.',
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const DiscoveryMessage(
+                message: 'Vui lòng mở chi nhánh từ danh sách tìm kiếm.',
+              ),
+              FilledButton(
+                onPressed: () => context.go('/branches'),
+                child: const Text('Tìm chi nhánh'),
+              ),
+            ],
           ),
         ),
       );
