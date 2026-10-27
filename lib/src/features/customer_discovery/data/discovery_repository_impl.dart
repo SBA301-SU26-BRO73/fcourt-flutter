@@ -9,8 +9,11 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   final DiscoveryRemoteDataSource source;
 
   @override
-  Future<BranchPage> search({String query = '', DiscoverySport? sport,
-    int page = 0}) async {
+  Future<BranchPage> search({
+    String query = '',
+    DiscoverySport? sport,
+    int page = 0,
+  }) async {
     try {
       return await source.search(query: query, sport: sport, page: page);
     } on DioException catch (error) {
