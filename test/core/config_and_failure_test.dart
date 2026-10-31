@@ -55,5 +55,32 @@ void main() {
         const ServerFailure('Lỗi máy chủ (404)', statusCode: 404),
       );
     });
+
+    test('giữ `errors` dạng chuỗi (facility) và {field,message} (auth)', () {
+      expect(
+        failureFromDio(
+          _error(400, {
+            'detail': 'Invalid request fields',
+            'errors': ['defaultPricePerHour: must be greater than 0'],
+          }),
+        ).props,
+        [
+          'Invalid request fields',
+          400,
+          ['defaultPricePerHour: must be greater than 0'],
+        ],
+      );
+      expect(
+        (failureFromDio(
+          _error(400, {
+            'detail': 'Invalid request fields',
+            'errors': [
+              {'field': 'reason', 'message': 'must not be blank'},
+            ],
+          }),
+        ) as ServerFailure).errors,
+        ['reason: must not be blank'],
+      );
+    });
   });
 }
