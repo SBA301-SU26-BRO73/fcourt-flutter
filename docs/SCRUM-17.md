@@ -18,7 +18,7 @@ nhánh trong `/admin/branches`.
   để lọc; đổi chi nhánh tải lại sân ngay, phản hồi của chi nhánh cũ về muộn bị
   bỏ qua. Lưới **2 cột**, mỗi thẻ có nhãn trạng thái **Hoạt động** (xanh lá),
   **Bảo trì** (vàng), **Đang đóng** (xám), tên sân, loại sân, giá/giờ dạng
-  `120.000 đ/giờ`, nút mẫu khung giờ (SCRUM-19) và **Switch Bảo trì**.
+  `120.000 đ/giờ` (hoặc "Chưa đặt giá"), nút mẫu khung giờ (SCRUM-19) và **Switch Bảo trì**.
 - Switch gọi `PATCH /status` (bật → `MAINTENANCE`, tắt → `ACTIVE`), khóa
   Switch trong lúc chờ, cập nhật nhãn theo response và hiện SnackBar. Lỗi thì
   giữ trạng thái cũ, SnackBar màu lỗi.
@@ -36,10 +36,19 @@ nhánh trong `/admin/branches`.
 | Chi tiết / sửa | `GET` / `PUT /api/admin/courts/{id}` |
 | Bật/tắt bảo trì | `PATCH /api/admin/courts/{id}/status` body `{status}` |
 
-CourtRequest: `{name, courtTypeId, description|null, defaultPricePerHour,
-status}`. `defaultPricePerHour` nhận cả số nguyên lẫn số thực (BigDecimal) và
-làm tròn về đồng. Trùng tên sân trong chi nhánh (400) hoặc vượt giới hạn gói
-(403) hiển thị `detail` của server. Trạng thái lạ → báo dữ liệu không hợp lệ.
+CourtRequest: `{name (≤ 150), courtTypeId, description|null (≤ 2000),
+imageUrl, defaultPricePerHour (> 0, ≤ 10 chữ số), status}`. PUT **thay toàn bộ
+bản ghi** nên form gửi lại `imageUrl` hiện có (app chưa cho sửa ảnh).
+`defaultPricePerHour` trong response là BigDecimal (`120000.00`), app làm tròn
+về đồng; **có thể `null` với sân tạo bằng seed SQL** (cột thêm ở V3): thẻ sân
+hiện "Chưa đặt giá", form sửa bắt nhập giá (gợi ý "Sân chưa có giá mặc
+định"), mẫu khung giờ (SCRUM-19) bắt nhập giá mỗi slot.
+
+Lỗi được đổi sang tiếng Việt (`facility_failures.dart`): trùng tên sân (400
+"Court name already exists in this branch") → "Tên sân đã tồn tại trong chi
+nhánh"; 400 khác liệt kê `errors`; 403 "Court limit ... (15)" → "Đã đạt số sân
+tối đa của gói dịch vụ (15)"; 404 → sân không tồn tại hoặc thuộc chủ sân khác.
+Trạng thái lạ → báo dữ liệu không hợp lệ.
 
 ## Phần chờ tích hợp
 

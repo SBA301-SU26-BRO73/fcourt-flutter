@@ -42,7 +42,15 @@ Response đọc `courtId`, `daysOfWeek`, `totalSlots` (danh sách `slots` không
 cần cho màn hình). Bản xem trước dùng cùng quy tắc với backend (end > start,
 nằm trong giờ chi nhánh, chia hết cho 30, giá mặc định = giá giờ × 30/60) nên
 không gọi `.../time-slot-templates/preview`; việc lưu luôn đi qua backend và
-backend vẫn là nơi kiểm tra cuối (400 → hiển thị `detail`).
+backend vẫn là nơi kiểm tra cuối: 400 ngoài giờ mở cửa → "Khung giờ phải nằm
+trong giờ mở cửa của chi nhánh (06:00-22:00)", 400 khác liệt kê `errors`
+(ví dụ `daysOfWeek` rỗng/trùng), 409 → "Khung giờ trùng với mẫu khung giờ
+đang có", 404 → sân không thuộc chủ sân.
+
+Sân tạo bằng seed SQL có `defaultPricePerHour = null`: ô giá mỗi slot để
+trống kèm gợi ý "Sân chưa có giá giờ, hãy nhập giá mỗi slot"; xem trước rỗng
+và nút áp dụng khóa cho tới khi nhập giá. Ô giá giới hạn 8 chữ số như
+`ApplyTemplateRequest.price`.
 
 ## Phần chờ tích hợp
 

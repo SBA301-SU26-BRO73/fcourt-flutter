@@ -45,8 +45,11 @@ làm tròn sát ngưỡng lên đơn vị kế (999 950 → `1M đ`).
 ```
 
 Số đếm thiếu trong `bookingStatusCounts` coi là 0; sai kiểu báo dữ liệu
-không hợp lệ. `occupancyRate` được giới hạn 0..1. 403 (chi nhánh của chủ khác)
-hiển thị `detail`.
+không hợp lệ. `totalRevenue`/`todayRevenue` là BigDecimal (`15500000.00`),
+`occupancyRate` là double 0..1 (4 chữ số thập phân, app vẫn giới hạn 0..1),
+`branchId` là `null` khi xem tất cả. 403 "Branch access denied" (chi nhánh của
+chủ khác) → "Bạn không có quyền xem số liệu của chi nhánh này"; 503 (facility
+không phản hồi) → "Chưa lấy được thông tin chi nhánh, vui lòng thử lại sau".
 
 ## Phần chờ tích hợp
 
@@ -62,13 +65,13 @@ Kiểm chứng local ngày 31/10/2026, Windows 11, Flutter 3.47.7:
 
 - `flutter pub get`: thành công. Thêm `fl_chart ^1.3.0`, `shimmer ^4.0.0`.
 - `dart format --output=none --set-exit-if-changed` trên mọi file Dart nhánh
-  này thêm/sửa (trừ `lib/app/router.dart`): 75 file, 0 thay đổi. Chạy trên
+  này thêm/sửa (trừ `lib/app/router.dart`): 76 file, 0 thay đổi. Chạy trên
   toàn bộ `lib test` vẫn báo 6 file **có sẵn trên `dev`** chưa format
   (`router.dart`, `app_theme.dart`, `auth_interceptor.dart`,
   `token_storage.dart`, `health_page.dart`, `auth_interceptor_test.dart`);
   không format lại để tránh xung đột với nhánh khác.
 - `flutter analyze`: No issues found.
-- `flutter test`: 92 test pass (gồm test cũ của khung app), trong đó test mới
+- `flutter test`: 101 test pass (gồm test cũ của khung app), trong đó test mới
   cho contract HTTP bằng `FakeAdapter`, bloc, widget, sinh slot, định dạng tiền
   rút gọn, dashboard (shimmer, 4 thẻ, PieChart, đổi chi nhánh) và test mở từng
   route admin trên `FcourtApp`.
@@ -80,3 +83,14 @@ Kiểm chứng local ngày 31/10/2026, Windows 11, Flutter 3.47.7:
   HTTP dùng adapter giả theo `CONTRACTS.md`, không thay thế kiểm thử end-to-end.
 
 Task: https://bro73.atlassian.net/browse/SCRUM-13
+
+### Đối chiếu với backend thật (31/10/2026)
+
+Đã so từng model với record của `fcourt-backend`
+(`feature/Tuan-SCRUM-14-facility-reporting`: `BranchResponse/Request`,
+`CourtResponse/Request`, `TemplateDtos`, `DashboardService.DashboardStats`,
+`ApiErrors`) và seed V2. Test `FakeAdapter` dùng JSON đúng dạng backend, gồm
+chi nhánh/sân seed nhiều trường `null`. Các điểm đã sửa: giá sân `null`, giữ
+`imageUrl`/tọa độ/`slotDurationMinutes` khi PUT, độ dài và định dạng số điện
+thoại theo `@Size`/`@Pattern`, đoán `bankBin` theo `bankName`, thông báo lỗi
+tiếng Việt cho 400 `errors`/403/404/409/503. Chưa gọi backend đang chạy.
