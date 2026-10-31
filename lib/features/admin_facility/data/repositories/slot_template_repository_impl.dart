@@ -1,4 +1,4 @@
-import '../../../../core/error/remote_call.dart';
+import 'facility_failures.dart';
 import '../../domain/entities/slot_template.dart';
 import '../../domain/repositories/slot_template_repository.dart';
 import '../datasources/facility_remote_data_source.dart';
@@ -14,7 +14,7 @@ class SlotTemplateRepositoryImpl implements SlotTemplateRepository {
   Future<AppliedTemplate> applyTemplate(
     int courtId,
     SlotTemplateRequest request,
-  ) => remoteCall(
+  ) => facilityCall(
     () async => SlotTemplateModel.appliedFromJson(
       readJsonObject(
         await _remote.applyTemplate(

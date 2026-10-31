@@ -1,4 +1,4 @@
-import '../../../../core/error/remote_call.dart';
+import 'facility_failures.dart';
 import '../../domain/entities/court.dart';
 import '../../domain/entities/court_type.dart';
 import '../../domain/repositories/court_repository.dart';
@@ -13,18 +13,18 @@ class CourtRepositoryImpl implements CourtRepository {
   final FacilityRemoteDataSource _remote;
 
   @override
-  Future<List<Court>> getCourts(int branchId) => remoteCall(() async {
+  Future<List<Court>> getCourts(int branchId) => facilityCall(() async {
     final body = await _remote.getCourts(branchId);
     return readJsonList(body).map(CourtModel.fromJson).toList();
   });
 
   @override
-  Future<Court> getCourt(int id) => remoteCall(
+  Future<Court> getCourt(int id) => facilityCall(
     () async => CourtModel.fromJson(readJsonObject(await _remote.getCourt(id))),
   );
 
   @override
-  Future<Court> createCourt(int branchId, CourtDraft draft) => remoteCall(
+  Future<Court> createCourt(int branchId, CourtDraft draft) => facilityCall(
     () async => CourtModel.fromJson(
       readJsonObject(
         await _remote.createCourt(branchId, CourtModel.toJson(draft)),
@@ -33,14 +33,14 @@ class CourtRepositoryImpl implements CourtRepository {
   );
 
   @override
-  Future<Court> updateCourt(int id, CourtDraft draft) => remoteCall(
+  Future<Court> updateCourt(int id, CourtDraft draft) => facilityCall(
     () async => CourtModel.fromJson(
       readJsonObject(await _remote.updateCourt(id, CourtModel.toJson(draft))),
     ),
   );
 
   @override
-  Future<Court> changeStatus(int id, CourtStatus status) => remoteCall(
+  Future<Court> changeStatus(int id, CourtStatus status) => facilityCall(
     () async => CourtModel.fromJson(
       readJsonObject(
         await _remote.changeCourtStatus(id, CourtModel.statusToJson(status)),
