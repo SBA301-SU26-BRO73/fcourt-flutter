@@ -36,6 +36,21 @@ class VietQrBank extends Equatable {
     return null;
   }
 
+  /// Chi nhánh tạo bằng seed SQL chỉ có `bankName` (ví dụ "MB Bank"), chưa có
+  /// `bankBin`: đoán ngân hàng theo tên (không phân biệt hoa thường, khoảng
+  /// trắng) để chủ sân không phải chọn lại.
+  static VietQrBank? byName(String? name) {
+    final key = _normalize(name);
+    if (key.isEmpty) return null;
+    for (final bank in all) {
+      if (_normalize(bank.shortName) == key) return bank;
+    }
+    return null;
+  }
+
+  static String _normalize(String? value) =>
+      (value ?? '').toLowerCase().replaceAll(RegExp(r'\s+'), '');
+
   @override
   List<Object?> get props => [shortName, bin];
 }

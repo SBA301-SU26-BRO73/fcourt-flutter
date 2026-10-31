@@ -84,7 +84,10 @@ class _BranchFormState extends State<_BranchForm> {
   late String? _district = _nonEmpty(widget.initial?.district);
   late ClockTime _open = widget.initial?.openTime ?? const ClockTime(6, 0);
   late ClockTime _close = widget.initial?.closeTime ?? const ClockTime(22, 0);
-  late String? _bankBin = _nonEmpty(widget.initial?.bankBin);
+  // Chi nhánh seed chỉ có bankName, chưa có bankBin: đoán theo tên ngân hàng.
+  late String? _bankBin =
+      _nonEmpty(widget.initial?.bankBin) ??
+      VietQrBank.byName(widget.initial?.bankName)?.bin;
 
   static String? _nonEmpty(String? value) =>
       value == null || value.trim().isEmpty ? null : value;
@@ -137,6 +140,10 @@ class _BranchFormState extends State<_BranchForm> {
       ward: _ward.text,
       district: _district,
       city: _city!,
+      // Form chưa sửa tọa độ/thời lượng slot nhưng PUT thay toàn bộ bản ghi.
+      latitude: widget.initial?.latitude,
+      longitude: widget.initial?.longitude,
+      slotDurationMinutes: widget.initial?.slotDurationMinutes ?? 30,
       phone: _phone.text,
       openTime: _open,
       closeTime: _close,
@@ -163,7 +170,11 @@ class _BranchFormState extends State<_BranchForm> {
             controller: _name,
             textInputAction: TextInputAction.next,
             decoration: const InputDecoration(labelText: 'Tên chi nhánh *'),
-            validator: (v) => BranchRules.required(v, 'tên chi nhánh'),
+            validator: (v) => BranchRules.required(
+              v,
+              'tên chi nhánh',
+              max: BranchRules.maxName,
+            ),
           ),
           const SizedBox(height: 12),
           TextFormField(
@@ -173,7 +184,8 @@ class _BranchFormState extends State<_BranchForm> {
             decoration: const InputDecoration(
               labelText: 'Địa chỉ (số nhà, đường) *',
             ),
-            validator: (v) => BranchRules.required(v, 'địa chỉ'),
+            validator: (v) =>
+                BranchRules.required(v, 'địa chỉ', max: BranchRules.maxAddress),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
@@ -209,6 +221,11 @@ class _BranchFormState extends State<_BranchForm> {
             controller: _ward,
             textInputAction: TextInputAction.next,
             decoration: const InputDecoration(labelText: 'Phường/Xã'),
+            validator: (v) => BranchRules.optional(
+              v,
+              'phường/xã',
+              max: BranchRules.maxWardOrDistrict,
+            ),
           ),
           const SizedBox(height: 12),
           TextFormField(

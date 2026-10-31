@@ -12,6 +12,8 @@ class Branch extends Equatable {
     this.ward,
     this.district,
     required this.city,
+    this.latitude,
+    this.longitude,
     this.phone,
     required this.openTime,
     required this.closeTime,
@@ -30,10 +32,17 @@ class Branch extends Equatable {
   final String? ward;
   final String? district;
   final String city;
+
+  /// Tọa độ có thể trống (chi nhánh tạo bằng seed SQL). App chưa cho sửa,
+  /// nhưng phải gửi lại khi cập nhật vì PUT thay thế toàn bộ bản ghi.
+  final double? latitude;
+  final double? longitude;
   final String? phone;
   final ClockTime openTime;
   final ClockTime closeTime;
   final int slotDurationMinutes;
+
+  /// Thông tin VietQR; chuỗi rỗng = chưa thiết lập (seed SQL không có `bankBin`).
   final String bankName;
   final String bankBin;
   final String bankAccountNumber;
@@ -55,9 +64,12 @@ class Branch extends Equatable {
     ward: ward,
     district: district,
     city: city,
+    latitude: latitude,
+    longitude: longitude,
     phone: phone,
     openTime: openTime,
     closeTime: closeTime,
+    slotDurationMinutes: slotDurationMinutes,
     bankName: bankName,
     bankBin: bankBin,
     bankAccountNumber: bankAccountNumber,
@@ -72,6 +84,8 @@ class Branch extends Equatable {
     ward,
     district,
     city,
+    latitude,
+    longitude,
     phone,
     openTime,
     closeTime,
@@ -85,7 +99,9 @@ class Branch extends Equatable {
   ];
 }
 
-/// Dữ liệu người dùng nhập để tạo/cập nhật chi nhánh (BranchRequest).
+/// Dữ liệu tạo/cập nhật chi nhánh (BranchRequest). Backend thay thế toàn bộ
+/// bản ghi khi PUT, nên các trường form không sửa (tọa độ, thời lượng slot)
+/// vẫn phải mang giá trị cũ.
 class BranchDraft extends Equatable {
   const BranchDraft({
     required this.name,
@@ -93,9 +109,12 @@ class BranchDraft extends Equatable {
     this.ward,
     this.district,
     required this.city,
+    this.latitude,
+    this.longitude,
     this.phone,
     required this.openTime,
     required this.closeTime,
+    this.slotDurationMinutes = 30,
     required this.bankName,
     required this.bankBin,
     required this.bankAccountNumber,
@@ -107,9 +126,12 @@ class BranchDraft extends Equatable {
   final String? ward;
   final String? district;
   final String city;
+  final double? latitude;
+  final double? longitude;
   final String? phone;
   final ClockTime openTime;
   final ClockTime closeTime;
+  final int slotDurationMinutes;
   final String bankName;
   final String bankBin;
   final String bankAccountNumber;
@@ -122,9 +144,12 @@ class BranchDraft extends Equatable {
     ward,
     district,
     city,
+    latitude,
+    longitude,
     phone,
     openTime,
     closeTime,
+    slotDurationMinutes,
     bankName,
     bankBin,
     bankAccountNumber,
