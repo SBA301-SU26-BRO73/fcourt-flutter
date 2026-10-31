@@ -393,4 +393,172 @@ void main() {
       verify(() => templates.applyTemplate(5, any())).called(1);
     });
   });
+
+  group('Dữ liệu seed SQL (giá/BIN/tọa độ null)', () {
+    testWidgets('sân chưa có giá hiển thị "Chưa đặt giá" thay vì lỗi', (
+      tester,
+    ) async {
+      when(() => branches.getBranches()).thenAnswer((_) async => []);
+      when(() => courts.getCourts(4)).thenAnswer(
+        (_) async => [
+          sampleCourt(id: 2, branchId: 4, price: null),
+          sampleCourt(id: 3, branchId: 4),
+        ],
+      );
+      await _pump(
+        tester,
+        BlocProvider(
+          create: (_) => CourtListBloc(
+            getBranches: GetBranches(branches),
+            getCourts: GetCourts(courts),
+            getCourtTypes: GetCourtTypes(types),
+            toggleMaintenance: ToggleCourtMaintenance(courts),
+          )..add(const CourtListStarted(4)),
+          child: CourtListScreen(
+            onCreateCourt: (_) async => null,
+            onEditCourt: (_) async => null,
+            onOpenSlotTemplate: (_) {},
+          ),
+        ),
+      );
+
+      expect(find.text('Chưa đặt giá'), findsOneWidget);
+      expect(find.text('120.000 đ/giờ'), findsOneWidget);
+    });
+
+    testWidgets('sửa sân chưa có giá: bắt nhập giá, giữ imageUrl khi PUT', (
+      tester,
+    ) async {
+      when(() => courts.getCourt(2)).thenAnswer(
+        (_) async => sampleCourt(
+          id: 2,
+          branchId: 4,
+          price: null,
+          imageUrl: 'https://img/court.jpg',
+        ),
+      );
+      when(
+        () => courts.updateCourt(2, any()),
+      ).thenAnswer((_) async => sampleCourt(id: 2, branchId: 4, price: 90000));
+      await _pump(
+        tester,
+        BlocProvider(
+          create: (_) => CourtFormBloc(
+            getCourt: GetCourt(courts),
+            saveCourt: SaveCourt(courts),
+            getCourtTypes: GetCourtTypes(types),
+            courtId: 2,
+          )..add(const CourtFormStarted()),
+          child: const CourtFormScreen(),
+        ),
+      );
+
+      expect(
+        find.text('Sân chưa có giá mặc định, vui lòng đặt giá'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('court-submit')));
+      await tester.pumpAndSettle();
+      expect(find.text('Vui lòng nhập giá'), findsOneWidget);
+      verifyNever(() => courts.updateCourt(any(), any()));
+
+      await tester.enterText(find.byKey(const Key('court-price')), '90000');
+      await tester.tap(find.byKey(const Key('court-submit')));
+      await tester.pumpAndSettle();
+
+      final sent =
+          verify(() => courts.updateCourt(2, captureAny())).captured.single
+              as CourtDraft;
+      expect(sent.defaultPricePerHour, 90000);
+      expect(sent.imageUrl, 'https://img/court.jpg');
+    });
+
+    testWidgets(
+      'mẫu khung giờ của sân chưa có giá: phải nhập giá mới áp dụng',
+      (tester) async {
+        when(() => courts.getCourt(2))
+            .thenAnswer((_) async => sampleCourt(id: 2, price: null));
+        when(() => branches.getBranch(1))
+            .thenAnswer((_) async => sampleBranch());
+        await _pump(
+          tester,
+          BlocProvider(
+            create: (_) => SlotTemplateBloc(
+              courtId: 2,
+              getCourt: GetCourt(courts),
+              getBranch: GetBranch(branches),
+              applyTemplate: ApplySlotTemplate(templates),
+            )..add(const SlotTemplateStarted()),
+            child: const TimeSlotTemplateScreen(),
+          ),
+        );
+
+        ButtonStyleButton apply() =>
+            tester.widget(find.byKey(const Key('slot-apply')));
+        expect(
+          find.text('Sân chưa có giá giờ, hãy nhập giá mỗi slot'),
+          findsOneWidget,
+        );
+        expect(find.text('Xem trước: 0 slot/ngày'), findsOneWidget);
+        expect(apply().onPressed, isNull);
+
+        await tester.enterText(find.byKey(const Key('slot-price')), '50000');
+        await tester.pumpAndSettle();
+
+        expect(find.text('Xem trước: 32 slot/ngày'), findsOneWidget);
+        expect(apply().onPressed, isNotNull);
+      },
+    );
+
+    testWidgets('sửa chi nhánh seed: đoán ngân hàng theo tên, PUT giữ tọa độ '
+        'và thời lượng slot', (tester) async {
+      final seeded = Branch(
+        id: 4,
+        name: 'Sân Bóng Đá Đống Đa',
+        address: 'Số 101 Đặng Văn Ngữ',
+        ward: 'Trung Tự',
+        city: 'Hà Nội',
+        latitude: 21.0,
+        longitude: 105.8,
+        phone: '0901234004',
+        openTime: const ClockTime(6, 0),
+        closeTime: const ClockTime(22, 0),
+        slotDurationMinutes: 60,
+        bankName: 'MB Bank',
+        bankBin: '',
+        bankAccountNumber: '40123456789',
+        bankAccountName: 'NGUYEN VAN FOUR',
+        status: BranchStatus.active,
+        courtCount: 2,
+      );
+      when(() => branches.getBranch(4)).thenAnswer((_) async => seeded);
+      when(() => branches.updateBranch(4, any()))
+          .thenAnswer((_) async => seeded);
+      await _pump(
+        tester,
+        BlocProvider(
+          create: (_) => BranchFormBloc(
+            getBranch: GetBranch(branches),
+            saveBranch: SaveBranch(branches),
+            branchId: 4,
+          )..add(const BranchFormStarted()),
+          child: const BranchFormScreen(),
+        ),
+      );
+
+      expect(find.text('MB Bank (970422)'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('branch-submit')));
+      await tester.pumpAndSettle();
+
+      final sent =
+          verify(() => branches.updateBranch(4, captureAny())).captured.single
+              as BranchDraft;
+      expect(sent.bankBin, '970422');
+      expect(sent.bankName, 'MB Bank');
+      expect(sent.latitude, 21.0);
+      expect(sent.longitude, 105.8);
+      expect(sent.slotDurationMinutes, 60);
+      expect(sent.district, isNull);
+    });
+  });
 }

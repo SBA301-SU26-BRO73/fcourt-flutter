@@ -20,7 +20,7 @@ class MockSlotTemplateRepository extends Mock
 
 void registerFacilityFallbacks() {
   registerFallbackValue(sampleBranch().toDraft());
-  registerFallbackValue(sampleCourt().toDraft());
+  registerFallbackValue(sampleCourtDraft);
   registerFallbackValue(CourtStatus.active);
   registerFallbackValue(
     const SlotTemplateRequest(

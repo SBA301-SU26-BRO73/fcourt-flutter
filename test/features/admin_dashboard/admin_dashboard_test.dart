@@ -26,13 +26,14 @@ class _MockDashboardRepository extends Mock implements DashboardRepository {}
 
 Map<String, dynamic> _statsJson({int? branchId}) => {
   'branchId': branchId,
-  'totalRevenue': 15500000,
+  'totalRevenue': 15500000.00,
   'todayRevenue': 850000.0,
   'totalBookings': 42,
   'bookingStatusCounts': {'CONFIRMED': 30, 'PENDING': 8, 'CANCELLED': 4},
   'activeCourts': 6,
   'totalCourts': 8,
   'occupancyRate': 0.725,
+  // DashboardService.DashboardStats: generatedAt là Instant ISO-8601.
   'generatedAt': '2026-10-31T10:00:00Z',
 };
 
@@ -107,9 +108,20 @@ void main() {
       () async {
         var status = 403;
         final adapter = FakeAdapter(
-          (_) => status == 403
-              ? jsonResponse(403, {'detail': 'Không có quyền'})
-              : jsonResponse(200, {..._statsJson(), 'totalRevenue': 'abc'}),
+          (_) => switch (status) {
+            403 => jsonResponse(403, {
+              'type': 'about:blank',
+              'title': 'Forbidden',
+              'status': 403,
+              'detail': 'Branch access denied',
+              'instance': '/api/admin/dashboard/stats',
+            }),
+            503 => jsonResponse(503, {
+              'status': 503,
+              'detail': 'Facility service unavailable',
+            }),
+            _ => jsonResponse(200, {..._statsJson(), 'totalRevenue': 'abc'}),
+          },
         );
         final dio = Dio(BaseOptions(baseUrl: 'http://reporting'))
           ..httpClientAdapter = adapter;
@@ -117,7 +129,22 @@ void main() {
 
         await expectLater(
           repo.getStats(branchId: 9),
-          throwsA(const ServerFailure('Không có quyền', statusCode: 403)),
+          throwsA(
+            const ServerFailure(
+              'Bạn không có quyền xem số liệu của chi nhánh này',
+              statusCode: 403,
+            ),
+          ),
+        );
+        status = 503;
+        await expectLater(
+          repo.getStats(branchId: 9),
+          throwsA(
+            const ServerFailure(
+              'Chưa lấy được thông tin chi nhánh, vui lòng thử lại sau',
+              statusCode: 503,
+            ),
+          ),
         );
         status = 200;
         await expectLater(repo.getStats(), throwsA(isA<UnknownFailure>()));

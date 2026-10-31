@@ -270,7 +270,7 @@ void main() {
       act: (bloc) async {
         bloc.add(const CourtFormStarted());
         await Future<void>.delayed(Duration.zero);
-        bloc.add(CourtFormSubmitted(sampleCourt().toDraft()));
+        bloc.add(const CourtFormSubmitted(sampleCourtDraft));
       },
       verify: (bloc) {
         expect(bloc.state.status, CourtFormStatus.success);
