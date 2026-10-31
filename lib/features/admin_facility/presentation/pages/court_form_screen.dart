@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/entities/branch_rules.dart';
 import '../../domain/entities/court.dart';
 import '../../domain/entities/court_type.dart';
 import '../bloc/court_form_bloc.dart';
@@ -67,7 +68,7 @@ class _CourtFormState extends State<_CourtForm> {
   final _formKey = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.initial?.name);
   late final _price = TextEditingController(
-    text: widget.initial?.defaultPricePerHour.toString(),
+    text: widget.initial?.defaultPricePerHour?.toString(),
   );
   late final _description = TextEditingController(
     text: widget.initial?.description,
@@ -91,6 +92,7 @@ class _CourtFormState extends State<_CourtForm> {
           name: _name.text,
           courtTypeId: _typeId!,
           description: _description.text,
+          imageUrl: widget.initial?.imageUrl,
           defaultPricePerHour: int.parse(_price.text),
           status: _status,
         ),
@@ -118,8 +120,8 @@ class _CourtFormState extends State<_CourtForm> {
             decoration: const InputDecoration(labelText: 'Tên sân *'),
             validator: (v) => v == null || v.trim().isEmpty
                 ? 'Vui lòng nhập tên sân'
-                : v.trim().length > 100
-                ? 'Tên sân tối đa 100 ký tự'
+                : v.trim().length > BranchRules.maxName
+                ? 'Tên sân tối đa ${BranchRules.maxName} ký tự'
                 : null,
           ),
           const SizedBox(height: 12),
@@ -139,10 +141,19 @@ class _CourtFormState extends State<_CourtForm> {
             key: const Key('court-price'),
             controller: _price,
             keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(
+            // Backend: DECIMAL tối đa 10 chữ số phần nguyên.
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
+            decoration: InputDecoration(
               labelText: 'Giá mặc định mỗi giờ (VND) *',
               suffixText: 'đ/giờ',
+              helperText:
+                  widget.initial != null &&
+                      widget.initial!.defaultPricePerHour == null
+                  ? 'Sân chưa có giá mặc định, vui lòng đặt giá'
+                  : null,
             ),
             validator: (v) {
               final price = int.tryParse(v ?? '');
@@ -155,6 +166,11 @@ class _CourtFormState extends State<_CourtForm> {
             controller: _description,
             maxLines: 3,
             decoration: const InputDecoration(labelText: 'Mô tả'),
+            validator: (v) => BranchRules.optional(
+              v,
+              'mô tả',
+              max: BranchRules.maxCourtDescription,
+            ),
           ),
           const SizedBox(height: 8),
           SwitchListTile(

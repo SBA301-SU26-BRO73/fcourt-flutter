@@ -52,7 +52,10 @@ class SlotTemplateBloc extends Bloc<SlotTemplateEvent, SlotTemplateState> {
           branch: branch,
           start: branch.openTime,
           end: branch.closeTime,
-          price: defaultSlotPrice(court.defaultPricePerHour),
+          // Sân seed chưa có giá giờ: để trống, chủ sân nhập giá mỗi slot.
+          price: court.defaultPricePerHour == null
+              ? null
+              : defaultSlotPrice(court.defaultPricePerHour!),
         ),
       );
     } on Failure catch (failure) {

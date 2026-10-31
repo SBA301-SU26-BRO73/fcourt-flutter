@@ -18,6 +18,16 @@ extension JsonReaders on Map<String, dynamic> {
     throw FormatException('Trường "$key" phải là số tiền', value);
   }
 
+  int? readMoneyOrNull(String key) => this[key] == null ? null : readMoney(key);
+
+  /// BigDecimal (tọa độ) được Jackson ghi thành JSON number.
+  double? readDoubleOrNull(String key) {
+    final value = this[key];
+    if (value == null) return null;
+    if (value is num && value.isFinite) return value.toDouble();
+    throw FormatException('Trường "$key" phải là số', value);
+  }
+
   String readString(String key) {
     final value = this[key];
     if (value is String) return value;

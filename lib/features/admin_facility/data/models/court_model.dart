@@ -11,7 +11,9 @@ class CourtModel {
     name: json.readString('name'),
     courtTypeId: json.readInt('courtTypeId'),
     description: json.readStringOrNull('description'),
-    defaultPricePerHour: json.readMoney('defaultPricePerHour'),
+    imageUrl: json.readStringOrNull('imageUrl'),
+    // null với sân tạo bằng seed SQL (V2 chưa có cột giá).
+    defaultPricePerHour: json.readMoneyOrNull('defaultPricePerHour'),
     status: statusFromJson(json['status']),
   );
 
@@ -23,6 +25,8 @@ class CourtModel {
       'description': description == null || description.isEmpty
           ? null
           : description,
+      // PUT thay toàn bộ bản ghi: gửi lại ảnh hiện có để không bị xóa.
+      'imageUrl': draft.imageUrl,
       'defaultPricePerHour': draft.defaultPricePerHour,
       'status': statusToJson(draft.status),
     };

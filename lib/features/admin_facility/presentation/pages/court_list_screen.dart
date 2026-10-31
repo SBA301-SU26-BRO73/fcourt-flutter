@@ -207,8 +207,15 @@ class CourtCard extends StatelessWidget {
               Text(typeName, style: textTheme.bodySmall),
               const SizedBox(height: 4),
               Text(
-                '${formatVnd(court.defaultPricePerHour)}/giờ',
-                style: textTheme.bodyMedium,
+                court.defaultPricePerHour == null
+                    ? 'Chưa đặt giá'
+                    : '${formatVnd(court.defaultPricePerHour!)}/giờ',
+                style: court.defaultPricePerHour == null
+                    ? textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                        fontStyle: FontStyle.italic,
+                      )
+                    : textTheme.bodyMedium,
               ),
               const Spacer(),
               Row(

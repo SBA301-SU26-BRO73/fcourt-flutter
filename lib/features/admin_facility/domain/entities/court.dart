@@ -9,7 +9,8 @@ class Court extends Equatable {
     required this.name,
     required this.courtTypeId,
     this.description,
-    required this.defaultPricePerHour,
+    this.imageUrl,
+    this.defaultPricePerHour,
     required this.status,
   });
 
@@ -19,17 +20,13 @@ class Court extends Equatable {
   final int courtTypeId;
   final String? description;
 
-  /// Giá mặc định mỗi giờ (VND).
-  final int defaultPricePerHour;
-  final CourtStatus status;
+  /// Ảnh sân; app chưa cho sửa nhưng phải gửi lại khi PUT (thay toàn bộ).
+  final String? imageUrl;
 
-  CourtDraft toDraft() => CourtDraft(
-    name: name,
-    courtTypeId: courtTypeId,
-    description: description,
-    defaultPricePerHour: defaultPricePerHour,
-    status: status,
-  );
+  /// Giá mặc định mỗi giờ (VND). `null` với sân tạo bằng seed SQL (cột được
+  /// thêm sau ở V3); chủ sân phải đặt giá khi sửa sân.
+  final int? defaultPricePerHour;
+  final CourtStatus status;
 
   @override
   List<Object?> get props => [
@@ -38,17 +35,19 @@ class Court extends Equatable {
     name,
     courtTypeId,
     description,
+    imageUrl,
     defaultPricePerHour,
     status,
   ];
 }
 
-/// Dữ liệu tạo/cập nhật sân (CourtRequest).
+/// Dữ liệu tạo/cập nhật sân (CourtRequest). Backend bắt buộc giá > 0.
 class CourtDraft extends Equatable {
   const CourtDraft({
     required this.name,
     required this.courtTypeId,
     this.description,
+    this.imageUrl,
     required this.defaultPricePerHour,
     this.status = CourtStatus.active,
   });
@@ -56,6 +55,7 @@ class CourtDraft extends Equatable {
   final String name;
   final int courtTypeId;
   final String? description;
+  final String? imageUrl;
   final int defaultPricePerHour;
   final CourtStatus status;
 
@@ -64,6 +64,7 @@ class CourtDraft extends Equatable {
     name,
     courtTypeId,
     description,
+    imageUrl,
     defaultPricePerHour,
     status,
   ];

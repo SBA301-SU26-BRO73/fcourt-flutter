@@ -207,10 +207,18 @@ class _TemplateBody extends StatelessWidget {
                       key: const Key('slot-price'),
                       initialValue: state.price?.toString(),
                       keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
+                      // ApplyTemplateRequest.price: tối đa 8 chữ số phần nguyên.
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(8),
+                      ],
+                      decoration: InputDecoration(
                         labelText: 'Giá mỗi slot',
                         suffixText: 'đ',
+                        helperMaxLines: 2,
+                        helperText: state.court?.defaultPricePerHour == null
+                            ? 'Sân chưa có giá giờ, hãy nhập giá mỗi slot'
+                            : null,
                       ),
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       validator: (v) => (int.tryParse(v ?? '') ?? 0) <= 0
