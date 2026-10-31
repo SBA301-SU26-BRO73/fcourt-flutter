@@ -36,10 +36,13 @@ Failure failureFromDio(DioException e) {
   final status = e.response?.statusCode;
   if (status == 401) return const UnauthorizedFailure();
   if (status != null) {
+    // Các service Spring trả lỗi dạng RFC 7807 ProblemDetail: thông điệp an toàn
+    // cho người dùng nằm ở `detail`; giữ `message` cho API kiểu cũ.
     final body = e.response?.data;
-    final message = body is Map && body['message'] is String
-        ? body['message'] as String
-        : 'Lỗi máy chủ ($status)';
+    final message =
+        _stringField(body, 'message') ??
+        _stringField(body, 'detail') ??
+        'Lỗi máy chủ ($status)';
     return ServerFailure(message, statusCode: status);
   }
   switch (e.type) {
@@ -51,4 +54,10 @@ Failure failureFromDio(DioException e) {
     default:
       return const UnknownFailure();
   }
+}
+
+String? _stringField(Object? body, String key) {
+  if (body is! Map) return null;
+  final value = body[key];
+  return value is String && value.trim().isNotEmpty ? value : null;
 }
