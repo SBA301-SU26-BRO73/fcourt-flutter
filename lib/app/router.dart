@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../features/refunds/presentation/admin_refund_approval_screen.dart';
 import '../features/refunds/presentation/customer_refund_screen.dart';
 import '../features/transactions/presentation/admin_transaction_history_screen.dart';
 
@@ -188,8 +189,29 @@ GoRouter createRouter(
             repository: repository,
             branchId: id,
             onLedger: dependencies.adminTransactions == null
+            onRefunds: dependencies.adminRefunds == null
+                ? null
+                : () => context.push('/admin/branches/$id/refunds'),
                 ? null
                 : () => context.push('/admin/branches/$id/transactions'),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/admin/branches/:branchId/refunds',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['branchId'] ?? '');
+          final repository = dependencies.adminRefunds;
+          final picker = dependencies.receiptPicker;
+          if (id == null || id <= 0 || repository == null || picker == null) {
+            return const Scaffold(
+              body: Center(child: Text('Vui lòng chọn chi nhánh hợp lệ')),
+            );
+          }
+          return AdminRefundApprovalScreen(
+            repository: repository,
+            picker: picker,
+            branchId: id,
           );
         },
       ),

@@ -11,11 +11,13 @@ class AdminPaymentApprovalScreen extends StatefulWidget {
     required this.repository,
     required this.branchId,
     this.onLedger,
+    this.onRefunds,
     this.receiptBuilder,
   });
   final AdminPaymentRepository repository;
   final int branchId;
   final VoidCallback? onLedger;
+  final VoidCallback? onRefunds;
   final Widget Function(Uri)? receiptBuilder;
   @override
   State<AdminPaymentApprovalScreen> createState() =>
@@ -101,6 +103,12 @@ class _AdminPaymentApprovalScreenState
     appBar: AppBar(
       title: const Text('Duyệt biên lai'),
       actions: [
+        if (widget.onRefunds != null)
+          IconButton(
+            tooltip: 'Duyệt hoàn tiền',
+            onPressed: widget.onRefunds,
+            icon: const Icon(Icons.currency_exchange),
+          ),
         if (widget.onLedger != null)
           IconButton(
             tooltip: 'Đối soát tài chính',
