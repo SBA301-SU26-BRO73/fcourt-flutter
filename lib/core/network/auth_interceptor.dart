@@ -12,16 +12,19 @@ class AuthInterceptor extends Interceptor {
     required this.tokenStorage,
     this.refreshPath = ApiEndpoints.authRefresh,
     this.onSessionExpired,
+    this.allowRefresh = true,
   });
 
   static const skipAuthKey = 'skipAuth';
   static const _retriedKey = 'authRetried';
+  static const _retryAccessKey = 'authRetryAccess';
   static final _sessions = Expando<_RefreshSession>();
   final Dio dio;
   final Dio refreshDio;
   final TokenStorage tokenStorage;
   final String refreshPath;
   final void Function()? onSessionExpired;
+  final bool allowRefresh;
   _RefreshSession get _session => _sessions[tokenStorage] ??= _RefreshSession();
 
   @override
@@ -31,6 +34,19 @@ class AuthInterceptor extends Interceptor {
   ) async {
     if (options.extra[skipAuthKey] != true) {
       final tokens = await tokenStorage.read();
+      final expected = options.extra[_retryAccessKey];
+      if (expected != null && tokens?.accessToken != expected) {
+        return handler.reject(
+          DioException(
+            requestOptions: options,
+            type: DioExceptionType.badResponse,
+            response: Response<dynamic>(
+              requestOptions: options,
+              statusCode: 401,
+            ),
+          ),
+        );
+      }
       if (tokens != null) {
         options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
       } else {
@@ -46,7 +62,8 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final request = err.requestOptions;
-    if (err.response?.statusCode != 401 ||
+    if (!allowRefresh ||
+        err.response?.statusCode != 401 ||
         request.extra[skipAuthKey] == true ||
         request.extra[_retriedKey] == true) {
       return handler.next(err);
@@ -59,9 +76,7 @@ class AuthInterceptor extends Interceptor {
       final AuthTokens? tokens;
       if (sent != 'Bearer ${current.accessToken}') {
         // Never replay an old account's operation under a newly signed-in account.
-        tokens = session.previousAccess == sent && session.result == current
-            ? current
-            : null;
+        tokens = await session.reuse(sent, current);
       } else {
         tokens = await session.run(current, () => _refresh(current));
         if (tokens == null && await tokenStorage.read() == current) {
@@ -72,6 +87,7 @@ class AuthInterceptor extends Interceptor {
       if (tokens == null) return handler.next(err);
       request.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
       request.extra[_retriedKey] = true;
+      request.extra[_retryAccessKey] = tokens.accessToken;
       handler.resolve(await dio.fetch<dynamic>(request));
     } on DioException catch (error) {
       handler.next(error);
@@ -112,17 +128,28 @@ class AuthInterceptor extends Interceptor {
 }
 
 class _RefreshSession {
-  Future<AuthTokens?>? _pending;
-  String? previousAccess;
-  AuthTokens? result;
+  final _pending = <AuthTokens, Future<AuthTokens?>>{};
+  final _rotated = <String, AuthTokens>{};
+  Future<AuthTokens?> reuse(Object? sent, AuthTokens current) async {
+    final source = _pending.keys
+        .where((tokens) => 'Bearer ${tokens.accessToken}' == sent)
+        .firstOrNull;
+    final value = source == null ? _rotated[sent] : await _pending[source];
+    return value == current ? current : null;
+  }
+
   Future<AuthTokens?> run(
     AuthTokens current,
     Future<AuthTokens?> Function() action,
   ) {
-    if (_pending != null) return _pending!;
-    previousAccess = 'Bearer ${current.accessToken}';
-    return _pending = action()
-        .then((value) => result = value)
-        .whenComplete(() => _pending = null);
+    return _pending[current] ??= action()
+        .then((value) {
+          if (value != null) {
+            _rotated.clear();
+            _rotated['Bearer ${current.accessToken}'] = value;
+          }
+          return value;
+        })
+        .whenComplete(() => _pending.remove(current));
   }
 }
