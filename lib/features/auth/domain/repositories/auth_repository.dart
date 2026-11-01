@@ -32,6 +32,20 @@ abstract class AuthRepository {
     required String phone,
   });
 
+  /// Gửi email đặt lại mật khẩu. BE luôn trả cùng một kết quả dù email có đăng ký hay không.
+  Future<void> requestPasswordReset(String email);
+
+  /// Đặt mật khẩu mới bằng token trong email. Ném `Failure` khi token sai, đã dùng hoặc hết hạn.
+  /// Mọi phiên đăng nhập của tài khoản bị BE thu hồi.
+  Future<void> resetPassword({required String token, required String newPassword});
+
+  /// Đổi mật khẩu khi đang đăng nhập. BE thu hồi mọi phiên và trả cặp token mới; repository lưu
+  /// cặp này để thiết bị hiện tại vẫn đăng nhập, các thiết bị khác phải đăng nhập lại.
+  Future<AuthUser> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
+
   /// Không bao giờ ném lỗi: token cục bộ luôn bị xóa dù BE không trả lời.
   Future<void> logout();
 }
