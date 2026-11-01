@@ -17,11 +17,15 @@ import '../features/auth/presentation/services/document_picker.dart';
 import '../features/catalog/data/datasources/catalog_remote_data_source.dart';
 import '../features/catalog/data/repositories/catalog_repository_impl.dart';
 import '../features/catalog/domain/repositories/catalog_repository.dart';
+import '../features/booking/data/datasources/booking_remote_data_source.dart';
+import '../features/booking/data/repositories/booking_repository_impl.dart';
+import '../features/booking/domain/repositories/booking_repository.dart';
 import '../features/health/data/datasources/health_remote_data_source.dart';
 import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
 import '../features/staff/domain/staff.dart';
 import '../features/staff/data/http_staff_repository.dart';
+import 'admin_facility_dependencies.dart';
 import '../features/super_admin/data/datasources/super_admin_remote_data_source.dart';
 import '../features/super_admin/data/repositories/court_owner_approval_repository_impl.dart';
 import '../features/super_admin/domain/repositories/court_owner_approval_repository.dart';
@@ -33,6 +37,7 @@ class AppDependencies {
   const AppDependencies({
     required this.config,
     required this.healthRepository,
+    this.adminFacility,
     required this.authRepository,
     required this.catalogRepository,
     this.documentPicker = const FilePickerDocumentPicker(),
@@ -40,11 +45,13 @@ class AppDependencies {
     required this.discoveryRepository,
     this.slotRepository,
     this.staffRepository,
+    this.bookingRepository,
     this.courtOwnerApprovalRepository,
   });
 
   final AppConfig config;
   final HealthRepository healthRepository;
+  final AdminFacilityDependencies? adminFacility;
   final AuthRepository authRepository;
   final CatalogRepository catalogRepository;
   final DocumentPicker documentPicker;
@@ -54,6 +61,7 @@ class AppDependencies {
   final DiscoveryRepository discoveryRepository;
   final SlotRepository? slotRepository;
   final StaffRepository? staffRepository;
+  final BookingRepository? bookingRepository;
   final CourtOwnerApprovalRepository? courtOwnerApprovalRepository;
 
   factory AppDependencies.create(AppConfig config) {
@@ -78,11 +86,20 @@ class AppDependencies {
         headers: const {'Accept': 'application/json'},
       ),
     );
+    final catalogRepository = CatalogRepositoryImpl(
+      CatalogRemoteDataSource(dio),
+    );
     return AppDependencies(
       config: config,
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
+      adminFacility: AdminFacilityDependencies.create(
+        config,
+        tokenStorage,
+        catalogRepository,
+        onSessionExpired: onSessionExpired,
+      ),
       authRepository: AuthRepositoryImpl(AuthRemoteDataSource(dio), tokenStorage),
-      catalogRepository: CatalogRepositoryImpl(CatalogRemoteDataSource(dio)),
+      catalogRepository: catalogRepository,
       sessionExpired: sessionExpired.stream,
       discoveryRepository: DiscoveryRepositoryImpl(
         DiscoveryRemoteDataSource(publicDio),
@@ -90,8 +107,9 @@ class AppDependencies {
       slotRepository: SlotRepositoryImpl(SlotRemoteDataSource(publicDio)),
       staffRepository: HttpStaffRepository(
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
-        createDio(config, tokenStorage, baseUrl: config.facilityBaseUrl),
+        createDio(config, tokenStorage, baseUrl: config.facilityUrl),
       ),
+      bookingRepository: BookingRepositoryImpl(BookingRemoteDataSource(dio)),
       courtOwnerApprovalRepository: CourtOwnerApprovalRepositoryImpl(
         SuperAdminRemoteDataSource(authDio),
       ),

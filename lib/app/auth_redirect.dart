@@ -1,5 +1,5 @@
-import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/auth/domain/entities/user_role.dart';
+import '../features/auth/presentation/bloc/auth_bloc.dart';
 
 class AppRoutes {
   const AppRoutes._();
@@ -52,6 +52,9 @@ String? authRedirect(AuthStatus status, String location, {UserRole? role}) {
 /// Màn hình chỉ dành cho một vai trò. BE vẫn là nơi chặn cuối cùng (403), đây chỉ để không
 /// cho người không có quyền thấy màn hình rồi nhận lỗi.
 bool _isForbidden(String location, UserRole? role) =>
-    ((location == AppRoutes.catalog || location.startsWith('/super-admin')) &&
-        role != UserRole.superAdmin) ||
-    (location == AppRoutes.staff && role != UserRole.admin);
+    switch (location) {
+      AppRoutes.catalog => role != UserRole.superAdmin,
+      _ when location.startsWith('/super-admin') => role != UserRole.superAdmin,
+      _ when location.startsWith('/admin') => role != UserRole.admin,
+      _ => false,
+    };

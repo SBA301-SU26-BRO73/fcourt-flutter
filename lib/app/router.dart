@@ -44,6 +44,7 @@ import '../features/super_admin/presentation/bloc/owner_detail_cubit.dart';
 import '../features/super_admin/presentation/bloc/pending_owners_cubit.dart';
 import '../features/super_admin/presentation/pages/owner_approval_detail_screen.dart';
 import '../features/super_admin/presentation/pages/pending_owners_screen.dart';
+import 'admin_facility_routes.dart';
 import 'app_dependencies.dart';
 import 'auth_redirect.dart';
 import '../features/staff/presentation/staff_page.dart';
@@ -54,6 +55,7 @@ import '../src/features/customer_discovery/presentation/screens/branch_list_scre
 import '../src/features/customer_discovery/presentation/screens/branch_detail_screen.dart';
 import '../src/features/customer_slots/presentation/slot_picker_screen.dart';
 import '../src/features/customer_slots/domain/court_slot.dart';
+import '../features/booking/presentation/pages/booking_summary_screen.dart';
 
 /// Báo cho router đánh giá lại [GoRouter.redirect] mỗi khi trạng thái đăng nhập đổi.
 class AuthRefreshNotifier extends ChangeNotifier {
@@ -133,6 +135,25 @@ GoRouter createRouter(
           create: (_) => ResetPasswordBloc(ResetPassword(repository)),
           child: ResetPasswordPage(initialToken: state.uri.queryParameters['token']),
         ),
+      ),
+      GoRoute(
+        path: '/booking/summary',
+        builder: (context, state) {
+          final arguments = state.extra;
+          final bookingRepository = dependencies.bookingRepository;
+          if (arguments is! BookingSummaryArguments || bookingRepository == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Đặt sân')),
+              body: const Center(
+                child: Text('Vui lòng chọn sân và khung giờ trước khi đặt.'),
+              ),
+            );
+          }
+          return BookingSummaryScreen(
+            repository: bookingRepository,
+            arguments: arguments,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.home,
@@ -240,6 +261,7 @@ GoRouter createRouter(
           child: HealthPage(config: dependencies.config),
         ),
       ),
+      ...adminFacilityRoutes(dependencies.adminFacility),
       GoRoute(
         path: '/super-admin/owners/pending',
         builder: (context, state) {

@@ -7,20 +7,21 @@ class AppConfig {
     required this.env,
     required this.apiBaseUrl,
     this.discoveryBaseUrl,
+    this.facilityBaseUrl,
+    this.reportingBaseUrl,
     String? staffBaseUrl,
-    String? facilityBaseUrl,
     String? posBaseUrl,
     String? authBaseUrl,
   }) : authBaseUrl = authBaseUrl ?? apiBaseUrl,
        staffBaseUrl = staffBaseUrl ?? apiBaseUrl,
-       facilityBaseUrl = facilityBaseUrl ?? apiBaseUrl,
        posBaseUrl = posBaseUrl ?? apiBaseUrl;
 
   final AppEnv env;
   final String apiBaseUrl;
   final String? discoveryBaseUrl;
+  final String? facilityBaseUrl;
+  final String? reportingBaseUrl;
   final String staffBaseUrl;
-  final String facilityBaseUrl;
   final String posBaseUrl;
   String get discoveryUrl => discoveryBaseUrl ?? apiBaseUrl;
 
@@ -28,6 +29,12 @@ class AppConfig {
   final String authBaseUrl;
 
   bool get isDev => env == AppEnv.dev;
+
+  String get facilityUrl => _orApi(facilityBaseUrl);
+  String get reportingUrl => _orApi(reportingBaseUrl);
+
+  String _orApi(String? url) =>
+      url == null || url.trim().isEmpty ? apiBaseUrl : url;
 
   factory AppConfig.fromEnvironment() {
     const envName = String.fromEnvironment('APP_ENV', defaultValue: 'dev');
@@ -43,15 +50,18 @@ class AppConfig {
       discoveryBaseUrl: const bool.hasEnvironment('DISCOVERY_BASE_URL')
           ? const String.fromEnvironment('DISCOVERY_BASE_URL')
           : null,
+      facilityBaseUrl: const bool.hasEnvironment('FACILITY_BASE_URL')
+          ? const String.fromEnvironment('FACILITY_BASE_URL')
+          : null,
       staffBaseUrl: const String.fromEnvironment('STAFF_BASE_URL').isEmpty
           ? baseUrl
           : const String.fromEnvironment('STAFF_BASE_URL'),
-      facilityBaseUrl: const String.fromEnvironment('FACILITY_BASE_URL').isEmpty
-          ? baseUrl
-          : const String.fromEnvironment('FACILITY_BASE_URL'),
       posBaseUrl: const String.fromEnvironment('POS_BASE_URL').isEmpty
           ? baseUrl
           : const String.fromEnvironment('POS_BASE_URL'),
+      reportingBaseUrl: const bool.hasEnvironment('REPORTING_BASE_URL')
+          ? const String.fromEnvironment('REPORTING_BASE_URL')
+          : null,
     );
   }
 }
