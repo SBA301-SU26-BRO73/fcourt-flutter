@@ -123,9 +123,10 @@ class AuthInterceptor extends QueuedInterceptor {
   }
 
   /// BE đã trả lời và từ chối refresh token (400, 401, 403...): phiên không cứu được.
+  /// 429 chỉ là bị giới hạn tần suất nên không tính.
   static bool _isRejected(DioException error) {
     final status = error.response?.statusCode;
-    return status != null && status >= 400 && status < 500;
+    return status != null && status >= 400 && status < 500 && status != 429;
   }
 }
 

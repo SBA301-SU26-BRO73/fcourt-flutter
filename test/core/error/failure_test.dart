@@ -2,14 +2,24 @@ import 'package:dio/dio.dart';
 import 'package:fcourt/core/error/failure.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-DioException _error(int? status, {Object? body, DioExceptionType? type}) {
+DioException _error(
+  int? status, {
+  Object? body,
+  DioExceptionType? type,
+  Map<String, List<String>> headers = const {},
+}) {
   final request = RequestOptions(path: '/x');
   return DioException(
     requestOptions: request,
     type: type ?? DioExceptionType.badResponse,
     response: status == null
         ? null
-        : Response<dynamic>(requestOptions: request, statusCode: status, data: body),
+        : Response<dynamic>(
+            requestOptions: request,
+            statusCode: status,
+            data: body,
+            headers: Headers.fromMap(headers),
+          ),
   );
 }
 
@@ -22,6 +32,17 @@ void main() {
         failure,
         const ServerFailure('Email is already registered', statusCode: 409),
       );
+    });
+
+    test('429 hiển thị thời gian chờ theo Retry-After', () {
+      final seconds = failureFromDio(_error(429, headers: {'retry-after': ['30']}));
+      final minutes = failureFromDio(_error(429, headers: {'retry-after': ['90']}));
+      final none = failureFromDio(_error(429, body: {'detail': 'x'}));
+
+      expect(seconds.message, contains('30 giây'));
+      expect(minutes.message, contains('2 phút'));
+      expect((none as ServerFailure).statusCode, 429);
+      expect(none.message, isNot(contains('giây')));
     });
 
     test('vẫn đọc message của response cũ', () {

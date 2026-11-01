@@ -49,6 +49,12 @@ Failure failureFromDio(DioException e) {
     return reason == null ? const UnauthorizedFailure() : UnauthorizedFailure(reason);
   }
   final message = _messageFrom(body);
+  if (status == 429) {
+    return ServerFailure(
+      _throttledMessage(e.response?.headers.value('retry-after')),
+      statusCode: 429,
+    );
+  }
   if (status != null) {
     return ServerFailure(
       message ?? 'Lỗi máy chủ ($status)',
@@ -65,6 +71,15 @@ Failure failureFromDio(DioException e) {
     default:
       return const UnknownFailure();
   }
+}
+
+String _throttledMessage(String? retryAfter) {
+  final seconds = int.tryParse(retryAfter?.trim() ?? '');
+  if (seconds == null || seconds <= 0) {
+    return 'Bạn thao tác quá nhanh, vui lòng thử lại sau';
+  }
+  final wait = seconds < 60 ? '$seconds giây' : '${(seconds / 60).ceil()} phút';
+  return 'Bạn thao tác quá nhanh, vui lòng thử lại sau $wait';
 }
 
 /// RFC 7807 của các service mới dùng `detail`; response cũ dùng `message`.
