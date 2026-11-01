@@ -13,9 +13,11 @@ class AdminTransactionHistoryScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.branchId,
+    this.exporter,
   });
   final AdminTransactions repository;
   final int branchId;
+  final LedgerReportExporter? exporter;
   @override
   State<AdminTransactionHistoryScreen> createState() =>
       _AdminTransactionHistoryScreenState();
@@ -26,7 +28,8 @@ class _AdminTransactionHistoryScreenState
   final _search = TextEditingController();
   Timer? _debounce;
   DateTimeRange? _range;
-  String _status = 'ALL';
+  String _status = 'ALL', _type = 'ALL';
+  bool _exporting = false;
   List<PaymentTransaction> _items = [];
   LedgerPage? _ledger;
   int _page = 0, _generation = 0;
@@ -46,6 +49,7 @@ class _AdminTransactionHistoryScreenState
       _search.clear();
       _range = null;
       _status = 'ALL';
+      _type = 'ALL';
       _load(reset: true);
     }
   }
@@ -64,6 +68,7 @@ class _AdminTransactionHistoryScreenState
     final generation = ++_generation, page = reset ? 0 : _page + 1;
     final query = LedgerQuery(
       branchId: widget.branchId,
+      transactionType: _type,
       status: _status,
       search: _search.text,
       fromDate: _range?.start,
@@ -88,7 +93,7 @@ class _AdminTransactionHistoryScreenState
             : [
                 ..._items,
                 ...result.transactions.items.where(
-                  (i) => !_items.any((e) => e.id == i.id),
+                  (i) => !_items.any((e) => e.key == i.key),
                 ),
               ];
         _page = page;
@@ -102,6 +107,29 @@ class _AdminTransactionHistoryScreenState
       if (mounted && generation == _generation) {
         setState(() => _loading = false);
       }
+    }
+  }
+
+  Future<void> _export() async {
+    if (_exporting || widget.exporter == null) return;
+    final query = LedgerQuery(
+      branchId: widget.branchId,
+      status: _status,
+      search: _search.text,
+      transactionType: _type,
+      fromDate: _range?.start,
+      toDate: _range?.end,
+    );
+    setState(() => _exporting = true);
+    try {
+      await widget.exporter!.export(query);
+    } on Failure catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
     }
   }
 
@@ -137,7 +165,17 @@ class _AdminTransactionHistoryScreenState
   Widget build(BuildContext context) {
     final ledger = _ledger;
     return Scaffold(
-      appBar: AppBar(title: const Text('Đối soát tài chính')),
+      appBar: AppBar(
+        title: const Text('Đối soát tài chính'),
+        actions: [
+          if (widget.exporter != null)
+            IconButton(
+              tooltip: _exporting ? 'Đang xuất báo cáo' : 'Xuất báo cáo CSV',
+              onPressed: _exporting ? null : _export,
+              icon: const Icon(Icons.file_download),
+            ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () => _load(reset: true),
         child: ListView(
@@ -152,7 +190,12 @@ class _AdminTransactionHistoryScreenState
                     spacing: 20,
                     runSpacing: 12,
                     children: [
-                      Text('Đã nhận\n${vnd(ledger.received)}'),
+                      Text(
+                        'Tổng thu\n${vnd(ledger.received)}',
+                        key: const ValueKey('ledger-received'),
+                      ),
+                      Text('Tổng hoàn tiền\n${vnd(ledger.refunded)}'),
+                      Text('Doanh thu thực tế\n${vnd(ledger.netRevenue)}'),
                       Text('Chờ duyệt\n${vnd(ledger.pending)}'),
                       Text('Bị từ chối\n${ledger.rejectedCount}'),
                     ],
@@ -160,6 +203,7 @@ class _AdminTransactionHistoryScreenState
                 ),
               ),
             TextField(
+              enabled: !_exporting,
               controller: _search,
               maxLength: 100,
               decoration: const InputDecoration(
@@ -168,6 +212,27 @@ class _AdminTransactionHistoryScreenState
               ),
               onChanged: _changed,
               onSubmitted: (_) => _load(reset: true),
+            ),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final pair in const {
+                  'ALL': 'Mọi loại',
+                  'BOOKING_PAYMENT': 'Đặt sân',
+                  'REFUND': 'Hoàn tiền',
+                  'WALK_IN_CASH': 'Tiền mặt',
+                }.entries)
+                  FilterChip(
+                    label: Text(pair.value),
+                    selected: _type == pair.key,
+                    onSelected: _exporting
+                        ? null
+                        : (_) {
+                            setState(() => _type = pair.key);
+                            _load(reset: true);
+                          },
+                  ),
+              ],
             ),
             Wrap(
               spacing: 8,
