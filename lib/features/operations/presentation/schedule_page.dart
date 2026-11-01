@@ -292,7 +292,8 @@ class _ScheduleBoardState extends State<ScheduleBoard>
                               ),
                               repository: widget.counter!,
                               courtId: court.id,
-                                                    date: businessToday(),
+                              sessions: court.sessions,
+                              date: businessToday(),
                               onSelected: (slot) =>
                                   _walkIn(court, initialSlotId: slot.id),
                             ),
