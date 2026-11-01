@@ -24,6 +24,8 @@ import '../features/booking/domain/repositories/booking_repository.dart';
 import '../features/payment/data/repositories/payment_repository_impl.dart';
 import '../features/payment/data/repositories/qr_gallery_saver.dart';
 import '../features/payment/domain/repositories/payment_repository.dart';
+import '../features/transactions/domain/branch_ledger.dart';
+import '../features/transactions/data/admin_transactions_impl.dart';
 import '../features/transactions/domain/transaction.dart';
 import '../features/transactions/data/customer_transactions_impl.dart';
 import '../features/booking_history/domain/cancellation.dart';
@@ -83,6 +85,7 @@ class AppDependencies {
     this.cancellationRepository,
     this.customerTransactions,
     this.courtOwnerApprovalRepository,
+    this.adminTransactions,
   });
 
   final AppConfig config;
@@ -112,6 +115,7 @@ class AppDependencies {
   final CancellationRepository? cancellationRepository;
   final CustomerTransactions? customerTransactions;
   final CourtOwnerApprovalRepository? courtOwnerApprovalRepository;
+  final AdminTransactions? adminTransactions;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -163,6 +167,7 @@ class AppDependencies {
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
+      adminTransactions: AdminTransactionsImpl(dio),
       ticketRepository: TicketRepositoryImpl(dio),
       ticketSaver: TicketGallerySaver(),
       adminPaymentRepository: AdminPaymentRepositoryImpl(dio),
