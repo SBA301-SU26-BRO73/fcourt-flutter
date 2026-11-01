@@ -12,6 +12,8 @@ import '../features/operations/data/http_operations_repository.dart';
 import '../features/operations/domain/schedule.dart';
 import '../features/operations/domain/counter.dart';
 import '../features/operations/data/http_counter_repository.dart';
+import '../features/pos/domain/pos.dart';
+import '../features/pos/data/http_pos_repository.dart';
 
 /// Nơi lắp ráp các dependency của app (không dùng thư viện DI để giữ đơn giản).
 /// Thêm repository của feature mới vào đây, và tạo bản giả trong test qua
@@ -23,6 +25,7 @@ class AppDependencies {
     this.staffRepository,
     this.operations,
     this.counter,
+    this.pos,
   });
 
   final AppConfig config;
@@ -30,12 +33,16 @@ class AppDependencies {
   final StaffRepository? staffRepository;
   final OperationsRepository? operations;
   final CounterRepository? counter;
+  final PosRepository? pos;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
     final dio = createDio(config, tokenStorage);
     return AppDependencies(
       config: config,
+      pos: HttpPosRepository(
+        createDio(config, tokenStorage, baseUrl: config.posBaseUrl),
+      ),
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
       staffRepository: HttpStaffRepository(
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),

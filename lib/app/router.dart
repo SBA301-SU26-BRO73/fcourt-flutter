@@ -7,10 +7,16 @@ import '../features/health/presentation/pages/health_page.dart';
 import 'app_dependencies.dart';
 import '../features/staff/presentation/staff_page.dart';
 import '../features/operations/presentation/schedule_page.dart';
+import '../features/pos/presentation/pos_page.dart';
 
 GoRouter createRouter(AppDependencies dependencies) {
   return GoRouter(
     routes: [
+      if (dependencies.pos != null)
+        GoRoute(
+          path: '/staff/pos',
+          builder: (_, _) => PosPage(repository: dependencies.pos!),
+        ),
       if (dependencies.operations != null)
         GoRoute(
           path: '/staff/schedule',
