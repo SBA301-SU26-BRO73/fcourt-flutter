@@ -66,6 +66,7 @@ GoRouter createRouter(AppDependencies dependencies) {
           return AdminTransactionHistoryScreen(
             repository: repository,
             branchId: id,
+            exporter: dependencies.ledgerExporter,
           );
         },
       ),
