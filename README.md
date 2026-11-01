@@ -87,3 +87,7 @@ Quy tắc phụ thuộc: `presentation → domain ← data`. Chi tiết và các
 
 - Android flavors (dev/prod). Hiện tách môi trường bằng `env/*.json`.
 - Firebase/FCM, Google Maps, đăng nhập Google. Owner feature tương ứng tự thêm khi cần.
+
+## Android release
+
+Cấu hình keystore, GitHub Secrets và kiểm chứng chữ ký APK/AAB: [docs/android-release.md](docs/android-release.md). Release thiếu signing config sẽ dừng; quy trình không dùng debug key để phát hành.
