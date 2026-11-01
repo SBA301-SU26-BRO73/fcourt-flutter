@@ -112,6 +112,48 @@ void main() {
     expect(h.sessionExpiredCount, 1);
   });
 
+  test('refresh đọc được response phẳng của auth-service', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) {
+        return jsonResponse(200, {
+          'accessToken': 'a2',
+          'refreshToken': 'r2',
+          'tokenType': 'Bearer',
+          'expiresIn': 900,
+        });
+      }
+      return o.headers['Authorization'] == 'Bearer a2'
+          ? jsonResponse(200, {'ok': true})
+          : jsonResponse(401, {'detail': 'expired'});
+    });
+
+    final response = await h.dio.get<dynamic>('/api/x');
+
+    expect(response.statusCode, 200);
+    expect(
+      await h.storage.read(),
+      const AuthTokens(accessToken: 'a2', refreshToken: 'r2'),
+    );
+  });
+
+  test('refresh không có refreshToken mới thì giữ token cũ', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) {
+        return jsonResponse(200, {'accessToken': 'a2'});
+      }
+      return o.headers['Authorization'] == 'Bearer a2'
+          ? jsonResponse(200, {'ok': true})
+          : jsonResponse(401, {'message': 'expired'});
+    });
+
+    await h.dio.get<dynamic>('/api/x');
+
+    expect(
+      await h.storage.read(),
+      const AuthTokens(accessToken: 'a2', refreshToken: 'r1'),
+    );
+  });
+
   test('không refresh khi request đặt skipAuth', () async {
     final h = _Harness((_) => jsonResponse(401, {'message': 'bad credentials'}));
 

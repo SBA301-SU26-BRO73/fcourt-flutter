@@ -92,9 +92,8 @@ class AuthInterceptor extends QueuedInterceptor {
         data: {'refreshToken': current.refreshToken},
         options: Options(extra: {skipAuthKey: true}),
       );
-      final body = response.data;
-      final data = body is Map ? body['data'] : null;
-      if (data is! Map) return null;
+      final data = _tokenPayload(response.data);
+      if (data == null) return null;
       final access = data['accessToken'];
       if (access is! String || access.isEmpty) return null;
       final refresh = data['refreshToken'];
@@ -110,4 +109,11 @@ class AuthInterceptor extends QueuedInterceptor {
       return null;
     }
   }
+}
+
+/// auth-service trả token ở gốc JSON; các service cũ bọc trong `data`. Chấp nhận cả hai.
+Map<dynamic, dynamic>? _tokenPayload(Object? body) {
+  if (body is! Map) return null;
+  final wrapped = body['data'];
+  return wrapped is Map ? wrapped : body;
 }
