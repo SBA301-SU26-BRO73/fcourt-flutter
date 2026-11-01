@@ -1,3 +1,6 @@
+import '../features/booking_history/presentation/booking_history_screen.dart';
+import '../features/booking_history/presentation/booking_detail_screen.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +19,51 @@ GoRouter createRouter(AppDependencies dependencies) {
   return GoRouter(
     routes: [
       GoRoute(
+        path: '/bookings',
+        builder: (context, state) {
+          final repository = dependencies.bookingRepository;
+          if (repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Lịch sử đặt sân chưa khả dụng')),
+            );
+          }
+          return BookingHistoryScreen(
+            repository: repository,
+            onDetail: (id) => context.push('/bookings/$id'),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/bookings/:id',
+        builder: (context, state) {
+          final repository = dependencies.bookingRepository;
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          if (repository == null || id == null || id <= 0) {
+            return const Scaffold(
+              body: Center(child: Text('Đơn đặt sân không hợp lệ')),
+            );
+          }
+          return BookingDetailScreen(
+            repository: repository,
+            id: id,
+            onTicket:
+                dependencies.ticketRepository == null ||
+                    dependencies.ticketSaver == null
+                ? null
+                : (id) => showDialog<void>(
+                    context: context,
+                    builder: (_) => Dialog.fullscreen(
+                      child: BookingSuccessScreen(
+                        repository: dependencies.ticketRepository!,
+                        saver: dependencies.ticketSaver!,
+                        arguments: CheckoutArguments(bookingId: id),
+                      ),
+                    ),
+                  ),
+          );
+        },
+      ),
+      GoRoute(
         path: '/payments/ticket',
         builder: (context, state) {
           final args = state.extra;
@@ -32,7 +80,11 @@ GoRouter createRouter(AppDependencies dependencies) {
             repository: repository,
             saver: saver,
             arguments: args,
-            onHistory: dependencies.onBookingHistory,
+            onHistory:
+                dependencies.onBookingHistory ??
+                (dependencies.bookingRepository == null
+                    ? null
+                    : () => context.go('/bookings')),
           );
         },
       ),

@@ -1,3 +1,5 @@
+import '../features/booking_history/domain/booking.dart';
+import '../features/booking_history/data/booking_repository_impl.dart';
 import '../features/payment/data/repositories/receipt_repository_impl.dart';
 import '../features/payment/data/repositories/device_receipt_picker.dart';
 import '../features/payment/domain/repositories/receipt_repository.dart';
@@ -34,6 +36,7 @@ class AppDependencies {
     this.ticketRepository,
     this.ticketSaver,
     this.onBookingHistory,
+    this.bookingRepository,
   });
 
   final AppConfig config;
@@ -46,12 +49,14 @@ class AppDependencies {
   final TicketRepository? ticketRepository;
   final TicketSaver? ticketSaver;
   final VoidCallback? onBookingHistory;
+  final BookingRepository? bookingRepository;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
     final dio = createDio(config, tokenStorage);
     return AppDependencies(
       config: config,
+      bookingRepository: BookingRepositoryImpl(dio),
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
