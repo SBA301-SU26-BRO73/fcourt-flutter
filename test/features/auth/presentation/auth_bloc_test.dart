@@ -45,6 +45,15 @@ void main() {
       act: (bloc) => bloc.add(const AuthStarted()),
       expect: () => [const AuthState.unauthenticated()],
     );
+
+    blocTest<AuthBloc, AuthState>(
+      'lỗi bất ngờ (Keystore hỏng) vẫn rời màn chờ',
+      setUp: () => when(() => repository.restoreSession())
+          .thenThrow(StateError('keystore unavailable')),
+      build: build,
+      act: (bloc) => bloc.add(const AuthStarted()),
+      expect: () => [const AuthState.unauthenticated()],
+    );
   });
 
   blocTest<AuthBloc, AuthState>(

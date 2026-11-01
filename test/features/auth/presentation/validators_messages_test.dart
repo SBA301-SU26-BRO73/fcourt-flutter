@@ -40,6 +40,12 @@ void main() {
       expect(AuthValidators.password('x' * 73), isNotNull);
     });
 
+    test('mật khẩu tối đa 72 byte UTF-8 như BE (chữ có dấu chiếm nhiều byte)', () {
+      // 36 ký tự 'ệ' (3 byte mỗi ký tự) = 108 byte: dưới 72 ký tự nhưng quá 72 byte.
+      expect(AuthValidators.password('ệ' * 36), isNotNull);
+      expect(AuthValidators.password('ệ' * 24), isNull);
+    });
+
     test('ô mật khẩu đăng nhập chỉ cần có nội dung', () {
       expect(AuthValidators.loginPassword(''), isNotNull);
       expect(AuthValidators.loginPassword(null), isNotNull);
@@ -66,6 +72,10 @@ void main() {
         'Email hoặc mật khẩu không đúng',
       );
       expect(AuthMessages.localize('Account is locked'), 'Tài khoản đã bị khóa');
+      expect(
+        AuthMessages.localize('Authentication is required'),
+        'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại',
+      );
       expect(
         AuthMessages.localize('Account is awaiting approval'),
         'Tài khoản đang chờ quản trị viên duyệt',

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Kiểm tra sớm ở phía app để người dùng sửa ngay; BE vẫn là nơi kiểm tra cuối cùng.
 class AuthValidators {
   const AuthValidators._();
@@ -7,7 +9,8 @@ class AuthValidators {
 
   static const passwordMinLength = 8;
 
-  /// BCrypt chỉ băm 72 byte đầu nên BE từ chối mật khẩu dài hơn.
+  /// BCrypt chỉ băm 72 byte đầu nên BE từ chối mật khẩu dài hơn 72 ký tự hoặc 72 byte
+  /// UTF-8 (chữ có dấu chiếm 2 đến 3 byte).
   static const passwordMaxLength = 72;
 
   static String? fullName(String? value) {
@@ -41,6 +44,9 @@ class AuthValidators {
     }
     if (text.length > passwordMaxLength) {
       return 'Mật khẩu tối đa $passwordMaxLength ký tự';
+    }
+    if (utf8.encode(text).length > passwordMaxLength) {
+      return 'Mật khẩu quá dài: tối đa $passwordMaxLength byte, chữ có dấu tính 2 đến 3 byte';
     }
     return null;
   }
