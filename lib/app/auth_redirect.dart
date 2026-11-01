@@ -9,6 +9,7 @@ class AppRoutes {
   static const registerOwner = '/register/owner';
   static const home = '/home';
   static const profile = '/profile';
+  static const discover = '/discover';
   static const health = '/health';
 }
 

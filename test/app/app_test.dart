@@ -11,10 +11,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../features/auth/helpers.dart';
+import 'package:fcourt/src/features/customer_discovery/domain/discovery_repository.dart';
 
 class _FakeHealthRepository implements HealthRepository {
   @override
   Future<HealthStatus> check() async => const HealthStatus('ok');
+}
+
+class _FakeDiscoveryRepository implements DiscoveryRepository {
+  @override
+  Future<BranchPage> search({
+    String query = '',
+    DiscoverySport? sport,
+    int page = 0,
+  }) async =>
+      const BranchPage(branches: [], page: 0, totalPages: 0, totalElements: 0);
 }
 
 void main() {
@@ -38,6 +49,7 @@ void main() {
           config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
           healthRepository: _FakeHealthRepository(),
           authRepository: repository,
+          discoveryRepository: _FakeDiscoveryRepository(),
           sessionExpired: sessionExpired.stream,
         ),
       ),
@@ -63,6 +75,7 @@ void main() {
           config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
           healthRepository: _FakeHealthRepository(),
           authRepository: repository,
+          discoveryRepository: _FakeDiscoveryRepository(),
         ),
       ),
     );
@@ -144,5 +157,19 @@ void main() {
     await tester.tap(find.text('Đăng ký làm chủ sân'));
     await tester.pumpAndSettle();
     expect(find.text('Đăng ký chủ sân'), findsOneWidget);
+  });
+
+  testWidgets('khách hàng mở được màn tìm sân và màn kiểm tra kết nối', (tester) async {
+    when(() => repository.restoreSession()).thenAnswer((_) async => customerUser);
+    await pumpApp(tester);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Tìm sân'));
+    await tester.pumpAndSettle();
+    expect(find.text('FCOURT'), findsOneWidget);
+    expect(find.text('Ra sân. Hết mình.'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Kiểm tra kết nối'));
+    await tester.pumpAndSettle();
+    expect(find.text('Máy chủ: ok'), findsOneWidget);
   });
 }
