@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../features/refunds/presentation/customer_refund_screen.dart';
 import '../features/transactions/presentation/admin_transaction_history_screen.dart';
 
 import 'package:flutter/material.dart';
@@ -193,6 +194,19 @@ GoRouter createRouter(
         },
       ),
       GoRoute(
+        path: '/bookings/:id/refund',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          final repository = dependencies.refundRepository;
+          if (id == null || id <= 0 || repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Vui lòng chọn đơn hợp lệ')),
+            );
+          }
+          return CustomerRefundScreen(repository: repository, bookingId: id);
+        },
+      ),
+      GoRoute(
         path: '/admin/branches/:branchId/transactions',
         builder: (context, state) {
           final id = int.tryParse(state.pathParameters['branchId'] ?? '');
@@ -252,6 +266,9 @@ GoRouter createRouter(
             repository: repository,
             id: id,
             cancellation: dependencies.cancellationRepository,
+            onRefund: dependencies.refundRepository == null
+                ? null
+                : (id) => context.push('/bookings/$id/refund'),
             onTicket:
                 dependencies.ticketRepository == null ||
                     dependencies.ticketSaver == null
