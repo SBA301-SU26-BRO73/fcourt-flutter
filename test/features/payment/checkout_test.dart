@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:fcourt/features/payment/data/models/checkout_model.dart';
 import 'package:fcourt/features/payment/data/repositories/qr_gallery_saver.dart';
@@ -347,4 +350,30 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+
+  test('checkout expiry is corrected by the server Date header', () async {
+    final serverNow = DateTime.now().toUtc().add(const Duration(hours: 1));
+    final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+      ..httpClientAdapter = FakeAdapter(
+        (_) => ResponseBody.fromString(
+          jsonEncode(
+            jsonCheckout(
+              expiresAt: serverNow.add(const Duration(minutes: 5)),
+            ),
+          ),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+            'date': [HttpDate.format(serverNow)],
+          },
+        ),
+      );
+    final before = DateTime.now().toUtc();
+    final checkout = await PaymentRepositoryImpl(
+      dio,
+    ).checkout(const CheckoutArguments(bookingId: 42, holdToken: 't'));
+    final remaining = checkout.expiresAt.difference(before);
+    expect(remaining, greaterThan(const Duration(minutes: 4, seconds: 57)));
+    expect(remaining, lessThan(const Duration(minutes: 5, seconds: 2)));
+  });
 }
