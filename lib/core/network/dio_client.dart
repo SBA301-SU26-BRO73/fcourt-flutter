@@ -19,7 +19,7 @@ Dio createDio(
   );
 
   final dio = Dio(options);
-  final refreshDio = Dio(options.copyWith(baseUrl: config.apiBaseUrl));
+  final refreshDio = Dio(options.copyWith(baseUrl: config.authBaseUrl));
 
   dio.interceptors.add(
     AuthInterceptor(

@@ -4,6 +4,7 @@ import 'package:fcourt/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  roleGuardTests();
   group('authRedirect', () {
     test('chưa biết trạng thái: mọi màn hình đều về màn chờ, màn chờ thì ở lại', () {
       expect(authRedirect(AuthStatus.unknown, AppRoutes.home), AppRoutes.splash);
@@ -74,6 +75,33 @@ void main() {
           reason: role.name,
         );
       }
+    });
+  });
+}
+
+void roleGuardTests() {
+  group('authRedirect theo role', () {
+    const path = '/super-admin/owners/pending';
+
+    test('chỉ SUPER_ADMIN được vào màn duyệt chủ sân', () {
+      expect(
+        authRedirect(AuthStatus.authenticated, path, role: UserRole.superAdmin),
+        isNull,
+      );
+      for (final role in [UserRole.customer, UserRole.staff, UserRole.admin]) {
+        expect(
+          authRedirect(AuthStatus.authenticated, path, role: role),
+          AppRoutes.home,
+        );
+        expect(
+          authRedirect(AuthStatus.authenticated, '$path/5', role: role),
+          AppRoutes.home,
+        );
+      }
+    });
+
+    test('chưa đăng nhập vẫn về màn đăng nhập', () {
+      expect(authRedirect(AuthStatus.unauthenticated, path), AppRoutes.login);
     });
   });
 }
