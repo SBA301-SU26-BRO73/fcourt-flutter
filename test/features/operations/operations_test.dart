@@ -11,6 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../helpers/fake_adapter.dart';
 
 class FakeOperations implements OperationsRepository {
+  @override
+  Future<BranchSchedule> week(String start, String end) => today();
   int writes = 0;
   Failure? error;
   final keys = <String>[];
