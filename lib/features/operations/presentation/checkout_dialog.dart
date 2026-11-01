@@ -66,6 +66,7 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
         widget.bookingId,
         _key,
         expectedSurcharge: _quote!.surcharge,
+        expectedTotal: _quote!.total,
       );
       if (mounted) Navigator.pop(context, true);
     } on Failure catch (e) {
@@ -88,7 +89,7 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
           ),
           if (_quote case final q?)
             Text(
-              'Dự tính phụ thu cần thu thêm: ${moneyLabel(q.surcharge)}\nGiá trị đơn sau phụ thu: ${moneyLabel(q.total)}\nKhông thu lại tiền sân đã thanh toán. Phí phát sinh theo từng 30 phút và giá slot tương ứng.',
+              'Dự tính phụ thu quá giờ: ${moneyLabel(q.surcharge)}\nDịch vụ gộp booking: ${moneyLabel(q.posAmount)}\nCần thu thêm: ${moneyLabel(q.surcharge + q.posAmount)}\nGiá trị đơn sau phụ thu: ${moneyLabel(q.total)}\nKhông thu lại tiền sân đã thanh toán. Phí phát sinh theo từng 30 phút và giá slot tương ứng.',
             ),
           if (_error != null)
             Text(

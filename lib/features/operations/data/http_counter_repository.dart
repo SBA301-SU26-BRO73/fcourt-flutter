@@ -15,8 +15,15 @@ class HttpCounterRepository implements CounterRepository {
     if (r['bookingId'] != booking) throw const FormatException('Wrong booking');
     final total = parseMoney(r['totalAmount']);
     final fee = parseMoney(r['surchargeAmount']);
-    if (fee > total) throw const FormatException('Wrong fee');
-    return CashReceipt('#$booking', total - fee, fee, total);
+    final pos = r['posAmount'] == null ? 0 : parseMoney(r['posAmount']);
+    if (fee + pos > total) throw const FormatException('Wrong fee');
+    return CashReceipt(
+      '#$booking',
+      total - fee - pos,
+      fee,
+      total,
+      posAmount: pos,
+    );
   });
   Future<T> _call<T>(Future<T> Function() action) async {
     try {
@@ -97,10 +104,14 @@ class HttpCounterRepository implements CounterRepository {
     int booking,
     String key, {
     required int expectedSurcharge,
+    required int expectedTotal,
   }) => _call(() async {
     final r = (await staff.put<Map<String, dynamic>>(
       '/api/staff/bookings/$booking/checkout',
-      data: {'expectedSurcharge': (expectedSurcharge / 100).toStringAsFixed(2)},
+      data: {
+        'expectedSurcharge': (expectedSurcharge / 100).toStringAsFixed(2),
+        'expectedTotal': (expectedTotal / 100).toStringAsFixed(2),
+      },
       options: Options(headers: {'Idempotency-Key': key}),
     )).data!;
     if (r['bookingId'] != booking || r['status'] != 'COMPLETED') {
