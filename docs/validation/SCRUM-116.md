@@ -38,3 +38,7 @@ also flushes. A three-second background guarantee is not established. Real gatew
 accounts, deployed migrations and signing-key operations still need acceptance.
 Walk-in creation/contact persistence and checkout fee authority remain upstream
 integration dependencies; their staff adapters alone do not prove settlement.
+
+Final integrated regression after SCRUM-62 review: 69 tests pass, analyze clean,
+changed Dart files formatted. The review fix prevents stale availability from
+making an authoritatively CHECKED_IN slot selectable.

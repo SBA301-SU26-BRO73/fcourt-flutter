@@ -102,3 +102,33 @@ fail closed rather than implement an unchecked local substitute.
 - Tests: persistent restart, duplicate/concurrent scans, expired/wrong-branch
   tickets, network recovery, conflict, pending preservation and offline replay.
 - Device airplane-mode/reconnect acceptance remains explicit until measured.
+
+## Delivery status — 2026-11-01
+
+Each task has its own branch and PR with small scoped commits. PRs are stacked
+in task order; merge/rebase/retarget requires review, no automatic merge.
+
+| Task | Flutter PR | Scope |
+|---|---|---|
+| SCRUM-27 | [#20](https://github.com/SBA301-SU26-BRO73/fcourt-flutter/pull/20) | Employee management |
+| SCRUM-29 | [#21](https://github.com/SBA301-SU26-BRO73/fcourt-flutter/pull/21) | Today board and QR admission |
+| SCRUM-31 | [#22](https://github.com/SBA301-SU26-BRO73/fcourt-flutter/pull/22) | Cash booking and checkout |
+| SCRUM-62 | [#23](https://github.com/SBA301-SU26-BRO73/fcourt-flutter/pull/23) | Slot selection and recent contact |
+| SCRUM-64 | [#24](https://github.com/SBA301-SU26-BRO73/fcourt-flutter/pull/24) | Weekly board |
+| SCRUM-66 | [#25](https://github.com/SBA301-SU26-BRO73/fcourt-flutter/pull/25) | Manual printed code |
+| SCRUM-106 | [#26](https://github.com/SBA301-SU26-BRO73/fcourt-flutter/pull/26) | POS counter |
+| SCRUM-116 | [#27](https://github.com/SBA301-SU26-BRO73/fcourt-flutter/pull/27) | Durable offline admission |
+
+Backend support: [staff #29](https://github.com/SBA301-SU26-BRO73/fcourt-backend/pull/29),
+[booking #30](https://github.com/SBA301-SU26-BRO73/fcourt-backend/pull/30),
+[IAM #31](https://github.com/SBA301-SU26-BRO73/fcourt-backend/pull/31).
+
+Final integrated Flutter analyze and formatting pass; 69 tests pass. Staff 121,
+booking 11 and auth 22 Maven tests pass locally, with three-service smoke passing.
+Per-task evidence and unverified boundaries are in `docs/validation/`.
+
+Production acceptance remains open: Android SDK/device build and camera/offline
+OS behavior, deployed gateway/accounts/migrations/secrets, existing IAM employee
+create/edit/disable authority, atomic walk-in ownership/contact persistence and
+checkout fee/settlement authority. No real environment was supplied. These are
+explicit remaining dependencies, not established by fixture-based Flutter tests.
