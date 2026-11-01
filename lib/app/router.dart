@@ -14,7 +14,10 @@ GoRouter createRouter(AppDependencies dependencies) {
       if (dependencies.operations != null)
         GoRoute(
           path: '/staff/schedule',
-          builder: (_, _) => SchedulePage(repository: dependencies.operations!),
+          builder: (_, _) => SchedulePage(
+            repository: dependencies.operations!,
+            counter: dependencies.counter,
+          ),
         ),
       if (dependencies.staffRepository != null)
         GoRoute(

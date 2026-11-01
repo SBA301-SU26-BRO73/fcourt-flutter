@@ -9,15 +9,18 @@ class AppConfig {
     String? staffBaseUrl,
     String? facilityBaseUrl,
     String? posBaseUrl,
+    String? discoveryBaseUrl,
   }) : staffBaseUrl = staffBaseUrl ?? apiBaseUrl,
        facilityBaseUrl = facilityBaseUrl ?? apiBaseUrl,
-       posBaseUrl = posBaseUrl ?? apiBaseUrl;
+       posBaseUrl = posBaseUrl ?? apiBaseUrl,
+       discoveryBaseUrl = discoveryBaseUrl ?? apiBaseUrl;
 
   final AppEnv env;
   final String apiBaseUrl;
   final String staffBaseUrl;
   final String facilityBaseUrl;
   final String posBaseUrl;
+  final String discoveryBaseUrl;
 
   bool get isDev => env == AppEnv.dev;
 
@@ -39,6 +42,10 @@ class AppConfig {
       posBaseUrl: const String.fromEnvironment('POS_BASE_URL').isEmpty
           ? baseUrl
           : const String.fromEnvironment('POS_BASE_URL'),
+      discoveryBaseUrl:
+          const String.fromEnvironment('DISCOVERY_BASE_URL').isEmpty
+          ? baseUrl
+          : const String.fromEnvironment('DISCOVERY_BASE_URL'),
     );
   }
 }

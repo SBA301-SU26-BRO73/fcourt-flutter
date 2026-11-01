@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../core/config/app_config.dart';
 import '../core/network/dio_client.dart';
 import '../core/storage/token_storage.dart';
@@ -8,6 +10,8 @@ import '../features/staff/domain/staff.dart';
 import '../features/staff/data/http_staff_repository.dart';
 import '../features/operations/data/http_operations_repository.dart';
 import '../features/operations/domain/schedule.dart';
+import '../features/operations/domain/counter.dart';
+import '../features/operations/data/http_counter_repository.dart';
 
 /// Nơi lắp ráp các dependency của app (không dùng thư viện DI để giữ đơn giản).
 /// Thêm repository của feature mới vào đây, và tạo bản giả trong test qua
@@ -18,12 +22,14 @@ class AppDependencies {
     required this.healthRepository,
     this.staffRepository,
     this.operations,
+    this.counter,
   });
 
   final AppConfig config;
   final HealthRepository healthRepository;
   final StaffRepository? staffRepository;
   final OperationsRepository? operations;
+  final CounterRepository? counter;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -37,6 +43,17 @@ class AppDependencies {
       ),
       operations: HttpOperationsRepository(
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
+      ),
+      counter: HttpCounterRepository(
+        createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
+        // Public availability reads never carry employee credentials.
+        Dio(
+          BaseOptions(
+            baseUrl: config.discoveryBaseUrl,
+            connectTimeout: const Duration(seconds: 10),
+            receiveTimeout: const Duration(seconds: 20),
+          ),
+        ),
       ),
     );
   }
