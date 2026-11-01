@@ -35,3 +35,27 @@ the role/ownership authority. This adds three commits after SCRUM-69. Net refund
 reporting follows in SCRUM-99. Analyze and all 61 tests pass, including bound branch/date
 query fields, all-result summaries across pagination and stale debounced response/dispose.
 Live Android/admin/account and backend acceptance remains pending.
+
+## Net cash flow and export — SCRUM-99
+
+Admin history now requests unified `transactionType` (ALL/BOOKING_PAYMENT/REFUND/
+WALK_IN_CASH). Filter chips distinguish incoming payments, completed refunds and cash.
+Summary shows received/refunded/net; signed row amounts use green inflows and red
+refunds. Row identity is the server's P:/R:/C: key, so local IDs cannot drop another
+transaction type during pagination. Missing type/key or unified financial totals fail
+closed; the new screen requires backend SCRUM-98 rather than assuming zero refunds
+from an older receipt-only response. Customer receipt history keeps its original API.
+
+Export fetches every page matching a query captured at click time (up to 200,000 rows),
+checks count/financial summary consistency and duplicate keys, and shares a UTF-8 BOM
+CSV with summary and signed integer VND. Text cells neutralize spreadsheet formula
+prefixes; numeric amounts stay numeric. No beneficiary bank fields are exported. Live
+changes detected across pages abort instead of silently sharing a partial report.
+This is a filtered operational report, not a server-side immutable accounting snapshot;
+strict audit exports need a dedicated versioned export API. Android sharing/saving uses
+share_plus; cancellation/availability of destination apps requires device acceptance.
+
+Analyze, all 73 tests and debug APK build pass. New checks cover negative refund validation,
+colliding IDs, complete multi-page CSV, formula-safe text and export drift rejection.
+Three task commits after SCRUM-97, backend SCRUM-98 / backend #28. Actual Android sharing,
+Kafka ingestion and live financial reconciliation remain integration acceptance checks.
