@@ -34,9 +34,12 @@ def verify(project, keystore, alias, password_env):
     if not tools:
         raise RuntimeError('apksigner is required')
     report = checked([str(tools[0]), 'verify', '--verbose', '--print-certs', str(apk)])
-    digests = re.findall(r'Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]+)', report)
-    if len(digests) != 1 or digests[0].lower() != expected:
-        raise RuntimeError('APK signer does not match the configured release keystore')
+    digests = re.findall(r'^Signer #\d+ certificate SHA-256 digest:\s*([0-9a-fA-F: ]+)\s*$', report, re.M)
+    normalized = {re.sub(r'[^0-9a-f]', '', v.lower()) for v in digests}
+    if normalized != {expected}:
+        if password_env == 'FCOURT_SMOKE_PASSWORD':
+            print(report, flush=True)  # Public metadata from a disposable fixture only.
+        raise RuntimeError('APK signer mismatch: expected SHA-256 ' + expected + ', observed ' + ','.join(sorted(normalized)))
     jar = checked(['jarsigner', '-verify', str(aab)])
     if 'jar verified.' not in jar.lower() or 'unsigned entries' in jar.lower():
         raise RuntimeError('AAB is not fully signed')
