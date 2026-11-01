@@ -44,6 +44,7 @@ import '../features/super_admin/presentation/bloc/owner_detail_cubit.dart';
 import '../features/super_admin/presentation/bloc/pending_owners_cubit.dart';
 import '../features/super_admin/presentation/pages/owner_approval_detail_screen.dart';
 import '../features/super_admin/presentation/pages/pending_owners_screen.dart';
+import 'admin_facility_routes.dart';
 import 'app_dependencies.dart';
 import 'auth_redirect.dart';
 import '../src/features/customer_discovery/domain/discovery_repository.dart';
@@ -253,6 +254,7 @@ GoRouter createRouter(
           child: HealthPage(config: dependencies.config),
         ),
       ),
+      ...adminFacilityRoutes(dependencies.adminFacility),
       GoRoute(
         path: '/super-admin/owners/pending',
         builder: (context, state) {

@@ -4,6 +4,7 @@ import 'package:fcourt/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  adminRoleGuardTests();
   roleGuardTests();
   group('authRedirect', () {
     test('chưa biết trạng thái: mọi màn hình đều về màn chờ, màn chờ thì ở lại', () {
@@ -91,6 +92,23 @@ void roleGuardTests() {
 
     test('chưa đăng nhập vẫn về màn đăng nhập', () {
       expect(authRedirect(AuthStatus.unauthenticated, path), AppRoutes.login);
+    });
+  });
+}
+
+void adminRoleGuardTests() {
+  group('authRedirect màn hình chủ sân', () {
+    test('chỉ ADMIN được vào /admin', () {
+      expect(
+        authRedirect(AuthStatus.authenticated, '/admin/branches', role: UserRole.admin),
+        isNull,
+      );
+      for (final role in [UserRole.customer, UserRole.staff, UserRole.superAdmin]) {
+        expect(
+          authRedirect(AuthStatus.authenticated, '/admin/dashboard', role: role),
+          AppRoutes.home,
+        );
+      }
     });
   });
 }
