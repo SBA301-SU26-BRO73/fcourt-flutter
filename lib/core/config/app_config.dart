@@ -3,10 +3,21 @@ enum AppEnv { dev, prod }
 /// Cấu hình theo môi trường, đọc từ `--dart-define` hoặc `--dart-define-from-file`.
 /// Xem `env/dev.json` và `env/prod.json`.
 class AppConfig {
-  const AppConfig({required this.env, required this.apiBaseUrl});
+  const AppConfig({
+    required this.env,
+    required this.apiBaseUrl,
+    String? staffBaseUrl,
+    String? facilityBaseUrl,
+    String? posBaseUrl,
+  }) : staffBaseUrl = staffBaseUrl ?? apiBaseUrl,
+       facilityBaseUrl = facilityBaseUrl ?? apiBaseUrl,
+       posBaseUrl = posBaseUrl ?? apiBaseUrl;
 
   final AppEnv env;
   final String apiBaseUrl;
+  final String staffBaseUrl;
+  final String facilityBaseUrl;
+  final String posBaseUrl;
 
   bool get isDev => env == AppEnv.dev;
 
@@ -19,6 +30,15 @@ class AppConfig {
     return AppConfig(
       env: envName == 'prod' ? AppEnv.prod : AppEnv.dev,
       apiBaseUrl: baseUrl,
+      staffBaseUrl: const String.fromEnvironment('STAFF_BASE_URL').isEmpty
+          ? baseUrl
+          : const String.fromEnvironment('STAFF_BASE_URL'),
+      facilityBaseUrl: const String.fromEnvironment('FACILITY_BASE_URL').isEmpty
+          ? baseUrl
+          : const String.fromEnvironment('FACILITY_BASE_URL'),
+      posBaseUrl: const String.fromEnvironment('POS_BASE_URL').isEmpty
+          ? baseUrl
+          : const String.fromEnvironment('POS_BASE_URL'),
     );
   }
 }

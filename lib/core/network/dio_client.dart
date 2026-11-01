@@ -8,16 +8,17 @@ Dio createDio(
   AppConfig config,
   TokenStorage tokenStorage, {
   void Function()? onSessionExpired,
+  String? baseUrl,
 }) {
   final options = BaseOptions(
-    baseUrl: config.apiBaseUrl,
+    baseUrl: baseUrl ?? config.apiBaseUrl,
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 20),
     headers: const {'Accept': 'application/json'},
   );
 
   final dio = Dio(options);
-  final refreshDio = Dio(options.copyWith());
+  final refreshDio = Dio(options.copyWith(baseUrl: config.apiBaseUrl));
 
   dio.interceptors.add(
     AuthInterceptor(
@@ -31,7 +32,11 @@ Dio createDio(
   if (config.isDev) {
     // Không log header để tránh lộ token.
     dio.interceptors.add(
-      LogInterceptor(requestHeader: false, requestBody: false, responseBody: false),
+      LogInterceptor(
+        requestHeader: false,
+        requestBody: false,
+        responseBody: false,
+      ),
     );
   }
   return dio;
