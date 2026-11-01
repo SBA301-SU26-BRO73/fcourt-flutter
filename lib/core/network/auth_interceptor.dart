@@ -7,14 +7,17 @@ import 'api_endpoints.dart';
 ///
 /// - Kế thừa [QueuedInterceptor] nên các request lỗi 401 đồng thời được xử lý
 ///   lần lượt: request đầu refresh token, các request sau dùng lại token mới.
+///   Nhờ vậy refresh token (chỉ dùng được một lần, BE thu hồi mọi phiên khi thấy
+///   token cũ bị dùng lại) không bao giờ bị gửi hai lần.
 /// - Mỗi request chỉ được thử lại tối đa một lần.
-/// - Refresh thất bại thì xóa token và gọi [onSessionExpired] (ví dụ về màn đăng nhập).
+/// - BE từ chối refresh (4xx: token sai, hết hạn, tài khoản bị khóa) thì xóa token
+///   và gọi [onSessionExpired]. Mất mạng hoặc BE lỗi 5xx thì giữ token và trả lỗi
+///   đó, để người dùng không bị đăng xuất chỉ vì mạng chập chờn.
 ///
 /// Đặt `extra: {AuthInterceptor.skipAuthKey: true}` cho request không cần token
 /// (đăng nhập, đăng ký...).
 class AuthInterceptor extends QueuedInterceptor {
   AuthInterceptor({
-    required this.dio,
     required this.refreshDio,
     required this.tokenStorage,
     this.refreshPath = ApiEndpoints.authRefresh,
@@ -24,10 +27,10 @@ class AuthInterceptor extends QueuedInterceptor {
   static const skipAuthKey = 'skipAuth';
   static const _retriedKey = 'authRetried';
 
-  /// Dio chính, dùng để gửi lại request sau khi refresh.
-  final Dio dio;
-
-  /// Dio riêng không gắn interceptor này, dùng cho request refresh để tránh lặp vô hạn.
+  /// Dio riêng không gắn interceptor này, dùng để refresh và để gửi lại request.
+  ///
+  /// Không gửi lại qua Dio chính: lỗi của request gửi lại sẽ xếp hàng sau chính
+  /// [onError] đang chờ nó, làm hàng đợi của [QueuedInterceptor] kẹt vĩnh viễn.
   final Dio refreshDio;
   final TokenStorage tokenStorage;
   final String refreshPath;
@@ -70,7 +73,18 @@ class AuthInterceptor extends QueuedInterceptor {
     final sentHeader = request.headers['Authorization'];
     final alreadyRefreshed = sentHeader != 'Bearer ${current.accessToken}';
 
-    final tokens = alreadyRefreshed ? current : await _refresh(current);
+    AuthTokens? tokens = current;
+    if (!alreadyRefreshed) {
+      try {
+        tokens = await _refresh(current);
+      } on DioException catch (refreshError) {
+        if (!_isRejected(refreshError)) {
+          // Lỗi tạm thời: giữ phiên, trả lỗi thật để UI báo mất mạng hoặc máy chủ bận.
+          return handler.next(refreshError);
+        }
+        tokens = null;
+      }
+    }
     if (tokens == null) {
       await tokenStorage.clear();
       onSessionExpired?.call();
@@ -83,35 +97,46 @@ class AuthInterceptor extends QueuedInterceptor {
       if (body is FormData) request.data = body.clone();
       request.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
       request.extra[_retriedKey] = true;
-      handler.resolve(await dio.fetch<dynamic>(request));
+      handler.resolve(await refreshDio.fetch<dynamic>(request));
     } on DioException catch (retryError) {
       handler.next(retryError);
     }
   }
 
+  /// Trả `null` khi BE trả 2xx nhưng không có access token. Ném [DioException]
+  /// khi gọi refresh thất bại.
   Future<AuthTokens?> _refresh(AuthTokens current) async {
-    try {
-      final response = await refreshDio.post<dynamic>(
-        refreshPath,
-        data: {'refreshToken': current.refreshToken},
-        options: Options(extra: {skipAuthKey: true}),
-      );
-      final body = response.data;
-      final data = body is Map ? body['data'] : null;
-      if (data is! Map) return null;
-      final access = data['accessToken'];
-      if (access is! String || access.isEmpty) return null;
-      final refresh = data['refreshToken'];
-      final tokens = AuthTokens(
-        accessToken: access,
-        refreshToken: refresh is String && refresh.isNotEmpty
-            ? refresh
-            : current.refreshToken,
-      );
-      await tokenStorage.save(tokens);
-      return tokens;
-    } on DioException {
-      return null;
-    }
+    final response = await refreshDio.post<dynamic>(
+      refreshPath,
+      data: {'refreshToken': current.refreshToken},
+      options: Options(extra: {skipAuthKey: true}),
+    );
+    final data = _tokenPayload(response.data);
+    if (data == null) return null;
+    final access = data['accessToken'];
+    if (access is! String || access.isEmpty) return null;
+    final refresh = data['refreshToken'];
+    final tokens = AuthTokens(
+      accessToken: access,
+      refreshToken: refresh is String && refresh.isNotEmpty
+          ? refresh
+          : current.refreshToken,
+    );
+    await tokenStorage.save(tokens);
+    return tokens;
   }
+
+  /// BE đã trả lời và từ chối refresh token (400, 401, 403...): phiên không cứu được.
+  /// 429 chỉ là bị giới hạn tần suất nên không tính.
+  static bool _isRejected(DioException error) {
+    final status = error.response?.statusCode;
+    return status != null && status >= 400 && status < 500 && status != 429;
+  }
+}
+
+/// auth-service trả token ở gốc JSON; các service cũ bọc trong `data`. Chấp nhận cả hai.
+Map<dynamic, dynamic>? _tokenPayload(Object? body) {
+  if (body is! Map) return null;
+  final wrapped = body['data'];
+  return wrapped is Map ? wrapped : body;
 }
