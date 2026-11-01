@@ -100,6 +100,10 @@ Failure ownerApprovalFailure(DioException e) {
       detail.isEmpty ? 'Thông tin duyệt chưa hợp lệ' : detail,
       statusCode: 400,
     ),
+    final code? when code >= 500 => ServerFailure(
+      'Lỗi máy chủ ($code)',
+      statusCode: code,
+    ),
     _ => failureFromDio(e),
   };
 }

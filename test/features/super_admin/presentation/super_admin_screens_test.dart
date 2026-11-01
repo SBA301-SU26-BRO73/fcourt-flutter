@@ -2,6 +2,11 @@ import 'package:fcourt/app/app_dependencies.dart';
 import 'package:fcourt/app/router.dart';
 import 'package:fcourt/core/config/app_config.dart';
 import 'package:fcourt/core/error/failure.dart';
+import 'package:fcourt/features/auth/domain/entities/auth_user.dart';
+import 'package:fcourt/features/auth/domain/entities/user_role.dart';
+import 'package:fcourt/features/auth/domain/usecases/logout.dart';
+import 'package:fcourt/features/auth/domain/usecases/restore_session.dart';
+import 'package:fcourt/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fcourt/features/health/domain/entities/health_status.dart';
 import 'package:fcourt/features/health/domain/repositories/health_repository.dart';
 import 'package:fcourt/features/super_admin/domain/entities/court_owner.dart';
@@ -14,6 +19,9 @@ import 'package:fcourt/features/super_admin/presentation/widgets/owner_document_
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../auth/helpers.dart';
 
 class _FakeHealthRepository implements HealthRepository {
   @override
@@ -89,21 +97,47 @@ CourtOwner owner(
   documents: documents,
 );
 
+const superAdminUser = AuthUser(
+  id: 1,
+  email: 'root@fcourt.vn',
+  role: UserRole.superAdmin,
+  status: 'ACTIVE',
+  fullName: 'Root',
+);
+
 Future<void> pumpRouterAt(
   WidgetTester tester,
   FakeOwnerRepository repository,
-  String location,
-) async {
+  String location, {
+  AuthUser user = superAdminUser,
+}) async {
+  final auth = MockAuthRepository();
+  when(() => auth.restoreSession()).thenAnswer((_) async => user);
+  final authBloc = AuthBloc(RestoreSession(auth), Logout(auth))
+    ..add(const AuthStarted());
+  addTearDown(authBloc.close);
+  final refresh = AuthRefreshNotifier(authBloc.stream);
+  addTearDown(refresh.dispose);
   final router = createRouter(
     AppDependencies(
       config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
       healthRepository: _FakeHealthRepository(),
+      authRepository: auth,
       discoveryRepository: _FakeDiscoveryRepository(),
       courtOwnerApprovalRepository: repository,
     ),
+    authBloc,
+    refreshListenable: refresh,
   );
+  addTearDown(router.dispose);
+  await tester.pumpWidget(
+    BlocProvider.value(
+      value: authBloc,
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pumpAndSettle();
   router.go(location);
-  await tester.pumpWidget(MaterialApp.router(routerConfig: router));
   await tester.pumpAndSettle();
 }
 
