@@ -1,8 +1,6 @@
 import 'facility_failures.dart';
 import '../../domain/entities/court.dart';
-import '../../domain/entities/court_type.dart';
 import '../../domain/repositories/court_repository.dart';
-import '../datasources/court_type_local_data_source.dart';
 import '../datasources/facility_remote_data_source.dart';
 import '../models/court_model.dart';
 import '../models/json_readers.dart';
@@ -47,15 +45,4 @@ class CourtRepositoryImpl implements CourtRepository {
       ),
     ),
   );
-}
-
-class CourtTypeRepositoryImpl implements CourtTypeRepository {
-  const CourtTypeRepositoryImpl([
-    this._local = const CourtTypeLocalDataSource(),
-  ]);
-
-  final CourtTypeLocalDataSource _local;
-
-  @override
-  Future<List<CourtType>> getCourtTypes() async => _local.getCourtTypes();
 }

@@ -430,15 +430,6 @@ void main() {
         throwsA(isA<UnknownFailure>()),
       );
     });
-
-    test('loại sân tạm thời: Cầu lông 6, Pickleball 1, Tennis 3', () async {
-      final types = await const CourtTypeRepositoryImpl().getCourtTypes();
-
-      expect(
-        {for (final t in types) t.name: t.id},
-        {'Cầu lông': 6, 'Pickleball': 1, 'Tennis': 3},
-      );
-    });
   });
 
   group('SlotTemplateRepositoryImpl', () {
