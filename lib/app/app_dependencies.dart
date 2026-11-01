@@ -40,6 +40,8 @@ import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
 import '../features/staff/domain/staff.dart';
 import '../features/staff/data/http_staff_repository.dart';
+import '../features/operations/data/http_operations_repository.dart';
+import '../features/operations/domain/schedule.dart';
 import 'admin_facility_dependencies.dart';
 import '../features/super_admin/data/datasources/super_admin_remote_data_source.dart';
 import '../features/super_admin/data/repositories/court_owner_approval_repository_impl.dart';
@@ -60,6 +62,7 @@ class AppDependencies {
     required this.discoveryRepository,
     this.slotRepository,
     this.staffRepository,
+    this.operations,
     this.paymentRepository,
     this.qrSaver,
     this.bookingHistoryRepository,
@@ -85,6 +88,7 @@ class AppDependencies {
   final DiscoveryRepository discoveryRepository;
   final SlotRepository? slotRepository;
   final StaffRepository? staffRepository;
+  final OperationsRepository? operations;
   final PaymentRepository? paymentRepository;
   final QrSaver? qrSaver;
   final history.BookingRepository? bookingHistoryRepository;
@@ -153,6 +157,9 @@ class AppDependencies {
       bookingRepository: BookingRepositoryImpl(BookingRemoteDataSource(dio)),
       courtOwnerApprovalRepository: CourtOwnerApprovalRepositoryImpl(
         SuperAdminRemoteDataSource(authDio),
+      ),
+      operations: HttpOperationsRepository(
+        createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
       ),
     );
   }

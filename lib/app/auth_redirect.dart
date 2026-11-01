@@ -56,5 +56,6 @@ bool _isForbidden(String location, UserRole? role) =>
       AppRoutes.catalog => role != UserRole.superAdmin,
       _ when location.startsWith('/super-admin') => role != UserRole.superAdmin,
       _ when location.startsWith('/admin') => role != UserRole.admin,
+      _ when location.startsWith('/staff') => role != UserRole.staff,
       _ => false,
     };
