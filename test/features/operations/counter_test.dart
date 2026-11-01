@@ -12,6 +12,7 @@ import '../../helpers/fake_adapter.dart';
 class FakeCounter implements CounterRepository {
   Failure? error;
   final keys = <String>[];
+  final checkoutFees = <int>[];
   List<int>? selected;
   @override
   Future<List<AvailableSlot>> slots(int court, String date) async => const [
@@ -39,8 +40,13 @@ class FakeCounter implements CounterRepository {
   Future<CashReceipt> checkoutPreview(int id) async =>
       const CashReceipt('INV-1', 3000000, 100000, 3100000);
   @override
-  Future<void> checkout(int booking, String key) async {
+  Future<void> checkout(
+    int booking,
+    String key, {
+    required int expectedSurcharge,
+  }) async {
     keys.add(key);
+    checkoutFees.add(expectedSurcharge);
     if (error != null) throw error!;
   }
 }
@@ -166,8 +172,8 @@ void main() {
     });
     expect(adapter.requests.last.headers['Idempotency-Key'], 'same');
     expect((await repo.checkoutPreview(42)).total, 2000000);
-    await repo.checkout(42, 'checkout');
-    expect(adapter.requests.last.data, isNull);
+    await repo.checkout(42, 'checkout', expectedSurcharge: 100000);
+    expect(adapter.requests.last.data, {'expectedSurcharge': '1000.00'});
   });
   testWidgets('walk-in keeps original selection and key after unknown result', (
     tester,
@@ -225,4 +231,32 @@ void main() {
       expect(fake.keys[0], fake.keys[1]);
     },
   );
+  testWidgets('checkout conflict requires fresh quote and fresh command', (
+    tester,
+  ) async {
+    final fake = FakeCounter()
+      ..error = const ServerFailure('Fee changed', statusCode: 409);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: CheckoutDialog(repository: fake, bookingId: 42)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Xác nhận trả sân'));
+    await tester.pumpAndSettle();
+    expect(fake.checkoutFees, [100000]);
+    expect(
+      find.textContaining('Phí hoặc trạng thái đã thay đổi'),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(FilledButton, 'Kiểm tra lại phí'),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Kiểm tra lại phí'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Xác nhận trả sân'));
+    await tester.pumpAndSettle();
+    expect(fake.keys[0], isNot(fake.keys[1]));
+  });
 }
