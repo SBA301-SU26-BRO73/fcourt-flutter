@@ -59,6 +59,8 @@ import '../src/features/customer_slots/domain/court_slot.dart';
 import '../features/booking/presentation/pages/booking_summary_screen.dart';
 import '../features/payment/domain/entities/payment_checkout.dart';
 import '../features/payment/presentation/pages/payment_checkout_screen.dart';
+import '../features/booking_history/presentation/booking_history_screen.dart';
+import '../features/booking_history/presentation/booking_detail_screen.dart';
 import '../features/payment/presentation/pages/booking_success_screen.dart';
 import '../features/payment/presentation/pages/admin_payment_approval_screen.dart';
 import '../features/payment/presentation/pages/payment_waiting_screen.dart';
@@ -183,6 +185,51 @@ GoRouter createRouter(
         },
       ),
       GoRoute(
+        path: '/bookings',
+        builder: (context, state) {
+          final repository = dependencies.bookingHistoryRepository;
+          if (repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Lịch sử đặt sân chưa khả dụng')),
+            );
+          }
+          return BookingHistoryScreen(
+            repository: repository,
+            onDetail: (id) => context.push('/bookings/$id'),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/bookings/:id',
+        builder: (context, state) {
+          final repository = dependencies.bookingHistoryRepository;
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          if (repository == null || id == null || id <= 0) {
+            return const Scaffold(
+              body: Center(child: Text('Đơn đặt sân không hợp lệ')),
+            );
+          }
+          return BookingDetailScreen(
+            repository: repository,
+            id: id,
+            onTicket:
+                dependencies.ticketRepository == null ||
+                    dependencies.ticketSaver == null
+                ? null
+                : (id) => showDialog<void>(
+                    context: context,
+                    builder: (_) => Dialog.fullscreen(
+                      child: BookingSuccessScreen(
+                        repository: dependencies.ticketRepository!,
+                        saver: dependencies.ticketSaver!,
+                        arguments: CheckoutArguments(bookingId: id),
+                      ),
+                    ),
+                  ),
+          );
+        },
+      ),
+      GoRoute(
         path: '/payments/checkout',
         builder: (context, state) {
           final arguments = state.extra;
@@ -223,7 +270,11 @@ GoRouter createRouter(
             repository: repository,
             saver: saver,
             arguments: args,
-            onHistory: dependencies.onBookingHistory,
+            onHistory:
+                dependencies.onBookingHistory ??
+                (dependencies.bookingHistoryRepository == null
+                    ? null
+                    : () => context.go('/bookings')),
           );
         },
       ),
