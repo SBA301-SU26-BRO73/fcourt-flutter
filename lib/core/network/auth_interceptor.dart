@@ -150,6 +150,8 @@ class _RefreshSession {
           }
           return value;
         })
-        .whenComplete(() => _pending.remove(current));
+        .whenComplete(() {
+          _pending.remove(current);
+        });
   }
 }

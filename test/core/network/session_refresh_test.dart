@@ -30,7 +30,12 @@ Dio _client(TokenStorage storage, Dio refresh, {bool allowRefresh = true}) {
         : jsonResponse(401, {}),
   );
   dio.interceptors.add(
-    AuthInterceptor(dio: dio, refreshDio: refresh, tokenStorage: storage),
+    AuthInterceptor(
+      dio: dio,
+      refreshDio: refresh,
+      tokenStorage: storage,
+      allowRefresh: allowRefresh,
+    ),
   );
   return dio;
 }
