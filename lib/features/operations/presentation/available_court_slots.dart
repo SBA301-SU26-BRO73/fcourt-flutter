@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/error/failure.dart';
 import '../domain/counter.dart';
+import '../domain/schedule.dart';
 
 class AvailableCourtSlots extends StatefulWidget {
   const AvailableCourtSlots({
@@ -10,11 +11,13 @@ class AvailableCourtSlots extends StatefulWidget {
     required this.courtId,
     required this.date,
     required this.onSelected,
+    this.sessions = const [],
   });
   final CounterRepository repository;
   final int courtId;
   final String date;
   final void Function(AvailableSlot) onSelected;
+  final List<CourtSession> sessions;
   @override
   State<AvailableCourtSlots> createState() => _AvailableCourtSlotsState();
 }
@@ -48,25 +51,51 @@ class _AvailableCourtSlotsState extends State<AvailableCourtSlots> {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: slots
-              .map(
-                (slot) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Semantics(
-                    label:
-                        '${slot.start} ${slot.available ? 'Trống' : 'Đã có khách'}',
-                    child: OutlinedButton(
-                      onPressed: slot.available
-                          ? () => widget.onSelected(slot)
-                          : null,
-                      child: Text(
-                        '${slot.start}\n${slot.available ? 'Trống' : 'Đã đặt'}',
-                      ),
-                    ),
+          children: slots.map((slot) {
+            final session = widget.sessions
+                .where(
+                  (s) =>
+                      s.date == widget.date &&
+                      [
+                        'CONFIRMED',
+                        'CHECKED_IN',
+                        'PENDING_PAYMENT',
+                        'AWAITING_CONFIRMATION',
+                      ].contains(s.status) &&
+                      s.start.compareTo(slot.start) <= 0 &&
+                      (s.end == '00:00' || s.end.compareTo(slot.start) > 0),
+                )
+                .firstOrNull;
+            final free = slot.available && session == null;
+            final playing = session?.playing == true;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Semantics(
+                label:
+                    '${slot.start} ${free
+                        ? 'Trống'
+                        : playing
+                        ? 'Đang chơi'
+                        : 'Đã có khách'}',
+                child: OutlinedButton(
+                  style: playing
+                      ? OutlinedButton.styleFrom(
+                          disabledBackgroundColor: const Color(0xFFB3261E),
+                          disabledForegroundColor: Colors.white,
+                        )
+                      : null,
+                  onPressed: free ? () => widget.onSelected(slot) : null,
+                  child: Text(
+                    '${slot.start}\n${free
+                        ? 'Trống'
+                        : playing
+                        ? 'Đang chơi · ${session!.name.isEmpty ? 'Khách vãng lai' : session.name}'
+                        : 'Đã đặt'}',
                   ),
                 ),
-              )
-              .toList(),
+              ),
+            );
+          }).toList(),
         ),
       );
     },
