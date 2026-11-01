@@ -3,16 +3,9 @@ import 'package:dio/dio.dart';
 import '../storage/token_storage.dart';
 import 'api_endpoints.dart';
 
-/// Gắn Bearer token vào request và tự refresh khi gặp 401.
-///
-/// - Kế thừa [QueuedInterceptor] nên các request lỗi 401 đồng thời được xử lý
-///   lần lượt: request đầu refresh token, các request sau dùng lại token mới.
-/// - Mỗi request chỉ được thử lại tối đa một lần.
-/// - Refresh thất bại thì xóa token và gọi [onSessionExpired] (ví dụ về màn đăng nhập).
-///
-/// Đặt `extra: {AuthInterceptor.skipAuthKey: true}` cho request không cần token
-/// (đăng nhập, đăng ký...).
-class AuthInterceptor extends QueuedInterceptor {
+/// Authenticate requests and retry once after a session-wide refresh.
+/// Plain Interceptor avoids waiting on its own error queue during replay.
+class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required this.dio,
     required this.refreshDio,
@@ -23,15 +16,13 @@ class AuthInterceptor extends QueuedInterceptor {
 
   static const skipAuthKey = 'skipAuth';
   static const _retriedKey = 'authRetried';
-
-  /// Dio chính, dùng để gửi lại request sau khi refresh.
+  static final _sessions = Expando<_RefreshSession>();
   final Dio dio;
-
-  /// Dio riêng không gắn interceptor này, dùng cho request refresh để tránh lặp vô hạn.
   final Dio refreshDio;
   final TokenStorage tokenStorage;
   final String refreshPath;
   final void Function()? onSessionExpired;
+  _RefreshSession get _session => _sessions[tokenStorage] ??= _RefreshSession();
 
   @override
   Future<void> onRequest(
@@ -42,6 +33,8 @@ class AuthInterceptor extends QueuedInterceptor {
       final tokens = await tokenStorage.read();
       if (tokens != null) {
         options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
+      } else {
+        options.headers.remove('Authorization');
       }
     }
     handler.next(options);
@@ -53,35 +46,35 @@ class AuthInterceptor extends QueuedInterceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final request = err.requestOptions;
-    final isUnauthorized = err.response?.statusCode == 401;
-    final canRetry =
-        request.extra[skipAuthKey] != true && request.extra[_retriedKey] != true;
-    if (!isUnauthorized || !canRetry) {
+    if (err.response?.statusCode != 401 ||
+        request.extra[skipAuthKey] == true ||
+        request.extra[_retriedKey] == true) {
       return handler.next(err);
     }
-
     final current = await tokenStorage.read();
-    if (current == null) {
-      return handler.next(err);
-    }
-
-    // Request trước đó trong hàng đợi có thể đã refresh xong: dùng lại token mới.
-    final sentHeader = request.headers['Authorization'];
-    final alreadyRefreshed = sentHeader != 'Bearer ${current.accessToken}';
-
-    final tokens = alreadyRefreshed ? current : await _refresh(current);
-    if (tokens == null) {
-      await tokenStorage.clear();
-      onSessionExpired?.call();
-      return handler.next(err);
-    }
-
+    if (current == null) return handler.next(err);
     try {
+      final sent = request.headers['Authorization'];
+      final session = _session;
+      final AuthTokens? tokens;
+      if (sent != 'Bearer ${current.accessToken}') {
+        // Never replay an old account's operation under a newly signed-in account.
+        tokens = session.previousAccess == sent && session.result == current
+            ? current
+            : null;
+      } else {
+        tokens = await session.run(current, () => _refresh(current));
+        if (tokens == null && await tokenStorage.read() == current) {
+          await tokenStorage.clear();
+          onSessionExpired?.call();
+        }
+      }
+      if (tokens == null) return handler.next(err);
       request.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
       request.extra[_retriedKey] = true;
       handler.resolve(await dio.fetch<dynamic>(request));
-    } on DioException catch (retryError) {
-      handler.next(retryError);
+    } on DioException catch (error) {
+      handler.next(error);
     }
   }
 
@@ -104,10 +97,32 @@ class AuthInterceptor extends QueuedInterceptor {
             ? refresh
             : current.refreshToken,
       );
+      // A logout/account switch while refreshing must not resurrect the old session.
+      if (await tokenStorage.read() != current) return null;
       await tokenStorage.save(tokens);
       return tokens;
-    } on DioException {
-      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        return null;
+      }
+      // Transient refresh failures preserve the session and remain retryable offline.
+      rethrow;
     }
+  }
+}
+
+class _RefreshSession {
+  Future<AuthTokens?>? _pending;
+  String? previousAccess;
+  AuthTokens? result;
+  Future<AuthTokens?> run(
+    AuthTokens current,
+    Future<AuthTokens?> Function() action,
+  ) {
+    if (_pending != null) return _pending!;
+    previousAccess = 'Bearer ${current.accessToken}';
+    return _pending = action()
+        .then((value) => result = value)
+        .whenComplete(() => _pending = null);
   }
 }
