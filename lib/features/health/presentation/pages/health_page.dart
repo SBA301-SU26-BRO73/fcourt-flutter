@@ -56,6 +56,10 @@ class HealthPage extends StatelessWidget {
                 onPressed: () => context.push('/admin/staff'),
                 child: const Text('Quản lý nhân viên'),
               ),
+              TextButton(
+                onPressed: () => context.push('/staff/schedule'),
+                child: const Text('Vận hành sân'),
+              ),
             ],
           ),
         ),
