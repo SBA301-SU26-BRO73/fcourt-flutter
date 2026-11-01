@@ -6,6 +6,7 @@ class AppConfig {
   const AppConfig({
     required this.env,
     required this.apiBaseUrl,
+    this.discoveryBaseUrl,
     String? staffBaseUrl,
     String? facilityBaseUrl,
     String? posBaseUrl,
@@ -15,9 +16,11 @@ class AppConfig {
 
   final AppEnv env;
   final String apiBaseUrl;
+  final String? discoveryBaseUrl;
   final String staffBaseUrl;
   final String facilityBaseUrl;
   final String posBaseUrl;
+  String get discoveryUrl => discoveryBaseUrl ?? apiBaseUrl;
 
   bool get isDev => env == AppEnv.dev;
 
@@ -30,6 +33,9 @@ class AppConfig {
     return AppConfig(
       env: envName == 'prod' ? AppEnv.prod : AppEnv.dev,
       apiBaseUrl: baseUrl,
+      discoveryBaseUrl: const bool.hasEnvironment('DISCOVERY_BASE_URL')
+          ? const String.fromEnvironment('DISCOVERY_BASE_URL')
+          : null,
       staffBaseUrl: const String.fromEnvironment('STAFF_BASE_URL').isEmpty
           ? baseUrl
           : const String.fromEnvironment('STAFF_BASE_URL'),
