@@ -17,7 +17,7 @@ class CheckoutDialog extends StatefulWidget {
 }
 
 class _CheckoutDialogState extends State<CheckoutDialog> {
-  final _key = newCommandKey();
+  String _key = newCommandKey();
   bool _busy = false;
   String? _error;
   CashReceipt? _quote;
@@ -28,25 +28,48 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
   }
 
   Future<void> _load() async {
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
       final quote = await widget.repository.checkoutPreview(widget.bookingId);
       if (mounted) setState(() => _quote = quote);
     } on Failure catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      _failed(e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  void _failed(Failure error) {
+    if (!mounted) return;
+    setState(() {
+      _error = error.message;
+      if (error is ServerFailure && error.statusCode == 409) {
+        _quote = null;
+        _key = newCommandKey();
+        _error =
+            'Phí hoặc trạng thái đã thay đổi. Kiểm tra lại trước khi xác nhận.';
+      }
+    });
+  }
+
   Future<void> _submit() async {
     if (_busy || _quote == null) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
-      await widget.repository.checkout(widget.bookingId, _key);
+      await widget.repository.checkout(
+        widget.bookingId,
+        _key,
+        expectedSurcharge: _quote!.surcharge,
+      );
       if (mounted) Navigator.pop(context, true);
     } on Failure catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      _failed(e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -65,7 +88,7 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
           ),
           if (_quote case final q?)
             Text(
-              'Dự tính phụ thu: ${moneyLabel(q.surcharge)}\nTổng: ${moneyLabel(q.total)}',
+              'Dự tính phụ thu cần thu thêm: ${moneyLabel(q.surcharge)}\nGiá trị đơn sau phụ thu: ${moneyLabel(q.total)}\nKhông thu lại tiền sân đã thanh toán. Phí phát sinh theo từng 30 phút và giá slot tương ứng.',
             ),
           if (_error != null)
             Text(
@@ -85,7 +108,13 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
               : _quote == null
               ? _load
               : _submit,
-          child: Text(_busy ? 'Đang trả sân…' : 'Xác nhận trả sân'),
+          child: Text(
+            _busy
+                ? 'Đang trả sân…'
+                : _quote == null
+                ? 'Kiểm tra lại phí'
+                : 'Xác nhận trả sân',
+          ),
         ),
       ],
     ),
