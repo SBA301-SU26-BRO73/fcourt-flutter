@@ -3,38 +3,29 @@ import 'package:dio/dio.dart';
 import '../storage/token_storage.dart';
 import 'api_endpoints.dart';
 
-/// Gắn Bearer token vào request và tự refresh khi gặp 401.
-///
-/// - Kế thừa [QueuedInterceptor] nên các request lỗi 401 đồng thời được xử lý
-///   lần lượt: request đầu refresh token, các request sau dùng lại token mới.
-///   Nhờ vậy refresh token (chỉ dùng được một lần, BE thu hồi mọi phiên khi thấy
-///   token cũ bị dùng lại) không bao giờ bị gửi hai lần.
-/// - Mỗi request chỉ được thử lại tối đa một lần.
-/// - BE từ chối refresh (4xx: token sai, hết hạn, tài khoản bị khóa) thì xóa token
-///   và gọi [onSessionExpired]. Mất mạng hoặc BE lỗi 5xx thì giữ token và trả lỗi
-///   đó, để người dùng không bị đăng xuất chỉ vì mạng chập chờn.
-///
-/// Đặt `extra: {AuthInterceptor.skipAuthKey: true}` cho request không cần token
-/// (đăng nhập, đăng ký...).
-class AuthInterceptor extends QueuedInterceptor {
+/// Authenticate requests and retry once after a session-wide refresh.
+/// Plain Interceptor avoids waiting on its own error queue during replay.
+class AuthInterceptor extends Interceptor {
   AuthInterceptor({
+    required this.dio,
     required this.refreshDio,
     required this.tokenStorage,
     this.refreshPath = ApiEndpoints.authRefresh,
     this.onSessionExpired,
+    this.allowRefresh = true,
   });
 
   static const skipAuthKey = 'skipAuth';
   static const _retriedKey = 'authRetried';
-
-  /// Dio riêng không gắn interceptor này, dùng để refresh và để gửi lại request.
-  ///
-  /// Không gửi lại qua Dio chính: lỗi của request gửi lại sẽ xếp hàng sau chính
-  /// [onError] đang chờ nó, làm hàng đợi của [QueuedInterceptor] kẹt vĩnh viễn.
+  static const _retryAccessKey = 'authRetryAccess';
+  static final _sessions = Expando<_RefreshSession>();
+  final Dio dio;
   final Dio refreshDio;
   final TokenStorage tokenStorage;
   final String refreshPath;
   final void Function()? onSessionExpired;
+  final bool allowRefresh;
+  _RefreshSession get _session => _sessions[tokenStorage] ??= _RefreshSession();
 
   @override
   Future<void> onRequest(
@@ -43,8 +34,23 @@ class AuthInterceptor extends QueuedInterceptor {
   ) async {
     if (options.extra[skipAuthKey] != true) {
       final tokens = await tokenStorage.read();
+      final expected = options.extra[_retryAccessKey];
+      if (expected != null && tokens?.accessToken != expected) {
+        return handler.reject(
+          DioException(
+            requestOptions: options,
+            type: DioExceptionType.badResponse,
+            response: Response<dynamic>(
+              requestOptions: options,
+              statusCode: 401,
+            ),
+          ),
+        );
+      }
       if (tokens != null) {
         options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
+      } else {
+        options.headers.remove('Authorization');
       }
     }
     handler.next(options);
@@ -56,85 +62,108 @@ class AuthInterceptor extends QueuedInterceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final request = err.requestOptions;
-    final isUnauthorized = err.response?.statusCode == 401;
-    final canRetry =
-        request.extra[skipAuthKey] != true &&
-        request.extra[_retriedKey] != true;
-    if (!isUnauthorized || !canRetry) {
+    if (!allowRefresh ||
+        err.response?.statusCode != 401 ||
+        request.extra[skipAuthKey] == true ||
+        request.extra[_retriedKey] == true) {
       return handler.next(err);
     }
-
     final current = await tokenStorage.read();
-    if (current == null) {
-      return handler.next(err);
-    }
-
-    // Request trước đó trong hàng đợi có thể đã refresh xong: dùng lại token mới.
-    final sentHeader = request.headers['Authorization'];
-    final alreadyRefreshed = sentHeader != 'Bearer ${current.accessToken}';
-
-    AuthTokens? tokens = current;
-    if (!alreadyRefreshed) {
-      try {
-        tokens = await _refresh(current);
-      } on DioException catch (refreshError) {
-        if (!_isRejected(refreshError)) {
-          // Lỗi tạm thời: giữ phiên, trả lỗi thật để UI báo mất mạng hoặc máy chủ bận.
-          return handler.next(refreshError);
-        }
-        tokens = null;
-      }
-    }
-    if (tokens == null) {
-      await tokenStorage.clear();
-      onSessionExpired?.call();
-      return handler.next(err);
-    }
-
+    if (current == null) return handler.next(err);
     try {
+      final sent = request.headers['Authorization'];
+      final session = _session;
+      final AuthTokens? tokens;
+      if (sent != 'Bearer ${current.accessToken}') {
+        // Never replay an old account's operation under a newly signed-in account.
+        tokens = await session.reuse(sent, current);
+      } else {
+        tokens = await session.run(current, () => _refresh(current));
+        if (tokens == null && await tokenStorage.read() == current) {
+          await tokenStorage.clear();
+          onSessionExpired?.call();
+        }
+      }
+      if (tokens == null) return handler.next(err);
       // A multipart body has already been finalized on the first upload.
       final body = request.data;
       if (body is FormData) request.data = body.clone();
       request.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
       request.extra[_retriedKey] = true;
-      handler.resolve(await refreshDio.fetch<dynamic>(request));
-    } on DioException catch (retryError) {
-      handler.next(retryError);
+      request.extra[_retryAccessKey] = tokens.accessToken;
+      handler.resolve(await dio.fetch<dynamic>(request));
+    } on DioException catch (error) {
+      handler.next(error);
     }
   }
 
-  /// Trả `null` khi BE trả 2xx nhưng không có access token. Ném [DioException]
-  /// khi gọi refresh thất bại.
   Future<AuthTokens?> _refresh(AuthTokens current) async {
-    final response = await refreshDio.post<dynamic>(
-      refreshPath,
-      data: {'refreshToken': current.refreshToken},
-      options: Options(extra: {skipAuthKey: true}),
-    );
-    final data = _tokenPayload(response.data);
-    if (data == null) return null;
-    final access = data['accessToken'];
-    if (access is! String || access.isEmpty) return null;
-    final refresh = data['refreshToken'];
-    final tokens = AuthTokens(
-      accessToken: access,
-      refreshToken: refresh is String && refresh.isNotEmpty
-          ? refresh
-          : current.refreshToken,
-    );
-    await tokenStorage.save(tokens);
-    return tokens;
-  }
-
-  /// BE đã trả lời và từ chối refresh token (400, 401, 403...): phiên không cứu được.
-  /// 429 chỉ là bị giới hạn tần suất nên không tính.
-  static bool _isRejected(DioException error) {
-    final status = error.response?.statusCode;
-    return status != null && status >= 400 && status < 500 && status != 429;
+    try {
+      final response = await refreshDio.post<dynamic>(
+        refreshPath,
+        data: {'refreshToken': current.refreshToken},
+        options: Options(extra: {skipAuthKey: true}),
+      );
+      final data = _tokenPayload(response.data);
+      if (data == null) return null;
+      final access = data['accessToken'];
+      if (access is! String || access.isEmpty) return null;
+      final refresh = data['refreshToken'];
+      final tokens = AuthTokens(
+        accessToken: access,
+        refreshToken: refresh is String && refresh.isNotEmpty
+            ? refresh
+            : current.refreshToken,
+      );
+      // A logout/account switch while refreshing must not resurrect the old session.
+      if (await tokenStorage.read() != current) return null;
+      await tokenStorage.save(tokens);
+      return tokens;
+    } on DioException catch (e) {
+      if (_isRejected(e)) {
+        return null;
+      }
+      // Transient refresh failures preserve the session and remain retryable offline.
+      rethrow;
+    }
   }
 }
 
-/// auth-service trả token ở gốc JSON; các service cũ bọc trong `data`. Chấp nhận cả hai.
+class _RefreshSession {
+  final _pending = <AuthTokens, Future<AuthTokens?>>{};
+  final _rotated = <String, AuthTokens>{};
+  Future<AuthTokens?> reuse(Object? sent, AuthTokens current) async {
+    final source = _pending.keys
+        .where((tokens) => 'Bearer ${tokens.accessToken}' == sent)
+        .firstOrNull;
+    final value = source == null ? _rotated[sent] : await _pending[source];
+    return value == current ? current : null;
+  }
+
+  Future<AuthTokens?> run(
+    AuthTokens current,
+    Future<AuthTokens?> Function() action,
+  ) {
+    return _pending[current] ??= action()
+        .then((value) {
+          if (value != null) {
+            _rotated.clear();
+            _rotated['Bearer ${current.accessToken}'] = value;
+          }
+          return value;
+        })
+        .whenComplete(() {
+          _pending.remove(current);
+        });
+  }
+}
+
+bool _isRejected(DioException error) {
+  final status = error.response?.statusCode;
+  return status != null && status >= 400 && status < 500 && status != 429;
+}
+
+/// auth-service returns tokens at the JSON root; older services wrap them in `data`.
 Map<dynamic, dynamic>? _tokenPayload(Object? body) {
   if (body is! Map) return null;
   final wrapped = body['data'];

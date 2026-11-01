@@ -66,6 +66,17 @@ void main() {
       expect(authRedirect(AuthStatus.authenticated, AppRoutes.home), isNull);
       expect(authRedirect(AuthStatus.authenticated, AppRoutes.profile), isNull);
     });
+
+    test('quản lý nhân viên chỉ dành cho chủ sân', () {
+      expect(authRedirect(AuthStatus.authenticated, AppRoutes.staff, role: UserRole.admin), isNull);
+      for (final role in [UserRole.customer, UserRole.staff, UserRole.superAdmin]) {
+        expect(
+          authRedirect(AuthStatus.authenticated, AppRoutes.staff, role: role),
+          AppRoutes.home,
+          reason: role.name,
+        );
+      }
+    });
   });
 }
 
