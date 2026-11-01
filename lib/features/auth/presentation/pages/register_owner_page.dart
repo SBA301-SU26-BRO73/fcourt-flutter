@@ -47,6 +47,7 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
 
   Future<void> _pick(List<UploadDocument> target, int max, bool allowPdf) async {
     final picked = await widget.picker.pick(allowPdf: allowPdf);
+    if (!mounted) return;
     setState(() {
       for (final document in picked) {
         final duplicate = target.any((d) => d.path == document.path);

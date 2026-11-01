@@ -26,9 +26,17 @@ class ChangePasswordSubmitted extends ChangePasswordEvent {
   List<Object?> get props => [currentPassword, newPassword];
 }
 
+/// Hộp thoại vừa mở: bỏ kết quả của lần mở trước (lỗi cũ không được hiện lại).
+class ChangePasswordStarted extends ChangePasswordEvent {
+  const ChangePasswordStarted();
+}
+
 /// Thành công kèm người dùng; token mới đã được repository lưu nên phiên hiện tại vẫn dùng được.
 class ChangePasswordBloc extends Bloc<ChangePasswordEvent, SubmissionState> {
   ChangePasswordBloc(this._changePassword) : super(const SubmissionState()) {
+    on<ChangePasswordStarted>((event, emit) {
+      if (!state.isSubmitting) emit(const SubmissionState());
+    });
     on<ChangePasswordSubmitted>(_onSubmitted);
   }
 

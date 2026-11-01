@@ -66,6 +66,17 @@ void main() {
       );
     });
 
+    test('response thiếu token: UnknownFailure, không lưu gì', () async {
+      when(() => remote.login(any(), any()))
+          .thenAnswer((_) async => AuthSessionModel.fromJson(const {'user': {}}));
+
+      await expectLater(
+        repository.login(email: 'a@demo.com', password: 'x'),
+        throwsA(const UnknownFailure()),
+      );
+      expect(await tokens.read(), isNull);
+    });
+
     test('mất mạng thành NetworkFailure', () async {
       when(() => remote.login(any(), any())).thenThrow(
         dioError(null, type: DioExceptionType.connectionError),
@@ -219,6 +230,24 @@ void main() {
 
       expect(await repository.restoreSession(), isNull);
       expect(await tokens.read(), isNull);
+    });
+
+    test('404 vì tài khoản không còn: phiên chết, xóa token', () async {
+      await tokens.save(savedTokens);
+      when(() => remote.fetchProfile())
+          .thenThrow(dioError(404, body: {'detail': 'Account not found'}));
+
+      expect(await repository.restoreSession(), isNull);
+      expect(await tokens.read(), isNull);
+    });
+
+    test('body sai hợp đồng thành UnknownFailure, giữ token', () async {
+      await tokens.save(savedTokens);
+      when(() => remote.fetchProfile())
+          .thenAnswer((_) async => UserModel.fromJson(const {'email': 'x@demo.com'}));
+
+      await expectLater(repository.restoreSession(), throwsA(const UnknownFailure()));
+      expect(await tokens.read(), savedTokens);
     });
 
     test('mất mạng thì ném lỗi và giữ token để lần sau thử lại', () async {
