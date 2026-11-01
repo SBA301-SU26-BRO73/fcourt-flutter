@@ -14,8 +14,13 @@ class BookingRepositoryImpl implements BookingRepository {
     try {
       final json = await source.hold(selection, phone);
       final token = json['holdToken'];
+      final seconds = json['expiresInSeconds'];
       final expiry = json['expiresAt'];
-      final expiresAt = expiry is String ? DateTime.tryParse(expiry) : null;
+      final expiresAt = seconds is int && seconds > 0
+          ? DateTime.now().toUtc().add(Duration(seconds: seconds))
+          : expiry is String
+          ? DateTime.tryParse(expiry)
+          : null;
       if (token is! String ||
           token.isEmpty ||
           expiresAt == null ||
