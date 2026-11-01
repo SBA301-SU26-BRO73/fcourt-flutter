@@ -17,6 +17,9 @@ import '../features/auth/presentation/services/document_picker.dart';
 import '../features/catalog/data/datasources/catalog_remote_data_source.dart';
 import '../features/catalog/data/repositories/catalog_repository_impl.dart';
 import '../features/catalog/domain/repositories/catalog_repository.dart';
+import '../features/booking/data/datasources/booking_remote_data_source.dart';
+import '../features/booking/data/repositories/booking_repository_impl.dart';
+import '../features/booking/domain/repositories/booking_repository.dart';
 import '../features/health/data/datasources/health_remote_data_source.dart';
 import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
@@ -39,6 +42,7 @@ class AppDependencies {
     this.sessionExpired = const Stream.empty(),
     required this.discoveryRepository,
     this.slotRepository,
+    this.bookingRepository,
     this.courtOwnerApprovalRepository,
   });
 
@@ -53,6 +57,7 @@ class AppDependencies {
   final Stream<void> sessionExpired;
   final DiscoveryRepository discoveryRepository;
   final SlotRepository? slotRepository;
+  final BookingRepository? bookingRepository;
   final CourtOwnerApprovalRepository? courtOwnerApprovalRepository;
 
   factory AppDependencies.create(AppConfig config) {
@@ -96,6 +101,7 @@ class AppDependencies {
         DiscoveryRemoteDataSource(publicDio),
       ),
       slotRepository: SlotRepositoryImpl(SlotRemoteDataSource(publicDio)),
+      bookingRepository: BookingRepositoryImpl(BookingRemoteDataSource(dio)),
       courtOwnerApprovalRepository: CourtOwnerApprovalRepositoryImpl(
         SuperAdminRemoteDataSource(authDio),
       ),
