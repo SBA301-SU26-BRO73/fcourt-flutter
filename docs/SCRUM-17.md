@@ -54,7 +54,7 @@ Trạng thái lạ → báo dữ liệu không hợp lệ.
 
 | Nội dung | Hiện tại trên app | Cần từ backend / task khác |
 | --- | --- | --- |
-| Danh mục loại sân | `CourtTypeLocalDataSource`: Pickleball=1, Tennis=3, Cầu lông=6 (seed subscription-service, giống SCRUM-21) | API catalog loại sân (SCRUM-10/11); chỉ cần thay data source |
+| Danh mục loại sân | `CatalogCourtTypeRepository`: `GET /api/court-types` (công khai), chỉ loại đang hoạt động | Đã dùng API catalog (SCRUM-10/11) |
 | Ảnh sân | Không gửi `imageUrl` | Upload ảnh (ngoài AC) |
 | Xóa sân | Chưa có nút xóa (`DELETE` có trong contract) | Không thuộc AC của SCRUM-17 |
 | Đăng nhập | Như SCRUM-15 | SCRUM-7 |
