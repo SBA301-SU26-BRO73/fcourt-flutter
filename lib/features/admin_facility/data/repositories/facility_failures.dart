@@ -37,7 +37,12 @@ Failure facilityFailure(ServerFailure failure) {
     400 => 'Dữ liệu chưa hợp lệ: $detail',
     _ => detail,
   };
-  return ServerFailure(message, statusCode: status, errors: failure.errors);
+  return ServerFailure(
+    message,
+    statusCode: status,
+    fieldErrors: failure.fieldErrors,
+    errorLines: failure.errorLines,
+  );
 }
 
 String _tail(String detail, String prefix) {

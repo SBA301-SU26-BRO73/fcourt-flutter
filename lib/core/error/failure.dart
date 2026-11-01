@@ -20,16 +20,29 @@ class UnauthorizedFailure extends Failure {
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure(super.message, {this.statusCode, this.errors = const []});
+  const ServerFailure(
+    super.message, {
+    this.statusCode,
+    this.fieldErrors = const {},
+    this.errorLines = const [],
+  });
 
   final int? statusCode;
 
-  /// Lỗi từng trường của ProblemDetail (`errors`), ví dụ
-  /// `"defaultPricePerHour: must be greater than 0"`.
-  final List<String> errors;
+  /// Lỗi validation theo từng field (`errors` trong response 400), khóa là tên field.
+  final Map<String, String> fieldErrors;
+
+  /// `errors` dạng chuỗi `"field: message"` của facility và reporting.
+  final List<String> errorLines;
+
+  /// Mọi lỗi validation dạng `"field: message"`, từ cả hai dạng `errors`.
+  List<String> get errors => [
+    ...errorLines,
+    for (final entry in fieldErrors.entries) '${entry.key}: ${entry.value}',
+  ];
 
   @override
-  List<Object?> get props => [message, statusCode, errors];
+  List<Object?> get props => [message, statusCode, fieldErrors, errorLines];
 }
 
 class UnknownFailure extends Failure {
@@ -38,19 +51,26 @@ class UnknownFailure extends Failure {
 
 Failure failureFromDio(DioException e) {
   final status = e.response?.statusCode;
-  if (status == 401) return const UnauthorizedFailure();
-  if (status != null) {
-    // Các service Spring trả lỗi dạng RFC 7807 ProblemDetail: thông điệp an toàn
-    // cho người dùng nằm ở `detail`; giữ `message` cho API kiểu cũ.
-    final body = e.response?.data;
-    final message =
-        _stringField(body, 'message') ??
-        _stringField(body, 'detail') ??
-        'Lỗi máy chủ ($status)';
+  final body = e.response?.data;
+  if (status == 401) {
+    // Chỉ tin `detail` của RFC 7807 (ví dụ "Invalid email or password"); `message` của
+    // response cũ vẫn cho ra thông báo hết phiên như trước.
+    final reason = _stringField(body, 'detail');
+    return reason == null ? const UnauthorizedFailure() : UnauthorizedFailure(reason);
+  }
+  final message = _messageFrom(body);
+  if (status == 429) {
     return ServerFailure(
-      message,
+      _throttledMessage(e.response?.headers.value('retry-after')),
+      statusCode: 429,
+    );
+  }
+  if (status != null) {
+    return ServerFailure(
+      message ?? 'Lỗi máy chủ ($status)',
       statusCode: status,
-      errors: _fieldErrors(body),
+      fieldErrors: _fieldErrorsFrom(body),
+      errorLines: _errorLinesFrom(body),
     );
   }
   switch (e.type) {
@@ -64,24 +84,41 @@ Failure failureFromDio(DioException e) {
   }
 }
 
-/// `errors` của ProblemDetail: facility/reporting trả danh sách chuỗi
-/// `"field: message"`, auth trả `{field, message}`; nhận cả hai dạng.
-List<String> _fieldErrors(Object? body) {
-  final raw = body is Map ? body['errors'] : null;
-  if (raw is! List) return const [];
-  return [
-    for (final item in raw)
-      if (item is String && item.trim().isNotEmpty)
-        item
-      else if (item is Map && item['message'] is String)
-        item['field'] is String
-            ? '${item['field']}: ${item['message']}'
-            : item['message'] as String,
-  ];
+String _throttledMessage(String? retryAfter) {
+  final seconds = int.tryParse(retryAfter?.trim() ?? '');
+  if (seconds == null || seconds <= 0) {
+    return 'Bạn thao tác quá nhanh, vui lòng thử lại sau';
+  }
+  final wait = seconds < 60 ? '$seconds giây' : '${(seconds / 60).ceil()} phút';
+  return 'Bạn thao tác quá nhanh, vui lòng thử lại sau $wait';
 }
 
+/// RFC 7807 của các service mới dùng `detail`; response cũ dùng `message`.
+String? _messageFrom(Object? body) =>
+    _stringField(body, 'detail') ?? _stringField(body, 'message');
+
 String? _stringField(Object? body, String key) {
-  if (body is! Map) return null;
-  final value = body[key];
-  return value is String && value.trim().isNotEmpty ? value : null;
+  final value = body is Map ? body[key] : null;
+  return value is String && value.isNotEmpty ? value : null;
+}
+
+Map<String, String> _fieldErrorsFrom(Object? body) {
+  final errors = body is Map ? body['errors'] : null;
+  if (errors is! List) return const {};
+  final result = <String, String>{};
+  for (final error in errors) {
+    if (error is Map && error['field'] is String && error['message'] is String) {
+      result.putIfAbsent(error['field'] as String, () => error['message'] as String);
+    }
+  }
+  return result;
+}
+
+List<String> _errorLinesFrom(Object? body) {
+  final errors = body is Map ? body['errors'] : null;
+  if (errors is! List) return const [];
+  return [
+    for (final error in errors)
+      if (error is String && error.trim().isNotEmpty) error,
+  ];
 }

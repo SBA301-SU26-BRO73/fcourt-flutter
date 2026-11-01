@@ -183,7 +183,7 @@ void main() {
             'Dữ liệu chưa hợp lệ: bankAccountNumber: must be 6-20 digits; '
             'closeTime must be after openTime',
             statusCode: 400,
-            errors: [
+            errorLines: [
               'bankAccountNumber: must be 6-20 digits',
               'closeTime must be after openTime',
             ],
@@ -241,7 +241,7 @@ void main() {
 
       await expectLater(
         BranchRepositoryImpl(r.remote).getBranches(),
-        throwsA(const UnauthorizedFailure()),
+        throwsA(const UnauthorizedFailure('expired')),
       );
     });
 

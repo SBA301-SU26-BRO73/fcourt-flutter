@@ -42,10 +42,10 @@ void main() {
       );
     });
 
-    test('vẫn ưu tiên message của API kiểu cũ', () {
+    test('ưu tiên detail của RFC 7807 hơn message kiểu cũ', () {
       expect(
         failureFromDio(_error(500, {'message': 'boom', 'detail': 'x'})),
-        const ServerFailure('boom', statusCode: 500),
+        const ServerFailure('x', statusCode: 500),
       );
     });
 
@@ -58,17 +58,13 @@ void main() {
 
     test('giữ `errors` dạng chuỗi (facility) và {field,message} (auth)', () {
       expect(
-        failureFromDio(
+        (failureFromDio(
           _error(400, {
             'detail': 'Invalid request fields',
             'errors': ['defaultPricePerHour: must be greater than 0'],
           }),
-        ).props,
-        [
-          'Invalid request fields',
-          400,
-          ['defaultPricePerHour: must be greater than 0'],
-        ],
+        ) as ServerFailure).errors,
+        ['defaultPricePerHour: must be greater than 0'],
       );
       expect(
         (failureFromDio(

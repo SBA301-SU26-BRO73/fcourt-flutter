@@ -1,6 +1,7 @@
 {
   "APP_ENV": "dev",
   "API_BASE_URL": "http://10.0.2.2:8080",
+  "DISCOVERY_BASE_URL": "http://10.0.2.2:8085",
   "FACILITY_BASE_URL": "http://10.0.2.2:8083",
   "REPORTING_BASE_URL": "http://10.0.2.2:8084"
 }

@@ -33,13 +33,24 @@ class AdminFacilityDependencies {
   /// (mặc định `API_BASE_URL`), cùng chung TokenStorage để gắn Bearer token.
   factory AdminFacilityDependencies.create(
     AppConfig config,
-    TokenStorage tokenStorage,
-  ) {
+    TokenStorage tokenStorage, {
+    void Function()? onSessionExpired,
+  }) {
     final facility = FacilityRemoteDataSource(
-      createDio(config, tokenStorage, baseUrl: config.facilityUrl),
+      createDio(
+        config,
+        tokenStorage,
+        baseUrl: config.facilityUrl,
+        onSessionExpired: onSessionExpired,
+      ),
     );
     final reporting = ReportingRemoteDataSource(
-      createDio(config, tokenStorage, baseUrl: config.reportingUrl),
+      createDio(
+        config,
+        tokenStorage,
+        baseUrl: config.reportingUrl,
+        onSessionExpired: onSessionExpired,
+      ),
     );
     return AdminFacilityDependencies(
       branchRepository: BranchRepositoryImpl(facility),

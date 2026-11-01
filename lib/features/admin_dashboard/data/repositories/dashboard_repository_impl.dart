@@ -33,6 +33,7 @@ Failure reportingFailure(ServerFailure failure) {
   return ServerFailure(
     message,
     statusCode: failure.statusCode,
-    errors: failure.errors,
+    fieldErrors: failure.fieldErrors,
+    errorLines: failure.errorLines,
   );
 }
