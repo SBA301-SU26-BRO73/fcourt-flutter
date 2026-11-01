@@ -161,6 +161,8 @@ void main() {
     fake.error = null;
     await tester.tap(find.text('Thử lại lệnh nhận sân'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Hoàn tất nhận sân'));
+    await tester.pumpAndSettle();
     expect(find.byType(CheckInDialog), findsNothing);
   });
   testWidgets('schedule shows court and waiting session', (tester) async {
