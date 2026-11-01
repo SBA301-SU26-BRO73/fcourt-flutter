@@ -5,6 +5,8 @@ import '../../../../core/error/failure.dart';
 import '../../domain/entities/court_owner.dart';
 import '../../domain/usecases/owner_approval_usecases.dart';
 
+const unexpectedErrorMessage = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+
 enum PendingOwnersStatus { initial, loading, success, failure }
 
 class PendingOwnersState extends Equatable {
@@ -41,6 +43,7 @@ class PendingOwnersCubit extends Cubit<PendingOwnersState> {
     : super(const PendingOwnersState());
 
   final GetPendingOwners _getPendingOwners;
+  final _decidedIds = <int>{};
 
   Future<void> load() async {
     emit(state.copyWith(status: PendingOwnersStatus.loading));
@@ -48,14 +51,17 @@ class PendingOwnersCubit extends Cubit<PendingOwnersState> {
       final owners = await _getPendingOwners();
       if (isClosed) return;
       emit(
-        PendingOwnersState(status: PendingOwnersStatus.success, owners: owners),
+        PendingOwnersState(
+          status: PendingOwnersStatus.success,
+          owners: owners.where((o) => !_decidedIds.contains(o.id)).toList(),
+        ),
       );
-    } on Failure catch (failure) {
+    } catch (error) {
       if (isClosed) return;
       emit(
         state.copyWith(
           status: PendingOwnersStatus.failure,
-          message: failure.message,
+          message: error is Failure ? error.message : unexpectedErrorMessage,
         ),
       );
     }
@@ -63,6 +69,7 @@ class PendingOwnersCubit extends Cubit<PendingOwnersState> {
 
   /// Bỏ hồ sơ đã duyệt/từ chối khỏi danh sách ngay, không chờ tải lại.
   void removeOwner(int ownerId) {
+    _decidedIds.add(ownerId);
     emit(
       state.copyWith(
         owners: state.owners.where((o) => o.id != ownerId).toList(),
