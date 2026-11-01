@@ -79,9 +79,9 @@ class _CheckInDialogState extends State<CheckInDialog> {
             color: Color(0xFF176B42),
             size: 40,
           ),
-          title: const Text('Nhận sân thành công'),
+          title: Text(p.offline ? 'HỢP LỆ (OFFLINE)' : 'Nhận sân thành công'),
           content: Text(
-            '${p.name}\n${p.courtName}\n${p.date} · ${p.start}–${p.end}',
+            '${p.name}\n${p.courtName}\n${p.date} · ${p.start}–${p.end}${p.offline ? '\nĐã ghi trên máy này. Đang chờ đối soát máy chủ.' : ''}',
           ),
           actions: [
             FilledButton(

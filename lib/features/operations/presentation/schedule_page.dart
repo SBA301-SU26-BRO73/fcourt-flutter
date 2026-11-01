@@ -12,21 +12,30 @@ import 'checkout_dialog.dart';
 import 'available_court_slots.dart';
 import 'week_board.dart';
 import 'manual_check_in.dart';
+import '../../offline/data/offline_runtime.dart';
+import '../../offline/presentation/offline_panel.dart';
 
 class SchedulePage extends StatelessWidget {
-  const SchedulePage({super.key, required this.repository, this.counter});
+  const SchedulePage({
+    super.key,
+    required this.repository,
+    this.counter,
+    this.offline,
+  });
   final OperationsRepository repository;
   final CounterRepository? counter;
+  final OfflineRuntime? offline;
   @override
   Widget build(BuildContext context) => BlocProvider(
     create: (_) => ScheduleCubit(repository)..load(),
-    child: ScheduleBoard(counter: counter),
+    child: ScheduleBoard(counter: counter, offline: offline),
   );
 }
 
 class ScheduleBoard extends StatefulWidget {
-  const ScheduleBoard({super.key, this.counter});
+  const ScheduleBoard({super.key, this.counter, this.offline});
   final CounterRepository? counter;
+  final OfflineRuntime? offline;
   @override
   State<ScheduleBoard> createState() => _ScheduleBoardState();
 }
@@ -195,6 +204,8 @@ class _ScheduleBoardState extends State<ScheduleBoard>
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               children: [
                 if (state.loading) const LinearProgressIndicator(),
+                if (widget.offline != null)
+                  OfflinePanel(runtime: widget.offline!),
                 SegmentedButton<bool>(
                   segments: const [
                     ButtonSegment(value: false, label: Text('Hôm nay')),
