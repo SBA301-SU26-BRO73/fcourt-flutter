@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/error/failure.dart';
 import '../../domain/entities/court_owner.dart';
 import '../../domain/usecases/owner_approval_usecases.dart';
+import 'pending_owners_cubit.dart' show unexpectedErrorMessage;
 
 enum OwnerDetailStatus { loading, loaded, failure }
 
@@ -69,18 +70,21 @@ class OwnerDetailCubit extends Cubit<OwnerDetailState> {
   final ApproveOwner _approveOwner;
   final RejectOwner _rejectOwner;
 
+  static String _messageOf(Object error) =>
+      error is Failure ? error.message : unexpectedErrorMessage;
+
   Future<void> load() async {
     emit(const OwnerDetailState());
     try {
       final owner = await _getOwnerDetail(ownerId);
       if (isClosed) return;
       emit(OwnerDetailState(status: OwnerDetailStatus.loaded, owner: owner));
-    } on Failure catch (failure) {
+    } catch (error) {
       if (isClosed) return;
       emit(
         OwnerDetailState(
           status: OwnerDetailStatus.failure,
-          message: failure.message,
+          message: _messageOf(error),
         ),
       );
     }
@@ -113,13 +117,13 @@ class OwnerDetailCubit extends Cubit<OwnerDetailState> {
           decision: OwnerDecision(owner: updated, type: type),
         ),
       );
-    } on Failure catch (failure) {
+    } catch (error) {
       if (isClosed) return;
       emit(
         OwnerDetailState(
           status: OwnerDetailStatus.loaded,
           owner: owner,
-          actionError: failure.message,
+          actionError: _messageOf(error),
         ),
       );
     }
