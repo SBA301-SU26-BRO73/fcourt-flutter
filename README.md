@@ -2,6 +2,10 @@
 
 Ứng dụng Android của FCOURT. Viết bằng Flutter theo Clean Architecture, chia theo feature. Repo đã có sẵn thư viện cơ bản (gọi API, lưu token, điều hướng, state management) và một feature mẫu `health` để sao chép cấu trúc.
 
+Feature Customer Discovery (SCRUM-21) mở tại trang chủ. Hướng dẫn API,
+cấu hình discovery-service và các phần đang chờ backend ở
+[`docs/SCRUM-21.md`](docs/SCRUM-21.md).
+
 ## Yêu cầu
 
 - Flutter `3.47.7` (stable), đi kèm Dart `3.13.5`.
