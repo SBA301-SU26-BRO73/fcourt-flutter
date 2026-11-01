@@ -20,6 +20,9 @@ import '../features/catalog/domain/repositories/catalog_repository.dart';
 import '../features/health/data/datasources/health_remote_data_source.dart';
 import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
+import '../features/super_admin/data/datasources/super_admin_remote_data_source.dart';
+import '../features/super_admin/data/repositories/court_owner_approval_repository_impl.dart';
+import '../features/super_admin/domain/repositories/court_owner_approval_repository.dart';
 
 /// Nơi lắp ráp các dependency của app (không dùng thư viện DI để giữ đơn giản).
 /// Thêm repository của feature mới vào đây, và tạo bản giả trong test qua
@@ -34,6 +37,7 @@ class AppDependencies {
     this.sessionExpired = const Stream.empty(),
     required this.discoveryRepository,
     this.slotRepository,
+    this.courtOwnerApprovalRepository,
   });
 
   final AppConfig config;
@@ -46,14 +50,21 @@ class AppDependencies {
   final Stream<void> sessionExpired;
   final DiscoveryRepository discoveryRepository;
   final SlotRepository? slotRepository;
+  final CourtOwnerApprovalRepository? courtOwnerApprovalRepository;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
     final sessionExpired = StreamController<void>.broadcast();
+    void onSessionExpired() => sessionExpired.add(null);
     final dio = createDio(
       config,
       tokenStorage,
-      onSessionExpired: () => sessionExpired.add(null),
+      onSessionExpired: onSessionExpired,
+    );
+    final authDio = createDio(
+      AppConfig(env: config.env, apiBaseUrl: config.authBaseUrl),
+      tokenStorage,
+      onSessionExpired: onSessionExpired,
     );
     final publicDio = Dio(
       BaseOptions(
@@ -73,6 +84,9 @@ class AppDependencies {
         DiscoveryRemoteDataSource(publicDio),
       ),
       slotRepository: SlotRepositoryImpl(SlotRemoteDataSource(publicDio)),
+      courtOwnerApprovalRepository: CourtOwnerApprovalRepositoryImpl(
+        SuperAdminRemoteDataSource(authDio),
+      ),
     );
   }
 }
