@@ -44,6 +44,7 @@ class FakeCounter implements CounterRepository {
     int booking,
     String key, {
     required int expectedSurcharge,
+    required int expectedTotal,
   }) async {
     keys.add(key);
     checkoutFees.add(expectedSurcharge);
@@ -172,8 +173,16 @@ void main() {
     });
     expect(adapter.requests.last.headers['Idempotency-Key'], 'same');
     expect((await repo.checkoutPreview(42)).total, 2000000);
-    await repo.checkout(42, 'checkout', expectedSurcharge: 100000);
-    expect(adapter.requests.last.data, {'expectedSurcharge': '1000.00'});
+    await repo.checkout(
+      42,
+      'checkout',
+      expectedSurcharge: 100000,
+      expectedTotal: 2000000,
+    );
+    expect(adapter.requests.last.data, {
+      'expectedSurcharge': '1000.00',
+      'expectedTotal': '20000.00',
+    });
   });
   testWidgets('walk-in keeps original selection and key after unknown result', (
     tester,
