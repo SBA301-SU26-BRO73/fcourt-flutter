@@ -15,6 +15,7 @@ class AppRoutes {
   static const catalog = '/catalog';
   static const discover = '/discover';
   static const health = '/health';
+  static const staff = '/admin/staff';
 }
 
 /// Các màn hình không cần đăng nhập.

@@ -17,6 +17,7 @@ class _Harness {
       ..httpClientAdapter = adapter;
     dio.interceptors.add(
       AuthInterceptor(
+        dio: dio,
         refreshDio: refreshDio,
         tokenStorage: storage,
         onSessionExpired: () => sessionExpiredCount++,

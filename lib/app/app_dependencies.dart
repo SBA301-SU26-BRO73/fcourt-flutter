@@ -31,6 +31,8 @@ import '../features/payment/domain/repositories/receipt_repository.dart';
 import '../features/health/data/datasources/health_remote_data_source.dart';
 import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
+import '../features/staff/domain/staff.dart';
+import '../features/staff/data/http_staff_repository.dart';
 import 'admin_facility_dependencies.dart';
 import '../features/super_admin/data/datasources/super_admin_remote_data_source.dart';
 import '../features/super_admin/data/repositories/court_owner_approval_repository_impl.dart';
@@ -50,6 +52,7 @@ class AppDependencies {
     this.sessionExpired = const Stream.empty(),
     required this.discoveryRepository,
     this.slotRepository,
+    this.staffRepository,
     this.paymentRepository,
     this.qrSaver,
     this.adminPaymentRepository,
@@ -70,6 +73,7 @@ class AppDependencies {
   final Stream<void> sessionExpired;
   final DiscoveryRepository discoveryRepository;
   final SlotRepository? slotRepository;
+  final StaffRepository? staffRepository;
   final PaymentRepository? paymentRepository;
   final QrSaver? qrSaver;
   final AdminPaymentRepository? adminPaymentRepository;
@@ -119,6 +123,10 @@ class AppDependencies {
         DiscoveryRemoteDataSource(publicDio),
       ),
       slotRepository: SlotRepositoryImpl(SlotRemoteDataSource(publicDio)),
+      staffRepository: HttpStaffRepository(
+        createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
+        createDio(config, tokenStorage, baseUrl: config.facilityUrl),
+      ),
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
       adminPaymentRepository: AdminPaymentRepositoryImpl(dio),

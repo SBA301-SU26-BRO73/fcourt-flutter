@@ -9,14 +9,20 @@ class AppConfig {
     this.discoveryBaseUrl,
     this.facilityBaseUrl,
     this.reportingBaseUrl,
+    String? staffBaseUrl,
+    String? posBaseUrl,
     String? authBaseUrl,
-  }) : authBaseUrl = authBaseUrl ?? apiBaseUrl;
+  }) : authBaseUrl = authBaseUrl ?? apiBaseUrl,
+       staffBaseUrl = staffBaseUrl ?? apiBaseUrl,
+       posBaseUrl = posBaseUrl ?? apiBaseUrl;
 
   final AppEnv env;
   final String apiBaseUrl;
   final String? discoveryBaseUrl;
   final String? facilityBaseUrl;
   final String? reportingBaseUrl;
+  final String staffBaseUrl;
+  final String posBaseUrl;
   String get discoveryUrl => discoveryBaseUrl ?? apiBaseUrl;
 
   /// auth-service (`AUTH_BASE_URL`), mặc định bằng [apiBaseUrl].
@@ -47,6 +53,12 @@ class AppConfig {
       facilityBaseUrl: const bool.hasEnvironment('FACILITY_BASE_URL')
           ? const String.fromEnvironment('FACILITY_BASE_URL')
           : null,
+      staffBaseUrl: const String.fromEnvironment('STAFF_BASE_URL').isEmpty
+          ? baseUrl
+          : const String.fromEnvironment('STAFF_BASE_URL'),
+      posBaseUrl: const String.fromEnvironment('POS_BASE_URL').isEmpty
+          ? baseUrl
+          : const String.fromEnvironment('POS_BASE_URL'),
       reportingBaseUrl: const bool.hasEnvironment('REPORTING_BASE_URL')
           ? const String.fromEnvironment('REPORTING_BASE_URL')
           : null,
