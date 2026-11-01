@@ -14,6 +14,9 @@ import '../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../features/auth/data/repositories/auth_repository_impl.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/presentation/services/document_picker.dart';
+import '../features/catalog/data/datasources/catalog_remote_data_source.dart';
+import '../features/catalog/data/repositories/catalog_repository_impl.dart';
+import '../features/catalog/domain/repositories/catalog_repository.dart';
 import '../features/health/data/datasources/health_remote_data_source.dart';
 import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
@@ -28,6 +31,7 @@ class AppDependencies {
     required this.config,
     required this.healthRepository,
     required this.authRepository,
+    required this.catalogRepository,
     this.documentPicker = const FilePickerDocumentPicker(),
     this.sessionExpired = const Stream.empty(),
     required this.discoveryRepository,
@@ -38,6 +42,7 @@ class AppDependencies {
   final AppConfig config;
   final HealthRepository healthRepository;
   final AuthRepository authRepository;
+  final CatalogRepository catalogRepository;
   final DocumentPicker documentPicker;
 
   /// Phát một sự kiện khi refresh token thất bại và phiên đăng nhập không còn dùng được.
@@ -66,6 +71,7 @@ class AppDependencies {
       config: config,
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
       authRepository: AuthRepositoryImpl(AuthRemoteDataSource(dio), tokenStorage),
+      catalogRepository: CatalogRepositoryImpl(CatalogRemoteDataSource(dio)),
       sessionExpired: sessionExpired.stream,
       discoveryRepository: DiscoveryRepositoryImpl(
         DiscoveryRemoteDataSource(publicDio),

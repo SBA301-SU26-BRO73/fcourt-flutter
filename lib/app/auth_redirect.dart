@@ -12,8 +12,10 @@ class AppRoutes {
   static const resetPassword = '/reset-password';
   static const home = '/home';
   static const profile = '/profile';
+  static const catalog = '/catalog';
   static const discover = '/discover';
   static const health = '/health';
+  static const staff = '/admin/staff';
 }
 
 /// Các màn hình không cần đăng nhập.
@@ -31,7 +33,8 @@ const publicRoutes = {
 /// - Chưa biết trạng thái: giữ ở màn chờ để không nháy màn đăng nhập khi đang khôi phục phiên.
 /// - Chưa đăng nhập: chỉ được vào các màn công khai.
 /// - Đã đăng nhập: không quay lại màn đăng nhập, đăng ký hay chờ.
-String? authRedirect(AuthStatus status, String location) {
+/// - Màn hình của một vai trò (ví dụ danh mục của super admin): vai trò khác bị đưa về trang chủ.
+String? authRedirect(AuthStatus status, String location, {UserRole? role}) {
   if (location == AppRoutes.resetPassword) return null;
   switch (status) {
     case AuthStatus.unknown:
@@ -41,9 +44,13 @@ String? authRedirect(AuthStatus status, String location) {
     case AuthStatus.authenticated:
       final isEntryScreen =
           publicRoutes.contains(location) || location == AppRoutes.splash || location == '/';
-      return isEntryScreen ? AppRoutes.home : null;
+      if (isEntryScreen) return AppRoutes.home;
+      return _isForbidden(location, role) ? AppRoutes.home : null;
   }
 }
 
-String? requireRole(UserRole? role, Set<UserRole> allowed) =>
-    role != null && allowed.contains(role) ? null : AppRoutes.home;
+/// Màn hình chỉ dành cho một vai trò. BE vẫn là nơi chặn cuối cùng (403), đây chỉ để không
+/// cho người không có quyền thấy màn hình rồi nhận lỗi.
+bool _isForbidden(String location, UserRole? role) =>
+    (location == AppRoutes.catalog && role != UserRole.superAdmin) ||
+    (location == AppRoutes.staff && role != UserRole.admin);

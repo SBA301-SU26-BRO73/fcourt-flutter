@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../auth/helpers.dart';
+import '../catalog/helpers.dart';
 
 class _Health implements HealthRepository {
   @override
@@ -71,6 +72,7 @@ void main() {
           config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
           healthRepository: _Health(),
           authRepository: auth,
+          catalogRepository: MockCatalogRepository(),
           discoveryRepository: discovery,
         ),
         authBloc,
@@ -110,6 +112,7 @@ void main() {
             config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
             healthRepository: _Health(),
             authRepository: auth,
+            catalogRepository: MockCatalogRepository(),
             discoveryRepository: discovery,
           ),
         ),
