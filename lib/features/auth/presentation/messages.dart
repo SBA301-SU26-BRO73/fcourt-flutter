@@ -24,6 +24,12 @@ class AuthMessages {
     'legalDocuments accepts at most 5 files': 'Tối đa 5 giấy tờ pháp lý',
     'courtImages accepts at most 10 files': 'Tối đa 10 ảnh sân',
     'Account not found': 'Không tìm thấy tài khoản',
+    'Reset token is invalid or has expired':
+        'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn',
+    'Current password is incorrect': 'Mật khẩu hiện tại không đúng',
+    'New password must differ from the current password':
+        'Mật khẩu mới phải khác mật khẩu hiện tại',
+    'token is required': 'Vui lòng nhập mã đặt lại mật khẩu',
   };
 
   static String localize(String message) => _vietnamese[message] ?? message;

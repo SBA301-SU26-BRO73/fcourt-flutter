@@ -72,6 +72,21 @@ void main() {
       );
     });
 
+    test('đổi các lỗi của luồng mật khẩu sang tiếng Việt', () {
+      expect(
+        AuthMessages.localize('Reset token is invalid or has expired'),
+        'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn',
+      );
+      expect(
+        AuthMessages.localize('Current password is incorrect'),
+        'Mật khẩu hiện tại không đúng',
+      );
+      expect(
+        AuthMessages.localize('New password must differ from the current password'),
+        'Mật khẩu mới phải khác mật khẩu hiện tại',
+      );
+    });
+
     test('lỗi chưa biết giữ nguyên để không mất thông tin', () {
       expect(AuthMessages.localize('something new'), 'something new');
     });
