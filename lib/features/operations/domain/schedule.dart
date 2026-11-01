@@ -55,7 +55,16 @@ class TicketPreview {
 }
 
 abstract class OperationsRepository {
+  Future<BranchSchedule> week(String start, String end);
   Future<BranchSchedule> today();
   Future<TicketPreview> preview(String code);
   Future<int> checkIn(String code, String key, {bool manual = false});
 }
+
+DateTime weekMonday(DateTime date) => DateTime(
+  date.year,
+  date.month,
+  date.day,
+).subtract(Duration(days: date.weekday - 1));
+String calendarDate(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';

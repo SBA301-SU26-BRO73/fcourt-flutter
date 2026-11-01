@@ -6,6 +6,36 @@ import '../domain/schedule.dart';
 class HttpOperationsRepository implements OperationsRepository {
   HttpOperationsRepository(this.dio);
   final Dio dio;
+  @override
+  Future<BranchSchedule> week(String start, String end) => call(() async {
+    final r = (await dio.get<Map<String, dynamic>>(
+      '/api/staff/schedule',
+      queryParameters: {'startDate': start, 'endDate': end},
+    )).data!;
+    if (r['startDate'] != start || r['endDate'] != end) {
+      throw const FormatException('Wrong date range');
+    }
+    return BranchSchedule(
+      r['branchId'] as int,
+      (r['courts'] as List)
+          .cast<Map<String, dynamic>>()
+          .map(
+            (c) => CourtSchedule(
+              c['courtId'] as int,
+              c['courtName'] as String,
+              (c['days'] as List)
+                  .cast<Map<String, dynamic>>()
+                  .expand(
+                    (day) => (day['slots'] as List)
+                        .cast<Map<String, dynamic>>()
+                        .map((slot) => session({...slot, 'date': day['date']})),
+                  )
+                  .toList(),
+            ),
+          )
+          .toList(),
+    );
+  });
   String time(Object? value) {
     if (value is! String ||
         !RegExp(r'^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]+)?)?$')
