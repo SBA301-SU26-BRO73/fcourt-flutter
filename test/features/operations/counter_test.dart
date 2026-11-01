@@ -5,6 +5,7 @@ import 'package:fcourt/features/operations/data/http_counter_repository.dart';
 import 'package:fcourt/features/operations/presentation/walk_in_sheet.dart';
 import 'package:fcourt/features/operations/presentation/checkout_dialog.dart';
 import 'package:fcourt/features/operations/presentation/available_court_slots.dart';
+import 'package:fcourt/features/operations/domain/schedule.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -47,6 +48,42 @@ class FakeCounter implements CounterRepository {
 }
 
 void main() {
+  testWidgets(
+    'authoritative playing session is red and blocks stale available slot',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AvailableCourtSlots(
+              repository: FakeCounter(),
+              courtId: 21,
+              date: '2026-11-01',
+              onSelected: (_) => fail('Occupied slot must not be selectable'),
+              sessions: const [
+                CourtSession(
+                  bookingId: 42,
+                  date: '2026-11-01',
+                  start: '09:00',
+                  end: '09:30',
+                  status: 'CHECKED_IN',
+                  name: 'Khoa',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final button = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, '09:00\nĐang chơi · Khoa'),
+      );
+      expect(button.onPressed, isNull);
+      expect(
+        button.style!.backgroundColor!.resolve({WidgetState.disabled}),
+        const Color(0xFFB3261E),
+      );
+    },
+  );
   testWidgets('tapped slot prefills exact start and exposes recent contact', (
     tester,
   ) async {
