@@ -1,4 +1,8 @@
 import 'package:fcourt/app/app.dart';
+import 'package:fcourt/features/auth/domain/usecases/logout.dart';
+import 'package:fcourt/features/auth/domain/usecases/restore_session.dart';
+import 'package:fcourt/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fcourt/app/app_dependencies.dart';
 import 'package:fcourt/app/router.dart';
 import 'package:fcourt/core/config/app_config.dart';
@@ -7,6 +11,9 @@ import 'package:fcourt/features/health/domain/repositories/health_repository.dar
 import 'package:fcourt/src/features/customer_discovery/domain/discovery_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../auth/helpers.dart';
 
 class _Health implements HealthRepository {
   @override
@@ -52,16 +59,32 @@ void main() {
     'direct detail URL has an actionable fallback without a fake lookup',
     (tester) async {
       final discovery = _Discovery();
+      final auth = MockAuthRepository();
+      when(() => auth.restoreSession()).thenAnswer((_) async => customerUser);
+      final authBloc = AuthBloc(RestoreSession(auth), Logout(auth))
+        ..add(const AuthStarted());
+      addTearDown(authBloc.close);
+      final refresh = AuthRefreshNotifier(authBloc.stream);
+      addTearDown(refresh.dispose);
       final router = createRouter(
         AppDependencies(
           config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
           healthRepository: _Health(),
+          authRepository: auth,
           discoveryRepository: discovery,
         ),
+        authBloc,
+        refreshListenable: refresh,
       );
       addTearDown(router.dispose);
+      await tester.pumpWidget(
+        BlocProvider.value(
+          value: authBloc,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
       router.go('/branches/999');
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
       await tester.pumpAndSettle();
       expect(find.text('Tìm chi nhánh'), findsOneWidget);
       expect(discovery.queries, isEmpty);
@@ -79,15 +102,21 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final discovery = _Discovery();
+      final auth = MockAuthRepository();
+      when(() => auth.restoreSession()).thenAnswer((_) async => customerUser);
       await tester.pumpWidget(
         FcourtApp(
           dependencies: AppDependencies(
             config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
             healthRepository: _Health(),
+            authRepository: auth,
             discoveryRepository: discovery,
           ),
         ),
       );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Tìm sân'));
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), '  Đường A  ');
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();

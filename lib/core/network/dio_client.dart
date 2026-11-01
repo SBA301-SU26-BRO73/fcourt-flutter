@@ -21,7 +21,6 @@ Dio createDio(
 
   dio.interceptors.add(
     AuthInterceptor(
-      dio: dio,
       refreshDio: refreshDio,
       tokenStorage: tokenStorage,
       onSessionExpired: onSessionExpired,

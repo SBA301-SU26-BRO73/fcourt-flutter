@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 
 import '../core/config/app_config.dart';
@@ -9,6 +10,10 @@ import '../src/features/customer_slots/data/slot_repository_impl.dart';
 import '../src/features/customer_slots/domain/slot_repository.dart';
 import '../core/network/dio_client.dart';
 import '../core/storage/token_storage.dart';
+import '../features/auth/data/datasources/auth_remote_data_source.dart';
+import '../features/auth/data/repositories/auth_repository_impl.dart';
+import '../features/auth/domain/repositories/auth_repository.dart';
+import '../features/auth/presentation/services/document_picker.dart';
 import '../features/health/data/datasources/health_remote_data_source.dart';
 import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
@@ -20,18 +25,31 @@ class AppDependencies {
   const AppDependencies({
     required this.config,
     required this.healthRepository,
+    required this.authRepository,
+    this.documentPicker = const FilePickerDocumentPicker(),
+    this.sessionExpired = const Stream.empty(),
     required this.discoveryRepository,
     this.slotRepository,
   });
 
   final AppConfig config;
   final HealthRepository healthRepository;
+  final AuthRepository authRepository;
+  final DocumentPicker documentPicker;
+
+  /// Phát một sự kiện khi refresh token thất bại và phiên đăng nhập không còn dùng được.
+  final Stream<void> sessionExpired;
   final DiscoveryRepository discoveryRepository;
   final SlotRepository? slotRepository;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
-    final dio = createDio(config, tokenStorage);
+    final sessionExpired = StreamController<void>.broadcast();
+    final dio = createDio(
+      config,
+      tokenStorage,
+      onSessionExpired: () => sessionExpired.add(null),
+    );
     final publicDio = Dio(
       BaseOptions(
         baseUrl: config.discoveryUrl,
@@ -43,6 +61,8 @@ class AppDependencies {
     return AppDependencies(
       config: config,
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
+      authRepository: AuthRepositoryImpl(AuthRemoteDataSource(dio), tokenStorage),
+      sessionExpired: sessionExpired.stream,
       discoveryRepository: DiscoveryRepositoryImpl(
         DiscoveryRemoteDataSource(publicDio),
       ),
