@@ -16,10 +16,17 @@ class AvailableSlot {
 }
 
 class CashReceipt {
-  const CashReceipt(this.code, this.base, this.surcharge, this.total);
+  const CashReceipt(
+    this.code,
+    this.base,
+    this.surcharge,
+    this.total, {
+    this.posAmount = 0,
+  });
   final String code;
   final int base;
   final int surcharge;
+  final int posAmount;
   final int total;
 }
 
@@ -38,6 +45,7 @@ abstract class CounterRepository {
     int booking,
     String key, {
     required int expectedSurcharge,
+    required int expectedTotal,
   });
 }
 
