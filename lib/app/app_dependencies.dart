@@ -26,6 +26,7 @@ import '../features/payment/domain/repositories/payment_repository.dart';
 import '../features/health/data/datasources/health_remote_data_source.dart';
 import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
+import 'admin_facility_dependencies.dart';
 import '../features/super_admin/data/datasources/super_admin_remote_data_source.dart';
 import '../features/super_admin/data/repositories/court_owner_approval_repository_impl.dart';
 import '../features/super_admin/domain/repositories/court_owner_approval_repository.dart';
@@ -37,6 +38,7 @@ class AppDependencies {
   const AppDependencies({
     required this.config,
     required this.healthRepository,
+    this.adminFacility,
     required this.authRepository,
     required this.catalogRepository,
     this.documentPicker = const FilePickerDocumentPicker(),
@@ -51,6 +53,7 @@ class AppDependencies {
 
   final AppConfig config;
   final HealthRepository healthRepository;
+  final AdminFacilityDependencies? adminFacility;
   final AuthRepository authRepository;
   final CatalogRepository catalogRepository;
   final DocumentPicker documentPicker;
@@ -86,11 +89,20 @@ class AppDependencies {
         headers: const {'Accept': 'application/json'},
       ),
     );
+    final catalogRepository = CatalogRepositoryImpl(
+      CatalogRemoteDataSource(dio),
+    );
     return AppDependencies(
       config: config,
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
+      adminFacility: AdminFacilityDependencies.create(
+        config,
+        tokenStorage,
+        catalogRepository,
+        onSessionExpired: onSessionExpired,
+      ),
       authRepository: AuthRepositoryImpl(AuthRemoteDataSource(dio), tokenStorage),
-      catalogRepository: CatalogRepositoryImpl(CatalogRemoteDataSource(dio)),
+      catalogRepository: catalogRepository,
       sessionExpired: sessionExpired.stream,
       discoveryRepository: DiscoveryRepositoryImpl(
         DiscoveryRemoteDataSource(publicDio),

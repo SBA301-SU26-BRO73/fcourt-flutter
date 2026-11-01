@@ -24,6 +24,7 @@ class ServerFailure extends Failure {
     super.message, {
     this.statusCode,
     this.fieldErrors = const {},
+    this.errorLines = const [],
   });
 
   final int? statusCode;
@@ -31,8 +32,17 @@ class ServerFailure extends Failure {
   /// Lỗi validation theo từng field (`errors` trong response 400), khóa là tên field.
   final Map<String, String> fieldErrors;
 
+  /// `errors` dạng chuỗi `"field: message"` của facility và reporting.
+  final List<String> errorLines;
+
+  /// Mọi lỗi validation dạng `"field: message"`, từ cả hai dạng `errors`.
+  List<String> get errors => [
+    ...errorLines,
+    for (final entry in fieldErrors.entries) '${entry.key}: ${entry.value}',
+  ];
+
   @override
-  List<Object?> get props => [message, statusCode, fieldErrors];
+  List<Object?> get props => [message, statusCode, fieldErrors, errorLines];
 }
 
 class UnknownFailure extends Failure {
@@ -60,6 +70,7 @@ Failure failureFromDio(DioException e) {
       message ?? 'Lỗi máy chủ ($status)',
       statusCode: status,
       fieldErrors: _fieldErrorsFrom(body),
+      errorLines: _errorLinesFrom(body),
     );
   }
   switch (e.type) {
@@ -101,4 +112,13 @@ Map<String, String> _fieldErrorsFrom(Object? body) {
     }
   }
   return result;
+}
+
+List<String> _errorLinesFrom(Object? body) {
+  final errors = body is Map ? body['errors'] : null;
+  if (errors is! List) return const [];
+  return [
+    for (final error in errors)
+      if (error is String && error.trim().isNotEmpty) error,
+  ];
 }
