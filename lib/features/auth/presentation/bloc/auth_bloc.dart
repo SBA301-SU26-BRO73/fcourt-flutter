@@ -91,6 +91,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } on Failure {
       // Không hỏi được BE (mất mạng): vào màn đăng nhập, token vẫn được giữ.
       emit(const AuthState.unauthenticated());
+    } catch (_) {
+      // Lỗi bất ngờ (ví dụ Keystore không đọc được token): vẫn phải rời màn chờ,
+      // nếu không app kẹt ở splash mãi.
+      emit(const AuthState.unauthenticated());
     }
   }
 

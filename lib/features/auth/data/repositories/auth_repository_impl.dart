@@ -18,14 +18,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<AuthUser?> restoreSession() async {
     if (await _tokens.read() == null) return null;
     try {
-      return (await _remote.fetchProfile()).toEntity();
-    } on DioException catch (e) {
-      final failure = failureFromDio(e);
+      return await _guard(() async => (await _remote.fetchProfile()).toEntity());
+    } on Failure catch (failure) {
       if (_isDeadSession(failure)) {
         await _tokens.clear();
         return null;
       }
-      throw failure;
+      rethrow;
     }
   }
 
@@ -57,32 +56,24 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required List<UploadDocument> legalDocuments,
     List<UploadDocument> courtImages = const [],
-  }) async {
-    try {
-      await _remote.registerCourtOwner(
-        fullName: fullName,
-        email: email,
-        phone: phone,
-        password: password,
-        legalDocuments: legalDocuments,
-        courtImages: courtImages,
+  }) =>
+      _guard(
+        () => _remote.registerCourtOwner(
+          fullName: fullName,
+          email: email,
+          phone: phone,
+          password: password,
+          legalDocuments: legalDocuments,
+          courtImages: courtImages,
+        ),
       );
-    } on DioException catch (e) {
-      throw failureFromDio(e);
-    }
-  }
 
   @override
   Future<AuthUser> updateProfile({
     required String fullName,
     required String phone,
-  }) async {
-    try {
-      return (await _remote.updateProfile(fullName, phone)).toEntity();
-    } on DioException catch (e) {
-      throw failureFromDio(e);
-    }
-  }
+  }) =>
+      _guard(() async => (await _remote.updateProfile(fullName, phone)).toEntity());
 
   @override
   Future<void> logout() async {
@@ -96,23 +87,34 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  Future<AuthUser> _openSession(Future<AuthSessionModel> Function() call) async {
+  Future<AuthUser> _openSession(Future<AuthSessionModel> Function() call) =>
+      _guard(() async {
+        final session = await call();
+        await _tokens.save(
+          AuthTokens(
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken,
+          ),
+        );
+        return session.user.toEntity();
+      });
+
+  /// Đổi lỗi Dio thành [Failure]; body sai hợp đồng (thiếu field, sai kiểu) thành
+  /// [UnknownFailure] để bloc không bị kẹt ở trạng thái đang gửi.
+  Future<T> _guard<T>(Future<T> Function() call) async {
     try {
-      final session = await call();
-      await _tokens.save(
-        AuthTokens(
-          accessToken: session.accessToken,
-          refreshToken: session.refreshToken,
-        ),
-      );
-      return session.user.toEntity();
+      return await call();
     } on DioException catch (e) {
       throw failureFromDio(e);
+    } on TypeError {
+      throw const UnknownFailure();
     }
   }
 
-  /// 401 sau khi interceptor đã thử refresh, hoặc 403 vì tài khoản bị khóa.
+  /// 401 sau khi interceptor đã thử refresh, 403 vì tài khoản bị khóa, hoặc 404 vì
+  /// tài khoản không còn tồn tại.
   bool _isDeadSession(Failure failure) =>
       failure is UnauthorizedFailure ||
-      (failure is ServerFailure && failure.statusCode == 403);
+      (failure is ServerFailure &&
+          (failure.statusCode == 403 || failure.statusCode == 404));
 }

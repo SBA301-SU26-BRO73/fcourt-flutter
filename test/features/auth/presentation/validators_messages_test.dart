@@ -67,6 +67,10 @@ void main() {
       );
       expect(AuthMessages.localize('Account is locked'), 'Tài khoản đã bị khóa');
       expect(
+        AuthMessages.localize('Authentication is required'),
+        'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại',
+      );
+      expect(
         AuthMessages.localize('Account is awaiting approval'),
         'Tài khoản đang chờ quản trị viên duyệt',
       );
