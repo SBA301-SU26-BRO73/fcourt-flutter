@@ -23,6 +23,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
   String? _error;
   bool _busy = true;
   bool _submitted = false;
+  bool _done = false;
   final _key = newCommandKey();
   @override
   void initState() {
@@ -46,7 +47,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
   }
 
   Future<void> _confirm() async {
-    if (_busy) return;
+    if (_busy || _done) return;
     setState(() {
       _busy = true;
       _submitted = true;
@@ -63,6 +64,33 @@ class _CheckInDialogState extends State<CheckInDialog> {
           'Kết quả nhận sân không khớp vé đã kiểm tra',
         );
       }
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _done = true;
+      });
+      final p = _preview!;
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          icon: const Icon(
+            Icons.check_circle,
+            color: Color(0xFF176B42),
+            size: 40,
+          ),
+          title: const Text('Nhận sân thành công'),
+          content: Text(
+            '${p.name}\n${p.courtName}\n${p.date} · ${p.start}–${p.end}',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hoàn tất nhận sân'),
+            ),
+          ],
+        ),
+      );
       if (mounted) Navigator.pop(context, true);
     } on Failure catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -116,7 +144,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
           ),
         if (_preview != null)
           FilledButton(
-            onPressed: _busy ? null : _confirm,
+            onPressed: _busy || _done ? null : _confirm,
             child: Text(
               _submitted ? 'Thử lại lệnh nhận sân' : 'Xác nhận nhận sân',
             ),
