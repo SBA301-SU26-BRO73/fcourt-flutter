@@ -55,6 +55,8 @@ import '../src/features/customer_discovery/presentation/screens/branch_detail_sc
 import '../src/features/customer_slots/presentation/slot_picker_screen.dart';
 import '../src/features/customer_slots/domain/court_slot.dart';
 import '../features/booking/presentation/pages/booking_summary_screen.dart';
+import '../features/payment/domain/entities/payment_checkout.dart';
+import '../features/payment/presentation/pages/payment_checkout_screen.dart';
 
 /// Báo cho router đánh giá lại [GoRouter.redirect] mỗi khi trạng thái đăng nhập đổi.
 class AuthRefreshNotifier extends ChangeNotifier {
@@ -144,6 +146,28 @@ GoRouter createRouter(
           }
           return BookingSummaryScreen(
             repository: bookingRepository,
+            arguments: arguments,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/payments/checkout',
+        builder: (context, state) {
+          final arguments = state.extra;
+          final paymentRepository = dependencies.paymentRepository;
+          final saver = dependencies.qrSaver;
+          if (arguments is! CheckoutArguments ||
+              paymentRepository == null ||
+              saver == null) {
+            return const Scaffold(
+              body: Center(
+                child: Text('Vui lòng chọn đơn đặt sân trước khi thanh toán.'),
+              ),
+            );
+          }
+          return PaymentCheckoutScreen(
+            repository: paymentRepository,
+            saver: saver,
             arguments: arguments,
           );
         },

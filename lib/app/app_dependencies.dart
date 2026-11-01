@@ -20,6 +20,9 @@ import '../features/catalog/domain/repositories/catalog_repository.dart';
 import '../features/booking/data/datasources/booking_remote_data_source.dart';
 import '../features/booking/data/repositories/booking_repository_impl.dart';
 import '../features/booking/domain/repositories/booking_repository.dart';
+import '../features/payment/data/repositories/payment_repository_impl.dart';
+import '../features/payment/data/repositories/qr_gallery_saver.dart';
+import '../features/payment/domain/repositories/payment_repository.dart';
 import '../features/health/data/datasources/health_remote_data_source.dart';
 import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
@@ -42,6 +45,8 @@ class AppDependencies {
     this.sessionExpired = const Stream.empty(),
     required this.discoveryRepository,
     this.slotRepository,
+    this.paymentRepository,
+    this.qrSaver,
     this.bookingRepository,
     this.courtOwnerApprovalRepository,
   });
@@ -57,6 +62,8 @@ class AppDependencies {
   final Stream<void> sessionExpired;
   final DiscoveryRepository discoveryRepository;
   final SlotRepository? slotRepository;
+  final PaymentRepository? paymentRepository;
+  final QrSaver? qrSaver;
   final BookingRepository? bookingRepository;
   final CourtOwnerApprovalRepository? courtOwnerApprovalRepository;
 
@@ -101,6 +108,8 @@ class AppDependencies {
         DiscoveryRemoteDataSource(publicDio),
       ),
       slotRepository: SlotRepositoryImpl(SlotRemoteDataSource(publicDio)),
+      paymentRepository: PaymentRepositoryImpl(dio),
+      qrSaver: QrGallerySaver(),
       bookingRepository: BookingRepositoryImpl(BookingRemoteDataSource(dio)),
       courtOwnerApprovalRepository: CourtOwnerApprovalRepositoryImpl(
         SuperAdminRemoteDataSource(authDio),
