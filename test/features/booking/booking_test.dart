@@ -103,6 +103,23 @@ void main() {
     });
   });
 
+  test('expiry follows server duration when device clock is skewed', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+      ..httpClientAdapter = FakeAdapter(
+        (_) => jsonResponse(201, {
+          'holdToken': 'server-token',
+          'expiresAt': '2000-01-01T00:00:00Z',
+          'expiresInSeconds': 300,
+        }),
+      );
+    final repository = BookingRepositoryImpl(BookingRemoteDataSource(dio));
+    final before = DateTime.now().toUtc();
+    final hold = await repository.hold(selection(), '0912345678');
+    final remaining = hold.expiresAt.difference(before);
+    expect(remaining, greaterThan(const Duration(seconds: 299)));
+    expect(remaining, lessThanOrEqualTo(const Duration(seconds: 301)));
+  });
+
   test(
     'repository translates conflict and rejects expired/malformed holds',
     () async {
