@@ -33,6 +33,17 @@ void main() {
       expect(authRedirect(AuthStatus.authenticated, '/'), AppRoutes.home);
     });
 
+    test('quên mật khẩu là màn công khai: chưa đăng nhập vào được, đã đăng nhập thì về trang chủ', () {
+      expect(authRedirect(AuthStatus.unauthenticated, AppRoutes.forgotPassword), isNull);
+      expect(authRedirect(AuthStatus.authenticated, AppRoutes.forgotPassword), AppRoutes.home);
+    });
+
+    test('link đặt lại mật khẩu mở được ở mọi trạng thái và không bị mất khi đang khôi phục phiên', () {
+      for (final status in AuthStatus.values) {
+        expect(authRedirect(status, AppRoutes.resetPassword), isNull, reason: status.name);
+      }
+    });
+
     test('đã đăng nhập: các màn trong app ở nguyên chỗ', () {
       expect(authRedirect(AuthStatus.authenticated, AppRoutes.home), isNull);
       expect(authRedirect(AuthStatus.authenticated, AppRoutes.profile), isNull);

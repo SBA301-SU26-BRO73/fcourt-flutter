@@ -88,6 +88,34 @@ class AuthRemoteDataSource {
     );
   }
 
+  Future<void> forgotPassword(String email) async {
+    await _dio.post<dynamic>(
+      '$_base/password/forgot',
+      data: {'email': email},
+      options: _public,
+    );
+  }
+
+  Future<void> resetPassword(String token, String newPassword) async {
+    await _dio.post<dynamic>(
+      '$_base/password/reset',
+      data: {'token': token, 'newPassword': newPassword},
+      options: _public,
+    );
+  }
+
+  /// Cần token. BE trả cặp token mới vì mọi phiên cũ (kể cả phiên này) đã bị thu hồi.
+  Future<AuthSessionModel> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '$_base/password',
+      data: {'currentPassword': currentPassword, 'newPassword': newPassword},
+    );
+    return AuthSessionModel.fromJson(response.data ?? const {});
+  }
+
   Future<void> _addFiles(
     FormData form,
     String field,
