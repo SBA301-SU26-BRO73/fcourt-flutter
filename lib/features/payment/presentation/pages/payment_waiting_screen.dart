@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import '../widgets/waiting_ripple.dart';
 
@@ -15,11 +16,14 @@ class PaymentWaitingScreen extends StatefulWidget {
     required this.picker,
     required this.arguments,
     required this.onConfirmed,
+    this.onSupport,
+    this.onRetryReceipt,
   });
   final ReceiptRepository repository;
   final ReceiptPicker picker;
   final CheckoutArguments arguments;
   final VoidCallback onConfirmed;
+  final VoidCallback? onSupport, onRetryReceipt;
   @override
   State<PaymentWaitingScreen> createState() => _PaymentWaitingScreenState();
 }
@@ -29,7 +33,10 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
   late ReceiptSession _session;
   ReceiptImage? _image;
   PaymentReceipt? _receipt;
-  Timer? _timer;
+  Timer? _timer, _limitTimer;
+  DateTime? _deadline;
+  bool _timedOut = false, _rejectionShown = false;
+  int _failures = 0;
   String? _error;
   bool _busy = false, _loading = true, _paused = false, _navigated = false;
   double _progress = 0;
@@ -42,6 +49,11 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
   }
 
   void _start() {
+    _limitTimer?.cancel();
+    _deadline = null;
+    _timedOut = false;
+    _rejectionShown = false;
+    _failures = 0;
     _session = widget.repository.open(widget.arguments);
     _loading = true;
     _receipt = null;
@@ -79,6 +91,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
   void dispose() {
     _generation++;
     _timer?.cancel();
+    _limitTimer?.cancel();
     _session.close();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -88,7 +101,10 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _paused = state != AppLifecycleState.resumed;
     _timer?.cancel();
-    if (!_paused) unawaited(_poll());
+    if (!_paused && _deadline != null && !DateTime.now().isBefore(_deadline!)) {
+      _stopPolling();
+    }
+    if (!_paused && !_timedOut) unawaited(_poll());
   }
 
   bool get _terminal =>
@@ -98,7 +114,23 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
       _receipt = receipt;
       _loading = false;
       _error = null;
+      _failures = 0;
     });
+    if (receipt?.status == ReceiptStatus.pending && _deadline == null) {
+      _deadline = DateTime.now().add(const Duration(minutes: 10));
+      _limitTimer = Timer(const Duration(minutes: 10), _stopPolling);
+    }
+    if (receipt != null && receipt.status != ReceiptStatus.pending) {
+      _limitTimer?.cancel();
+    }
+    if (receipt?.status == ReceiptStatus.rejected &&
+        !_rejectionShown &&
+        (widget.onSupport != null || widget.onRetryReceipt != null)) {
+      _rejectionShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showRejected();
+      });
+    }
     if (receipt?.status == ReceiptStatus.confirmed && !_navigated && !_paused) {
       _navigated = true;
       widget.onConfirmed();
@@ -107,13 +139,65 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
 
   void _schedule() {
     _timer?.cancel();
-    if (mounted && !_paused && !_terminal && _receipt != null) {
-      _timer = Timer(const Duration(seconds: 4), _poll);
+    if (mounted && !_paused && !_timedOut && !_terminal && _receipt != null) {
+      final seconds = math.min(30, 4 * (1 << math.min(_failures, 3)));
+      _timer = Timer(Duration(seconds: seconds), _poll);
     }
   }
 
-  Future<void> _poll() async {
-    if (_busy || _paused) return;
+  void _stopPolling() {
+    if (!mounted || _terminal || _timedOut) return;
+    _timer?.cancel();
+    _limitTimer?.cancel();
+    _generation++;
+    _session.close();
+    setState(() {
+      _timedOut = true;
+      _busy = false;
+      _loading = false;
+    });
+  }
+
+  Future<void> _manual() async {
+    if (_busy) return;
+    _session.close();
+    _session = widget.repository.open(widget.arguments);
+    await _poll(manual: true);
+  }
+
+  Future<void> _showRejected() => showDialog<void>(
+    context: context,
+    builder: (c) => AlertDialog(
+      title: const Text('Biên lai bị từ chối'),
+      content: Text(
+        _receipt?.rejectionReason ?? 'Vui lòng liên hệ chủ sân để được hỗ trợ.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(c),
+          child: const Text('Đóng'),
+        ),
+        if (widget.onRetryReceipt != null)
+          TextButton(
+            onPressed: () {
+              Navigator.pop(c);
+              widget.onRetryReceipt!();
+            },
+            child: const Text('Tải lại biên lai khác'),
+          ),
+        if (widget.onSupport != null)
+          TextButton(
+            onPressed: () {
+              Navigator.pop(c);
+              widget.onSupport!();
+            },
+            child: const Text('Liên hệ hỗ trợ'),
+          ),
+      ],
+    ),
+  );
+  Future<void> _poll({bool manual = false}) async {
+    if (_busy || _paused || (_timedOut && !manual)) return;
     if (_receipt?.status == ReceiptStatus.confirmed) {
       _accept(_receipt);
       return;
@@ -129,6 +213,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
       if (_active(generation)) {
         setState(() {
           _error = e.message;
+          _failures++;
           _loading = false;
           if (e.expired) {
             _receipt = PaymentReceipt(
@@ -202,6 +287,49 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
             child: ListView(
               padding: const EdgeInsets.all(24),
               children: [
+                if (_receipt != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      children: [
+                        for (int step = 0; step < 3; step++)
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  step == 2
+                                      ? Icons.check_circle
+                                      : Icons.radio_button_checked,
+                                  color:
+                                      step < 2 ||
+                                          _receipt?.status ==
+                                              ReceiptStatus.confirmed
+                                      ? Colors.green
+                                      : Colors.grey,
+                                ),
+                                Text(
+                                  [
+                                    'Đã gửi biên lai',
+                                    'Đang đối soát',
+                                    'Xác nhận thành công',
+                                  ][step],
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                if (_timedOut) ...[
+                  const Text(
+                    'Đã tạm dừng tự kiểm tra sau 10 phút để tiết kiệm pin. Đơn vẫn đang chờ duyệt.',
+                  ),
+                  TextButton(
+                    onPressed: _busy ? null : _manual,
+                    child: const Text('Kiểm tra thủ công'),
+                  ),
+                ],
                 if (_loading)
                   const Center(child: CircularProgressIndicator())
                 else if (pending) ...[
@@ -231,6 +359,12 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                   ),
                   if (_receipt!.rejectionReason != null)
                     Text(_receipt!.rejectionReason!),
+                  if (_receipt!.status == ReceiptStatus.rejected &&
+                      widget.onSupport != null)
+                    TextButton(
+                      onPressed: _showRejected,
+                      child: const Text('Xem hỗ trợ thanh toán'),
+                    ),
                 ] else ...[
                   const Text(
                     'Chụp hoặc chọn ảnh biên lai chuyển khoản. Ảnh sẽ được nén trước khi gửi (tối đa 5MB).',
