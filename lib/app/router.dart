@@ -6,10 +6,16 @@ import '../features/health/presentation/bloc/health_bloc.dart';
 import '../features/health/presentation/pages/health_page.dart';
 import 'app_dependencies.dart';
 import '../features/staff/presentation/staff_page.dart';
+import '../features/operations/presentation/schedule_page.dart';
 
 GoRouter createRouter(AppDependencies dependencies) {
   return GoRouter(
     routes: [
+      if (dependencies.operations != null)
+        GoRoute(
+          path: '/staff/schedule',
+          builder: (_, _) => SchedulePage(repository: dependencies.operations!),
+        ),
       if (dependencies.staffRepository != null)
         GoRoute(
           path: '/admin/staff',

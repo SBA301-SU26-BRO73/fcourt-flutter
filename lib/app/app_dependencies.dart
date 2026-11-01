@@ -6,6 +6,8 @@ import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
 import '../features/staff/domain/staff.dart';
 import '../features/staff/data/http_staff_repository.dart';
+import '../features/operations/data/http_operations_repository.dart';
+import '../features/operations/domain/schedule.dart';
 
 /// Nơi lắp ráp các dependency của app (không dùng thư viện DI để giữ đơn giản).
 /// Thêm repository của feature mới vào đây, và tạo bản giả trong test qua
@@ -15,11 +17,13 @@ class AppDependencies {
     required this.config,
     required this.healthRepository,
     this.staffRepository,
+    this.operations,
   });
 
   final AppConfig config;
   final HealthRepository healthRepository;
   final StaffRepository? staffRepository;
+  final OperationsRepository? operations;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -30,6 +34,9 @@ class AppDependencies {
       staffRepository: HttpStaffRepository(
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
         createDio(config, tokenStorage, baseUrl: config.facilityBaseUrl),
+      ),
+      operations: HttpOperationsRepository(
+        createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
       ),
     );
   }
