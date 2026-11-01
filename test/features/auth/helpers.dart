@@ -80,3 +80,12 @@ class FakeDocumentPicker implements DocumentPicker {
     return _results.isEmpty ? const [] : _results.removeAt(0);
   }
 }
+
+const superAdminUser = AuthUser(
+  id: 16,
+  email: 'superadmin@demo.com',
+  role: UserRole.superAdmin,
+  status: 'ACTIVE',
+  fullName: 'Quản Trị Hệ Thống',
+  phone: '0939000001',
+);

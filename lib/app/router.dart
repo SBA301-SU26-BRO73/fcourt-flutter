@@ -26,6 +26,16 @@ import '../features/auth/presentation/pages/register_customer_page.dart';
 import '../features/auth/presentation/pages/register_owner_page.dart';
 import '../features/auth/presentation/pages/reset_password_page.dart';
 import '../features/auth/presentation/pages/splash_page.dart';
+import '../features/catalog/domain/entities/court_type.dart';
+import '../features/catalog/domain/entities/subscription_plan.dart';
+import '../features/catalog/domain/usecases/delete_court_type.dart';
+import '../features/catalog/domain/usecases/delete_subscription_plan.dart';
+import '../features/catalog/domain/usecases/list_court_types.dart';
+import '../features/catalog/domain/usecases/list_subscription_plans.dart';
+import '../features/catalog/domain/usecases/save_court_type.dart';
+import '../features/catalog/domain/usecases/save_subscription_plan.dart';
+import '../features/catalog/presentation/bloc/catalog_list_bloc.dart';
+import '../features/catalog/presentation/pages/catalog_page.dart';
 import '../features/health/domain/usecases/get_health_status.dart';
 import '../features/health/presentation/bloc/health_bloc.dart';
 import '../features/health/presentation/pages/health_page.dart';
@@ -60,11 +70,12 @@ GoRouter createRouter(
   Listenable? refreshListenable,
 }) {
   final repository = dependencies.authRepository;
+  final catalog = dependencies.catalogRepository;
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refreshListenable,
     redirect: (context, state) =>
-        authRedirect(authBloc.state.status, state.matchedLocation),
+        authRedirect(authBloc.state.status, state.matchedLocation, role: authBloc.state.role),
     routes: [
       GoRoute(
         path: AppRoutes.splash,
@@ -114,6 +125,33 @@ GoRouter createRouter(
       GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const HomePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.catalog,
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) => CatalogListBloc<CourtType>(
+                load: ListCourtTypes(catalog).call,
+                delete: DeleteCourtType(catalog).call,
+                idOf: (courtType) => courtType.id,
+                deletedMessage: 'Đã xóa loại sân',
+              )..add(const CatalogRefreshed()),
+            ),
+            BlocProvider(
+              create: (_) => CatalogListBloc<SubscriptionPlan>(
+                load: ListSubscriptionPlans(catalog).call,
+                delete: DeleteSubscriptionPlan(catalog).call,
+                idOf: (plan) => plan.id,
+                deletedMessage: 'Đã xóa gói dịch vụ',
+              )..add(const CatalogRefreshed()),
+            ),
+          ],
+          child: CatalogPage(
+            saveCourtType: SaveCourtType(catalog),
+            saveSubscriptionPlan: SaveSubscriptionPlan(catalog),
+          ),
+        ),
       ),
       GoRoute(
         path: AppRoutes.profile,
