@@ -59,6 +59,7 @@ import '../src/features/customer_slots/domain/court_slot.dart';
 import '../features/booking/presentation/pages/booking_summary_screen.dart';
 import '../features/payment/domain/entities/payment_checkout.dart';
 import '../features/payment/presentation/pages/payment_checkout_screen.dart';
+import '../features/payment/presentation/pages/admin_payment_approval_screen.dart';
 import '../features/payment/presentation/pages/payment_waiting_screen.dart';
 
 /// Báo cho router đánh giá lại [GoRouter.redirect] mỗi khi trạng thái đăng nhập đổi.
@@ -161,6 +162,22 @@ GoRouter createRouter(
           return BookingSummaryScreen(
             repository: bookingRepository,
             arguments: arguments,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/admin/branches/:branchId/payments',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['branchId'] ?? '');
+          final repository = dependencies.adminPaymentRepository;
+          if (id == null || id <= 0 || repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Vui lòng chọn chi nhánh hợp lệ.')),
+            );
+          }
+          return AdminPaymentApprovalScreen(
+            repository: repository,
+            branchId: id,
           );
         },
       ),
