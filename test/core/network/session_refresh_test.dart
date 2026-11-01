@@ -22,7 +22,7 @@ class _AsyncAdapter implements HttpClientAdapter {
 }
 
 const _old = AuthTokens(accessToken: 'old', refreshToken: 'r1');
-Dio _client(TokenStorage storage, Dio refresh) {
+Dio _client(TokenStorage storage, Dio refresh, {bool allowRefresh = true}) {
   final dio = Dio(BaseOptions(baseUrl: 'http://test'));
   dio.httpClientAdapter = FakeAdapter(
     (r) => r.headers['Authorization'] == 'Bearer new'
@@ -30,7 +30,12 @@ Dio _client(TokenStorage storage, Dio refresh) {
         : jsonResponse(401, {}),
   );
   dio.interceptors.add(
-    AuthInterceptor(dio: dio, refreshDio: refresh, tokenStorage: storage),
+    AuthInterceptor(
+      dio: dio,
+      refreshDio: refresh,
+      tokenStorage: storage,
+      allowRefresh: allowRefresh,
+    ),
   );
   return dio;
 }
@@ -121,6 +126,63 @@ void main() {
         throwsA(isA<DioException>()),
       );
       expect(await storage.read(), replacement);
+    },
+  );
+  test('new account refresh never joins an old account operation', () async {
+    final storage = InMemoryTokenStorage(_old);
+    final entered = Completer<void>(), release = Completer<void>();
+    final refresh = Dio(BaseOptions(baseUrl: 'http://test'))
+      ..httpClientAdapter = _AsyncAdapter((r) async {
+        if ((r.data as Map)['refreshToken'] == 'r1') {
+          entered.complete();
+          await release.future;
+          return jsonResponse(200, {
+            'data': {'accessToken': 'old-result'},
+          });
+        }
+        return jsonResponse(200, {
+          'data': {'accessToken': 'new', 'refreshToken': 'new-user-refresh'},
+        });
+      });
+    final oldResult = expectLater(
+      _client(storage, refresh).get<dynamic>('/protected'),
+      throwsA(isA<DioException>()),
+    );
+    await entered.future;
+    await storage.save(
+      const AuthTokens(
+        accessToken: 'another-user',
+        refreshToken: 'another-refresh',
+      ),
+    );
+    await _client(
+      storage,
+      refresh,
+    ).get<dynamic>('/protected').timeout(const Duration(seconds: 2));
+    release.complete();
+    await oldResult;
+    expect((await storage.read())?.refreshToken, 'new-user-refresh');
+  });
+  test(
+    'background client cannot rotate or clear foreground credentials',
+    () async {
+      final storage = InMemoryTokenStorage(_old);
+      var refreshCalls = 0;
+      final refresh = Dio(BaseOptions(baseUrl: 'http://test'))
+        ..httpClientAdapter = FakeAdapter((r) {
+          refreshCalls++;
+          return jsonResponse(401, {});
+        });
+      await expectLater(
+        _client(
+          storage,
+          refresh,
+          allowRefresh: false,
+        ).get<dynamic>('/protected'),
+        throwsA(isA<DioException>()),
+      );
+      expect(refreshCalls, 0);
+      expect(await storage.read(), _old);
     },
   );
 }
