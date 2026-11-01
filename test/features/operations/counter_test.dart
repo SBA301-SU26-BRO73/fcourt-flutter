@@ -221,6 +221,39 @@ void main() {
       isFalse,
     );
   });
+  testWidgets('walk-in uses a fresh key after a definite rejection', (
+    tester,
+  ) async {
+    final fake = FakeCounter()
+      ..error = const ServerFailure('Invalid phone', statusCode: 400);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: WalkInSheet(
+            repository: fake,
+            courtId: 21,
+            courtName: 'Sân 1',
+            date: '2026-11-01',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<int>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('09:00–09:30').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'Khoa');
+    await tester.enterText(find.byType(TextFormField).at(1), '0912345678');
+    await tester.ensureVisible(find.text('Xác nhận & thu tiền mặt'));
+    await tester.tap(find.text('Xác nhận & thu tiền mặt'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Xác nhận & thu tiền mặt'));
+    await tester.tap(find.text('Xác nhận & thu tiền mặt'));
+    await tester.pumpAndSettle();
+    expect(fake.keys, hasLength(2));
+    expect(fake.keys[0], isNot(fake.keys[1]));
+  });
   testWidgets(
     'checkout shows fee before explicit submit and preserves retry key',
     (tester) async {

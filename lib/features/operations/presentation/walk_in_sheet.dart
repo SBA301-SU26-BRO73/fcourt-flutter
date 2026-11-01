@@ -113,6 +113,7 @@ class _WalkInSheetState extends State<WalkInSheet> {
           _error = e is ServerFailure && e.statusCode == 409
               ? 'Slot đã thay đổi hoặc lệnh xung đột. Làm mới lịch trước khi đặt lại.'
               : e.message;
+          if (!_uncertain) _key = newCommandKey();
         });
       }
     } finally {
