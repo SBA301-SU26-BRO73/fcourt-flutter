@@ -49,6 +49,7 @@ dependencies:
   image_picker: ^1.2.4
   flutter_image_compress: ^2.5.1
   url_launcher: ^6.3.3
+  screen_brightness: ^2.1.11
 
 dev_dependencies:
   flutter_test:

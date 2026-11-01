@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'ticket_brightness_scope.dart';
 
 import '../../domain/entities/booking_ticket.dart';
 import '../../domain/entities/payment_checkout.dart';
@@ -13,11 +16,13 @@ class BookingSuccessScreen extends StatefulWidget {
     required this.saver,
     required this.arguments,
     this.onHistory,
+    this.brightness,
   });
   final TicketRepository repository;
   final TicketSaver saver;
   final CheckoutArguments arguments;
   final VoidCallback? onHistory;
+  final TicketBrightness? brightness;
   @override
   State<BookingSuccessScreen> createState() => _BookingSuccessScreenState();
 }
@@ -141,50 +146,84 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                     style: Theme.of(context).textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          Text(
-                            ticket.branchName,
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          Text(ticket.courtName),
-                          Text(ticket.date),
-                          Text(ticket.slots.join(' · ')),
-                          Text('Mã đơn: ${ticket.bookingCode}'),
-                          const SizedBox(height: 12),
-                          ColoredBox(
-                            color: Colors.white,
-                            child: Image.memory(
-                              ticket.png,
-                              width: 300,
-                              height: 300,
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.none,
-                              semanticLabel: 'Mã QR check-in tại sân',
-                              errorBuilder: (_, _, _) => const SizedBox(
+                  TicketBrightnessScope(
+                    controller:
+                        widget.brightness ?? DeviceTicketBrightness.instance,
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            Text(
+                              ticket.branchName,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            Text(ticket.courtName),
+                            Text(ticket.date),
+                            Text(ticket.slots.join(' · ')),
+                            Text('Mã đơn: ${ticket.bookingCode}'),
+                            const SizedBox(height: 12),
+                            ColoredBox(
+                              color: Colors.white,
+                              child: Image.memory(
+                                ticket.png,
+                                width: 300,
                                 height: 300,
-                                child: Center(
-                                  child: Text(
-                                    'Chưa hiển thị được QR. Hãy tải lại vé.',
+                                fit: BoxFit.contain,
+                                filterQuality: FilterQuality.none,
+                                semanticLabel: 'Mã QR check-in tại sân',
+                                errorBuilder: (_, _, _) => const SizedBox(
+                                  height: 300,
+                                  child: Center(
+                                    child: Text(
+                                      'Chưa hiển thị được QR. Hãy tải lại vé.',
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          const Text('Mã check-in'),
-                          SelectableText(
-                            ticket.checkInCode,
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                            const Text('Mã check-in'),
+                            SelectableText(
+                              ticket.checkInCode,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            TextButton.icon(
+                              onPressed: () async {
+                                try {
+                                  await Clipboard.setData(
+                                    ClipboardData(text: ticket.checkInCode),
+                                  );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Đã sao chép mã vé'),
+                                      ),
+                                    );
+                                  }
+                                } on PlatformException {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Chưa sao chép được mã vé. Vui lòng thử lại.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.copy),
+                              label: const Text('Sao chép mã vé'),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   const Text(
-                    'Đến sân đúng giờ và đưa mã QR hoặc mã check-in cho nhân viên tại quầy.',
+                    'Xuất trình mã QR này tại quầy hoặc đọc mã số vé cho nhân viên để nhận sân.',
                   ),
                   FilledButton.icon(
                     onPressed: _saving ? null : _save,
