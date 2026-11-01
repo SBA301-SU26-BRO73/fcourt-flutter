@@ -23,6 +23,8 @@ import '../features/booking/domain/repositories/booking_repository.dart';
 import '../features/payment/data/repositories/payment_repository_impl.dart';
 import '../features/payment/data/repositories/qr_gallery_saver.dart';
 import '../features/payment/domain/repositories/payment_repository.dart';
+import '../features/payment/data/repositories/admin_payment_repository_impl.dart';
+import '../features/payment/domain/repositories/admin_payment_repository.dart';
 import '../features/payment/data/repositories/receipt_repository_impl.dart';
 import '../features/payment/data/repositories/device_receipt_picker.dart';
 import '../features/payment/domain/repositories/receipt_repository.dart';
@@ -50,6 +52,7 @@ class AppDependencies {
     this.slotRepository,
     this.paymentRepository,
     this.qrSaver,
+    this.adminPaymentRepository,
     this.receiptRepository,
     this.receiptPicker,
     this.bookingRepository,
@@ -69,6 +72,7 @@ class AppDependencies {
   final SlotRepository? slotRepository;
   final PaymentRepository? paymentRepository;
   final QrSaver? qrSaver;
+  final AdminPaymentRepository? adminPaymentRepository;
   final ReceiptRepository? receiptRepository;
   final ReceiptPicker? receiptPicker;
   final BookingRepository? bookingRepository;
@@ -117,6 +121,7 @@ class AppDependencies {
       slotRepository: SlotRepositoryImpl(SlotRemoteDataSource(publicDio)),
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
+      adminPaymentRepository: AdminPaymentRepositoryImpl(dio),
       receiptRepository: ReceiptRepositoryImpl(dio),
       receiptPicker: DeviceReceiptPicker(),
       bookingRepository: BookingRepositoryImpl(BookingRemoteDataSource(dio)),
