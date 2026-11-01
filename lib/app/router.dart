@@ -1,16 +1,101 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/domain/usecases/login.dart';
+import '../features/auth/domain/usecases/register_court_owner.dart';
+import '../features/auth/domain/usecases/register_customer.dart';
+import '../features/auth/domain/usecases/update_profile.dart';
+import '../features/auth/presentation/bloc/auth_bloc.dart';
+import '../features/auth/presentation/bloc/login_bloc.dart';
+import '../features/auth/presentation/bloc/profile_bloc.dart';
+import '../features/auth/presentation/bloc/register_bloc.dart';
+import '../features/auth/presentation/pages/home_page.dart';
+import '../features/auth/presentation/pages/login_page.dart';
+import '../features/auth/presentation/pages/profile_page.dart';
+import '../features/auth/presentation/pages/register_customer_page.dart';
+import '../features/auth/presentation/pages/register_owner_page.dart';
+import '../features/auth/presentation/pages/splash_page.dart';
 import '../features/health/domain/usecases/get_health_status.dart';
 import '../features/health/presentation/bloc/health_bloc.dart';
 import '../features/health/presentation/pages/health_page.dart';
 import 'app_dependencies.dart';
+import 'auth_redirect.dart';
 
-GoRouter createRouter(AppDependencies dependencies) {
+/// Báo cho router đánh giá lại [GoRouter.redirect] mỗi khi trạng thái đăng nhập đổi.
+class AuthRefreshNotifier extends ChangeNotifier {
+  AuthRefreshNotifier(Stream<AuthState> stream) {
+    _subscription = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<AuthState> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
+GoRouter createRouter(
+  AppDependencies dependencies,
+  AuthBloc authBloc, {
+  Listenable? refreshListenable,
+}) {
+  final repository = dependencies.authRepository;
   return GoRouter(
+    initialLocation: AppRoutes.splash,
+    refreshListenable: refreshListenable,
+    redirect: (context, state) =>
+        authRedirect(authBloc.state.status, state.matchedLocation),
     routes: [
       GoRoute(
-        path: '/',
+        path: AppRoutes.splash,
+        builder: (context, state) => const SplashPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => BlocProvider(
+          create: (_) => LoginBloc(Login(repository)),
+          child: const LoginPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.registerCustomer,
+        builder: (context, state) => BlocProvider(
+          create: (_) => RegisterBloc(
+            RegisterCustomer(repository),
+            RegisterCourtOwner(repository),
+          ),
+          child: const RegisterCustomerPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.registerOwner,
+        builder: (context, state) => BlocProvider(
+          create: (_) => RegisterBloc(
+            RegisterCustomer(repository),
+            RegisterCourtOwner(repository),
+          ),
+          child: RegisterOwnerPage(picker: dependencies.documentPicker),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.home,
+        builder: (context, state) => const HomePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => BlocProvider(
+          create: (_) => ProfileBloc(UpdateProfile(repository)),
+          child: const ProfilePage(),
+        ),
+      ),
+      // Màn kiểm tra kết nối BE, dùng khi phát triển.
+      GoRoute(
+        path: AppRoutes.health,
         builder: (context, state) => BlocProvider(
           create: (_) => HealthBloc(GetHealthStatus(dependencies.healthRepository))
             ..add(const HealthCheckRequested()),
