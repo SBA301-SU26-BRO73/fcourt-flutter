@@ -7,12 +7,16 @@ class AppConfig {
     required this.env,
     required this.apiBaseUrl,
     this.discoveryBaseUrl,
-  });
+    String? authBaseUrl,
+  }) : authBaseUrl = authBaseUrl ?? apiBaseUrl;
 
   final AppEnv env;
   final String apiBaseUrl;
   final String? discoveryBaseUrl;
   String get discoveryUrl => discoveryBaseUrl ?? apiBaseUrl;
+
+  /// auth-service (`AUTH_BASE_URL`), mặc định bằng [apiBaseUrl].
+  final String authBaseUrl;
 
   bool get isDev => env == AppEnv.dev;
 
@@ -22,9 +26,11 @@ class AppConfig {
       'API_BASE_URL',
       defaultValue: 'http://10.0.2.2:8080',
     );
+    const authUrl = String.fromEnvironment('AUTH_BASE_URL');
     return AppConfig(
       env: envName == 'prod' ? AppEnv.prod : AppEnv.dev,
       apiBaseUrl: baseUrl,
+      authBaseUrl: authUrl.isEmpty ? null : authUrl,
       discoveryBaseUrl: const bool.hasEnvironment('DISCOVERY_BASE_URL')
           ? const String.fromEnvironment('DISCOVERY_BASE_URL')
           : null,
