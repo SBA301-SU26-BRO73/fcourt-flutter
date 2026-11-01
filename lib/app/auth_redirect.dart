@@ -7,6 +7,8 @@ class AppRoutes {
   static const login = '/login';
   static const registerCustomer = '/register';
   static const registerOwner = '/register/owner';
+  static const forgotPassword = '/forgot-password';
+  static const resetPassword = '/reset-password';
   static const home = '/home';
   static const profile = '/profile';
   static const discover = '/discover';
@@ -18,14 +20,18 @@ const publicRoutes = {
   AppRoutes.login,
   AppRoutes.registerCustomer,
   AppRoutes.registerOwner,
+  AppRoutes.forgotPassword,
 };
 
 /// Quyết định chuyển hướng theo trạng thái đăng nhập; `null` nghĩa là ở lại.
 ///
+/// - [AppRoutes.resetPassword] mở được ở mọi trạng thái: link trong email có thể đến khi app
+///   đang khôi phục phiên, đang đăng nhập sẵn hoặc chưa đăng nhập, và không được làm mất link.
 /// - Chưa biết trạng thái: giữ ở màn chờ để không nháy màn đăng nhập khi đang khôi phục phiên.
 /// - Chưa đăng nhập: chỉ được vào các màn công khai.
 /// - Đã đăng nhập: không quay lại màn đăng nhập, đăng ký hay chờ.
 String? authRedirect(AuthStatus status, String location) {
+  if (location == AppRoutes.resetPassword) return null;
   switch (status) {
     case AuthStatus.unknown:
       return location == AppRoutes.splash ? null : AppRoutes.splash;

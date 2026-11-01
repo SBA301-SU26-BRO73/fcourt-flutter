@@ -98,6 +98,10 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 8),
                         TextButton(
+                          onPressed: () => context.push(AppRoutes.forgotPassword),
+                          child: const Text('Quên mật khẩu?'),
+                        ),
+                        TextButton(
                           onPressed: () => context.push(AppRoutes.registerCustomer),
                           child: const Text('Chưa có tài khoản? Đăng ký'),
                         ),

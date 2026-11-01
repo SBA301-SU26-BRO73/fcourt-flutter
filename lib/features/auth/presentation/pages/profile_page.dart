@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bloc/auth_bloc.dart';
+import '../bloc/change_password_bloc.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/submission_state.dart';
 import '../messages.dart';
 import '../validators.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/error_banner.dart';
+import 'change_password_dialog.dart';
 
 /// Xem và sửa họ tên, số điện thoại; email và vai trò chỉ xem. Có nút đăng xuất.
 class ProfilePage extends StatefulWidget {
@@ -35,6 +37,20 @@ class _ProfilePageState extends State<ProfilePage> {
     _fullName.dispose();
     _phone.dispose();
     super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    final changed = await ChangePasswordDialog.show(
+      context,
+      context.read<ChangePasswordBloc>(),
+    );
+    if (changed == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã đổi mật khẩu. Các thiết bị khác cần đăng nhập lại.'),
+        ),
+      );
+    }
   }
 
   void _submit() {
@@ -111,6 +127,12 @@ class _ProfilePageState extends State<ProfilePage> {
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : const Text('Lưu thay đổi'),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: _changePassword,
+                          icon: const Icon(Icons.lock_reset),
+                          label: const Text('Đổi mật khẩu'),
                         ),
                         const SizedBox(height: 8),
                         OutlinedButton.icon(

@@ -4,19 +4,27 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/domain/usecases/change_password.dart';
 import '../features/auth/domain/usecases/login.dart';
 import '../features/auth/domain/usecases/register_court_owner.dart';
 import '../features/auth/domain/usecases/register_customer.dart';
+import '../features/auth/domain/usecases/request_password_reset.dart';
+import '../features/auth/domain/usecases/reset_password.dart';
 import '../features/auth/domain/usecases/update_profile.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
+import '../features/auth/presentation/bloc/change_password_bloc.dart';
+import '../features/auth/presentation/bloc/forgot_password_bloc.dart';
 import '../features/auth/presentation/bloc/login_bloc.dart';
 import '../features/auth/presentation/bloc/profile_bloc.dart';
 import '../features/auth/presentation/bloc/register_bloc.dart';
+import '../features/auth/presentation/bloc/reset_password_bloc.dart';
+import '../features/auth/presentation/pages/forgot_password_page.dart';
 import '../features/auth/presentation/pages/home_page.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/profile_page.dart';
 import '../features/auth/presentation/pages/register_customer_page.dart';
 import '../features/auth/presentation/pages/register_owner_page.dart';
+import '../features/auth/presentation/pages/reset_password_page.dart';
 import '../features/auth/presentation/pages/splash_page.dart';
 import '../features/health/domain/usecases/get_health_status.dart';
 import '../features/health/presentation/bloc/health_bloc.dart';
@@ -90,13 +98,30 @@ GoRouter createRouter(
         ),
       ),
       GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (context, state) => BlocProvider(
+          create: (_) => ForgotPasswordBloc(RequestPasswordReset(repository)),
+          child: const ForgotPasswordPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        builder: (context, state) => BlocProvider(
+          create: (_) => ResetPasswordBloc(ResetPassword(repository)),
+          child: ResetPasswordPage(initialToken: state.uri.queryParameters['token']),
+        ),
+      ),
+      GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const HomePage(),
       ),
       GoRoute(
         path: AppRoutes.profile,
-        builder: (context, state) => BlocProvider(
-          create: (_) => ProfileBloc(UpdateProfile(repository)),
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => ProfileBloc(UpdateProfile(repository))),
+            BlocProvider(create: (_) => ChangePasswordBloc(ChangePassword(repository))),
+          ],
           child: const ProfilePage(),
         ),
       ),
