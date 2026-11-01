@@ -34,7 +34,9 @@ def verify(project, keystore, alias, password_env):
     if not tools:
         raise RuntimeError('apksigner is required')
     report = checked([str(tools[0]), 'verify', '--verbose', '--print-certs', str(apk)])
-    digests = re.findall(r'^Signer #\d+ certificate SHA-256 digest:\s*([0-9a-fA-F: ]+)\s*$', report, re.M)
+    # Build-tools can label scheme-specific certificates as "V2 Signer" or
+    # "V3 Signer" instead of the older numbered "Signer #1" format.
+    digests = re.findall(r'^(?:Signer #\d+|V\d+(?:\.\d+)? Signer) certificate SHA-256 digest:[ \t]*([0-9a-fA-F: ]+)[ \t]*$', report, re.M)
     normalized = {re.sub(r'[^0-9a-f]', '', v.lower()) for v in digests}
     if normalized != {expected}:
         if password_env == 'FCOURT_SMOKE_PASSWORD':
