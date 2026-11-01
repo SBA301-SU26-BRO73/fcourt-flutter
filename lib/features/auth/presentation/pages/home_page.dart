@@ -54,6 +54,14 @@ class HomePage extends StatelessWidget {
                   label: const Text('Quản lý danh mục'),
                 ),
               ],
+              if (user.role == UserRole.customer) ...[
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.push(AppRoutes.discover),
+                  icon: const Icon(Icons.search),
+                  label: const Text('Tìm sân'),
+                ),
+              ],
             ],
           ),
         ),

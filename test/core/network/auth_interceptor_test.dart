@@ -241,6 +241,23 @@ void main() {
     expect(h.sessionExpiredCount, 0);
   });
 
+  test('refresh bị throttle 429 thì giữ token, không báo hết phiên', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) {
+        return jsonResponse(429, {'detail': 'Too many requests'});
+      }
+      return jsonResponse(401, {'detail': 'expired'});
+    });
+
+    final error = await h.dio
+        .get<dynamic>('/api/x')
+        .then<Object?>((_) => null, onError: (Object e) => e);
+
+    expect((error as DioException).response?.statusCode, 429);
+    expect(await h.storage.read(), _oldTokens);
+    expect(h.sessionExpiredCount, 0);
+  });
+
   test('refresh bị từ chối 403 (tài khoản khóa) thì xóa token', () async {
     final h = _Harness((o) {
       if (o.path == ApiEndpoints.authRefresh) {
