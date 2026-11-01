@@ -1,8 +1,10 @@
 import 'package:fcourt/app/auth_redirect.dart';
 import 'package:fcourt/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fcourt/features/auth/domain/entities/user_role.dart';
 
 void main() {
+  roleGuardTests();
   group('authRedirect', () {
     test('chưa biết trạng thái: mọi màn hình đều về màn chờ, màn chờ thì ở lại', () {
       expect(authRedirect(AuthStatus.unknown, AppRoutes.home), AppRoutes.splash);
@@ -45,6 +47,17 @@ void main() {
     test('đã đăng nhập: các màn trong app ở nguyên chỗ', () {
       expect(authRedirect(AuthStatus.authenticated, AppRoutes.home), isNull);
       expect(authRedirect(AuthStatus.authenticated, AppRoutes.profile), isNull);
+    });
+  });
+}
+
+void roleGuardTests() {
+  group('requireRole', () {
+    test('only listed roles stay, everyone else goes home', () {
+      expect(requireRole(UserRole.admin, {UserRole.admin}), isNull);
+      expect(requireRole(UserRole.staff, {UserRole.admin}), AppRoutes.home);
+      expect(requireRole(UserRole.customer, {UserRole.admin}), AppRoutes.home);
+      expect(requireRole(null, {UserRole.admin}), AppRoutes.home);
     });
   });
 }

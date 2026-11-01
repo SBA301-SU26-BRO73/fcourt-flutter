@@ -1,4 +1,5 @@
 import '../features/auth/presentation/bloc/auth_bloc.dart';
+import '../features/auth/domain/entities/user_role.dart';
 
 class AppRoutes {
   const AppRoutes._();
@@ -43,3 +44,6 @@ String? authRedirect(AuthStatus status, String location) {
       return isEntryScreen ? AppRoutes.home : null;
   }
 }
+
+String? requireRole(UserRole? role, Set<UserRole> allowed) =>
+    role != null && allowed.contains(role) ? null : AppRoutes.home;

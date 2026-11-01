@@ -24,7 +24,7 @@ class _StaffView extends StatefulWidget {
 }
 
 class _StaffViewState extends State<_StaffView> {
-  final Map<int, String> _keys = {};
+  final Map<String, String> _keys = {};
   bool _busy = false;
 
   Future<void> _edit(StaffState state, [StaffMember? member]) async {
@@ -70,15 +70,16 @@ class _StaffViewState extends State<_StaffView> {
       ),
     );
     if (!mounted || accepted != true) return;
+    final commandId = '${member.id}:${!member.active}';
     setState(() => _busy = true);
     final cubit = context.read<StaffCubit>();
     try {
       await cubit.repository.setActive(
         member,
         !member.active,
-        _keys.putIfAbsent(member.id, newCommandKey),
+        _keys.putIfAbsent(commandId, newCommandKey),
       );
-      _keys.remove(member.id);
+      _keys.remove(commandId);
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
