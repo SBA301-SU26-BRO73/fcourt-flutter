@@ -85,6 +85,9 @@ class AuthInterceptor extends Interceptor {
         }
       }
       if (tokens == null) return handler.next(err);
+      // A multipart body has already been finalized on the first upload.
+      final body = request.data;
+      if (body is FormData) request.data = body.clone();
       request.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
       request.extra[_retriedKey] = true;
       request.extra[_retryAccessKey] = tokens.accessToken;
