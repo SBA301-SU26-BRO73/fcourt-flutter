@@ -17,7 +17,6 @@ class _Harness {
       ..httpClientAdapter = adapter;
     dio.interceptors.add(
       AuthInterceptor(
-        dio: dio,
         refreshDio: refreshDio,
         tokenStorage: storage,
         onSessionExpired: () => sessionExpiredCount++,
@@ -112,6 +111,48 @@ void main() {
     expect(h.sessionExpiredCount, 1);
   });
 
+  test('refresh đọc được response phẳng của auth-service', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) {
+        return jsonResponse(200, {
+          'accessToken': 'a2',
+          'refreshToken': 'r2',
+          'tokenType': 'Bearer',
+          'expiresIn': 900,
+        });
+      }
+      return o.headers['Authorization'] == 'Bearer a2'
+          ? jsonResponse(200, {'ok': true})
+          : jsonResponse(401, {'detail': 'expired'});
+    });
+
+    final response = await h.dio.get<dynamic>('/api/x');
+
+    expect(response.statusCode, 200);
+    expect(
+      await h.storage.read(),
+      const AuthTokens(accessToken: 'a2', refreshToken: 'r2'),
+    );
+  });
+
+  test('refresh không có refreshToken mới thì giữ token cũ', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) {
+        return jsonResponse(200, {'accessToken': 'a2'});
+      }
+      return o.headers['Authorization'] == 'Bearer a2'
+          ? jsonResponse(200, {'ok': true})
+          : jsonResponse(401, {'message': 'expired'});
+    });
+
+    await h.dio.get<dynamic>('/api/x');
+
+    expect(
+      await h.storage.read(),
+      const AuthTokens(accessToken: 'a2', refreshToken: 'r1'),
+    );
+  });
+
   test('không refresh khi request đặt skipAuth', () async {
     final h = _Harness((_) => jsonResponse(401, {'message': 'bad credentials'}));
 
@@ -125,6 +166,113 @@ void main() {
 
     expect(h.refreshCalls, 0);
     expect(await h.storage.read(), _oldTokens);
+  });
+
+  test('request gửi lại vẫn lỗi thì trả lỗi đó, không kẹt hàng đợi', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) return _refreshOk();
+      return o.headers['Authorization'] == 'Bearer a2'
+          ? jsonResponse(409, {'detail': 'conflict'})
+          : jsonResponse(401, {'detail': 'expired'});
+    });
+
+    final error = await h.dio
+        .get<dynamic>('/api/x')
+        .then<Object?>((_) => null, onError: (Object e) => e)
+        .timeout(const Duration(seconds: 2));
+
+    expect((error as DioException).response?.statusCode, 409);
+    // Hàng đợi vẫn chạy: request sau vẫn nhận được lỗi của nó.
+    final next = await h.dio
+        .get<dynamic>('/api/y')
+        .then<Object?>((_) => null, onError: (Object e) => e)
+        .timeout(const Duration(seconds: 2));
+    expect((next as DioException).response?.statusCode, 409);
+  });
+
+  test('request gửi lại vẫn 401 thì dừng, không refresh lần hai', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) return _refreshOk();
+      return jsonResponse(401, {'detail': 'expired'});
+    });
+
+    await expectLater(
+      h.dio.get<dynamic>('/api/x').timeout(const Duration(seconds: 2)),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(h.refreshCalls, 1);
+  });
+
+  test('refresh mất mạng thì giữ token, không báo hết phiên', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) {
+        throw DioException.connectionError(
+          requestOptions: o,
+          reason: 'offline',
+        );
+      }
+      return jsonResponse(401, {'detail': 'expired'});
+    });
+
+    final error = await h.dio
+        .get<dynamic>('/api/x')
+        .then<Object?>((_) => null, onError: (Object e) => e);
+
+    expect((error as DioException).type, DioExceptionType.connectionError);
+    expect(await h.storage.read(), _oldTokens);
+    expect(h.sessionExpiredCount, 0);
+  });
+
+  test('refresh lỗi 5xx thì giữ token, không báo hết phiên', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) {
+        return jsonResponse(503, {'detail': 'down'});
+      }
+      return jsonResponse(401, {'detail': 'expired'});
+    });
+
+    final error = await h.dio
+        .get<dynamic>('/api/x')
+        .then<Object?>((_) => null, onError: (Object e) => e);
+
+    expect((error as DioException).response?.statusCode, 503);
+    expect(await h.storage.read(), _oldTokens);
+    expect(h.sessionExpiredCount, 0);
+  });
+
+  test('refresh bị throttle 429 thì giữ token, không báo hết phiên', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) {
+        return jsonResponse(429, {'detail': 'Too many requests'});
+      }
+      return jsonResponse(401, {'detail': 'expired'});
+    });
+
+    final error = await h.dio
+        .get<dynamic>('/api/x')
+        .then<Object?>((_) => null, onError: (Object e) => e);
+
+    expect((error as DioException).response?.statusCode, 429);
+    expect(await h.storage.read(), _oldTokens);
+    expect(h.sessionExpiredCount, 0);
+  });
+
+  test('refresh bị từ chối 403 (tài khoản khóa) thì xóa token', () async {
+    final h = _Harness((o) {
+      if (o.path == ApiEndpoints.authRefresh) {
+        return jsonResponse(403, {'detail': 'Account is locked'});
+      }
+      return jsonResponse(401, {'detail': 'expired'});
+    });
+
+    await expectLater(
+      h.dio.get<dynamic>('/api/x'),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(await h.storage.read(), isNull);
+    expect(h.sessionExpiredCount, 1);
   });
 
   test('không có token thì trả lỗi 401 nguyên trạng', () async {
