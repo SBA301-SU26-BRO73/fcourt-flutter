@@ -32,27 +32,39 @@ class VerifyAndroidReleaseTest(unittest.TestCase):
                 return checked.call_args_list
 
     def test_numbered_and_scheme_specific_signers(self):
-        for label in ['Signer #1', 'V2 Signer', 'V3 Signer', 'V3.1 Signer']:
+        for label in ['Signer #1', 'V2 Signer', 'V3 Signer', 'V3.1 Signer', 'V2 Signer:', 'V3 Signer:', 'V3.1 Signer:']:
             with self.subTest(label=label):
                 calls = self.verify_report(f'{label} certificate SHA-256 digest: {self.fingerprint}\n')
                 self.assertEqual(len(calls), 4)
                 self.assertIn('verify', calls[1].args[0])
                 self.assertIn('-verify', calls[2].args[0])
 
+    def test_hosted_build_tools_report(self):
+        report = f'''Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Number of signers: 1
+V2 Signer: certificate DN: CN=Disposable FCOURT signing test
+V2 Signer: certificate SHA-256 digest: {self.fingerprint}
+V2 Signer: certificate SHA-1 digest: f2f97ae8587c9b268a4be0d3a712af81a753b1a6
+V2 Signer: public key SHA-256 digest: 5275a869a22d7c505b020b30e80421d34819bd7207ae6cc737f8c06fde907810
+'''
+        self.verify_report(report)
+
     def test_colon_separated_uppercase_fingerprint(self):
         digest = ':'.join(self.fingerprint[i:i + 2] for i in range(0, 64, 2)).upper()
-        self.verify_report(f'V2 Signer certificate SHA-256 digest: {digest}\n')
+        self.verify_report(f'V2 Signer: certificate SHA-256 digest: {digest}\n')
 
     def test_repeated_schemes_with_same_certificate(self):
-        self.verify_report('\n'.join(f'{label} certificate SHA-256 digest: {self.fingerprint}' for label in ['V2 Signer', 'V3 Signer']))
+        self.verify_report('\n'.join(f'{label} certificate SHA-256 digest: {self.fingerprint}' for label in ['V2 Signer:', 'V3 Signer:']))
 
     def test_wrong_or_missing_apk_certificate_is_rejected(self):
         for report in [
             '',
-            'V2 Signer certificate SHA-256 digest: ' + '0' * 64,
-            'V2 Signer public key SHA-256 digest: ' + self.fingerprint,
+            'V2 Signer: certificate SHA-256 digest: ' + '0' * 64,
+            'V2 Signer: public key SHA-256 digest: ' + self.fingerprint,
             'Source Stamp Signer certificate SHA-256 digest: ' + self.fingerprint,
-            'V2 Signer certificate SHA-256 digest: abc123',
+            'V2 Signer: certificate SHA-256 digest: abc123',
         ]:
             with self.subTest(report=report), self.assertRaisesRegex(RuntimeError, 'APK signer mismatch'):
                 self.verify_report(report)
@@ -63,13 +75,13 @@ class VerifyAndroidReleaseTest(unittest.TestCase):
             self.verify_report(report)
 
     def test_unsigned_bundle_is_rejected(self):
-        report = f'V2 Signer certificate SHA-256 digest: {self.fingerprint}'
+        report = f'V2 Signer: certificate SHA-256 digest: {self.fingerprint}'
         for jar in ['jar is unsigned.', 'jar verified.\nThis jar contains unsigned entries.']:
             with self.subTest(jar=jar), self.assertRaisesRegex(RuntimeError, 'AAB is not fully signed'):
                 self.verify_report(report, jar=jar)
 
     def test_wrong_bundle_certificate_is_rejected(self):
-        report = f'V2 Signer certificate SHA-256 digest: {self.fingerprint}'
+        report = f'V2 Signer: certificate SHA-256 digest: {self.fingerprint}'
         with self.assertRaisesRegex(RuntimeError, 'AAB signer does not match'):
             self.verify_report(report, bundle_certificate=b'another certificate')
 
