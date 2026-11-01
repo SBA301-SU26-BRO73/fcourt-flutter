@@ -2,7 +2,6 @@ import 'package:fcourt/core/error/failure.dart';
 import 'package:fcourt/features/operations/domain/manual_code.dart';
 import 'package:fcourt/features/operations/presentation/manual_check_in.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'operations_test.dart' show FakeOperations;
