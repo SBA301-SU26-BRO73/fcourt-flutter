@@ -34,7 +34,11 @@ abstract class CounterRepository {
     String name,
     String key,
   );
-  Future<void> checkout(int booking, String key);
+  Future<void> checkout(
+    int booking,
+    String key, {
+    required int expectedSurcharge,
+  });
 }
 
 List<AvailableSlot> contiguousSelection(
