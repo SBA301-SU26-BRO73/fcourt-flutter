@@ -121,5 +121,18 @@ void adminRoleGuardTests() {
         );
       }
     });
+
+    test('chỉ STAFF được vào /staff', () {
+      expect(
+        authRedirect(AuthStatus.authenticated, '/staff/schedule', role: UserRole.staff),
+        isNull,
+      );
+      for (final role in [UserRole.customer, UserRole.admin, UserRole.superAdmin]) {
+        expect(
+          authRedirect(AuthStatus.authenticated, '/staff/schedule', role: role),
+          AppRoutes.home,
+        );
+      }
+    });
   });
 }
