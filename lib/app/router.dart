@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/domain/entities/user_role.dart';
 import '../features/auth/domain/usecases/change_password.dart';
 import '../features/auth/domain/usecases/login.dart';
 import '../features/auth/domain/usecases/register_court_owner.dart';
@@ -70,6 +71,8 @@ GoRouter createRouter(
       if (dependencies.staffRepository != null)
         GoRoute(
           path: '/admin/staff',
+          redirect: (_, _) =>
+              requireRole(authBloc.state.role, {UserRole.admin}),
           builder: (_, _) =>
               StaffPage(repository: dependencies.staffRepository!),
         ),
