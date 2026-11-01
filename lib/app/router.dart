@@ -1,3 +1,4 @@
+import '../features/refunds/presentation/customer_refund_screen.dart';
 import '../features/transactions/presentation/admin_transaction_history_screen.dart';
 import '../features/transactions/presentation/customer_transaction_history_screen.dart';
 import '../features/booking_history/presentation/booking_history_screen.dart';
@@ -20,6 +21,19 @@ import '../features/payment/presentation/pages/payment_checkout_screen.dart';
 GoRouter createRouter(AppDependencies dependencies) {
   return GoRouter(
     routes: [
+      GoRoute(
+        path: '/bookings/:id/refund',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          final repository = dependencies.refundRepository;
+          if (id == null || id <= 0 || repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Vui lòng chọn đơn hợp lệ')),
+            );
+          }
+          return CustomerRefundScreen(repository: repository, bookingId: id);
+        },
+      ),
       GoRoute(
         path: '/admin/branches/:branchId/transactions',
         builder: (context, state) {
@@ -80,6 +94,9 @@ GoRouter createRouter(AppDependencies dependencies) {
             repository: repository,
             id: id,
             cancellation: dependencies.cancellationRepository,
+            onRefund: dependencies.refundRepository == null
+                ? null
+                : (id) => context.push('/bookings/$id/refund'),
             onTicket:
                 dependencies.ticketRepository == null ||
                     dependencies.ticketSaver == null
