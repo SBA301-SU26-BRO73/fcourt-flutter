@@ -61,7 +61,11 @@ GoRouter createRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refreshListenable,
     redirect: (context, state) =>
-        authRedirect(authBloc.state.status, state.matchedLocation),
+        authRedirect(
+          authBloc.state.status,
+          state.matchedLocation,
+          role: authBloc.state.role,
+        ),
     routes: [
       GoRoute(
         path: AppRoutes.splash,
