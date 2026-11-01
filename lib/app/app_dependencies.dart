@@ -20,6 +20,12 @@ import '../features/catalog/domain/repositories/catalog_repository.dart';
 import '../features/booking/data/datasources/booking_remote_data_source.dart';
 import '../features/booking/data/repositories/booking_repository_impl.dart';
 import '../features/booking/domain/repositories/booking_repository.dart';
+import '../features/payment/data/repositories/payment_repository_impl.dart';
+import '../features/payment/data/repositories/qr_gallery_saver.dart';
+import '../features/payment/domain/repositories/payment_repository.dart';
+import '../features/payment/data/repositories/receipt_repository_impl.dart';
+import '../features/payment/data/repositories/device_receipt_picker.dart';
+import '../features/payment/domain/repositories/receipt_repository.dart';
 import '../features/health/data/datasources/health_remote_data_source.dart';
 import '../features/health/data/repositories/health_repository_impl.dart';
 import '../features/health/domain/repositories/health_repository.dart';
@@ -45,6 +51,10 @@ class AppDependencies {
     required this.discoveryRepository,
     this.slotRepository,
     this.staffRepository,
+    this.paymentRepository,
+    this.qrSaver,
+    this.receiptRepository,
+    this.receiptPicker,
     this.bookingRepository,
     this.courtOwnerApprovalRepository,
   });
@@ -61,6 +71,10 @@ class AppDependencies {
   final DiscoveryRepository discoveryRepository;
   final SlotRepository? slotRepository;
   final StaffRepository? staffRepository;
+  final PaymentRepository? paymentRepository;
+  final QrSaver? qrSaver;
+  final ReceiptRepository? receiptRepository;
+  final ReceiptPicker? receiptPicker;
   final BookingRepository? bookingRepository;
   final CourtOwnerApprovalRepository? courtOwnerApprovalRepository;
 
@@ -109,6 +123,10 @@ class AppDependencies {
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
         createDio(config, tokenStorage, baseUrl: config.facilityUrl),
       ),
+      paymentRepository: PaymentRepositoryImpl(dio),
+      qrSaver: QrGallerySaver(),
+      receiptRepository: ReceiptRepositoryImpl(dio),
+      receiptPicker: DeviceReceiptPicker(),
       bookingRepository: BookingRepositoryImpl(BookingRemoteDataSource(dio)),
       courtOwnerApprovalRepository: CourtOwnerApprovalRepositoryImpl(
         SuperAdminRemoteDataSource(authDio),
