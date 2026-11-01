@@ -1,3 +1,6 @@
+import '../domain/cancellation.dart';
+import 'cancel_booking_dialog.dart';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,16 +14,19 @@ class BookingDetailScreen extends StatefulWidget {
     required this.repository,
     required this.id,
     this.onTicket,
+    this.cancellation,
   });
   final BookingRepository repository;
   final int id;
   final ValueChanged<int>? onTicket;
+  final CancellationRepository? cancellation;
   @override
   State<BookingDetailScreen> createState() => _BookingDetailScreenState();
 }
 
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
   Booking? _booking;
+  CancellationPolicy? _policy;
   String? _error;
   int _generation = 0;
   bool _loading = false;
@@ -48,11 +54,23 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       _loading = true;
       _error = null;
       _booking = null;
+      _policy = null;
     });
     try {
       final result = await widget.repository.detail(widget.id);
       if (mounted && generation == _generation) {
         setState(() => _booking = result);
+        if (widget.cancellation != null &&
+            {
+              'PENDING_PAYMENT',
+              'AWAITING_CONFIRMATION',
+              'CONFIRMED',
+            }.contains(result.status)) {
+          final policy = await widget.cancellation!.quote(widget.id);
+          if (mounted && generation == _generation) {
+            setState(() => _policy = policy);
+          }
+        }
       }
     } on Failure catch (e) {
       if (mounted && generation == _generation) {
@@ -62,6 +80,34 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       if (mounted && generation == _generation) {
         setState(() => _loading = false);
       }
+    }
+  }
+
+  Future<void> _cancel() async {
+    final policy = _policy;
+    if (policy == null || !policy.allowed || widget.cancellation == null) {
+      return;
+    }
+    final id = widget.id;
+    final result = await showDialog<Booking>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => CancelBookingDialog(
+        id: id,
+        repository: widget.cancellation!,
+        policy: policy,
+      ),
+    );
+    if (!mounted || id != widget.id) return;
+    if (result != null) {
+      setState(() {
+        _booking = result;
+        _policy = null;
+      });
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Đã hủy đặt sân')));
+    } else {
+      await _load();
     }
   }
 
@@ -136,6 +182,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 onPressed: () => _open(Uri(scheme: 'tel', path: b.phone)),
                 icon: const Icon(Icons.phone),
                 label: Text('Liên hệ chủ sân: ${b.phone}'),
+              ),
+            if (_policy != null && !_policy!.allowed) Text(_policy!.reason),
+            if (_policy?.allowed == true)
+              OutlinedButton(
+                onPressed: _cancel,
+                child: const Text('Hủy đặt sân'),
               ),
             if (b.hasTicket && widget.onTicket != null)
               FilledButton.icon(

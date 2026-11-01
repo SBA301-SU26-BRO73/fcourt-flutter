@@ -13,7 +13,7 @@ class BookingHistoryScreen extends StatefulWidget {
     required this.onDetail,
   });
   final BookingRepository repository;
-  final ValueChanged<int> onDetail;
+  final FutureOr<void> Function(int) onDetail;
   @override
   State<BookingHistoryScreen> createState() => _BookingHistoryScreenState();
 }
@@ -141,7 +141,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                       ),
                       isThreeLine: true,
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () => widget.onDetail(booking.id),
+                      onTap: () async {
+                        await widget.onDetail(booking.id);
+                        if (mounted) await _load(reset: true);
+                      },
                     ),
                   ),
                 if (_loading) const Center(child: CircularProgressIndicator()),
