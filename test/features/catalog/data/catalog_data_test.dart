@@ -318,6 +318,17 @@ void main() {
       );
     });
 
+    test('body sai hợp đồng thành UnknownFailure thay vì lỗi kiểu dữ liệu', () async {
+      when(() => remote.courtTypes(any(), any())).thenAnswer(
+        (_) async => pageOf([CourtTypeModel.fromJson(const {'name': 'thiếu id'})]),
+      );
+
+      await expectLater(
+        repository.courtTypes(page: 0, size: 20),
+        throwsA(const UnknownFailure()),
+      );
+    });
+
     test('xóa thành công không ném lỗi', () async {
       when(() => remote.deleteCourtType(1)).thenAnswer((_) async {});
       when(() => remote.deletePlan(1)).thenAnswer((_) async {});

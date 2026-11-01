@@ -122,6 +122,10 @@ class CatalogListBloc<T> extends Bloc<CatalogListEvent, CatalogListState<T>> {
   final String deletedMessage;
   int _noticeSequence = 0;
 
+  /// Tăng mỗi lần làm mới. Kết quả tải thêm của lượt trước về muộn sẽ bị bỏ, nếu không sẽ
+  /// nối trang cũ vào danh sách mới (trùng mục, sai số trang).
+  int _generation = 0;
+
   CatalogNotice _notice(String message, {required bool isError}) =>
       CatalogNotice(message, isError: isError, sequence: ++_noticeSequence);
 
@@ -129,6 +133,7 @@ class CatalogListBloc<T> extends Bloc<CatalogListEvent, CatalogListState<T>> {
     CatalogRefreshed event,
     Emitter<CatalogListState<T>> emit,
   ) async {
+    final generation = ++_generation;
     // Làm mới khi đã có dữ liệu thì giữ danh sách cũ trên màn hình cho tới khi có kết quả.
     if (state.items.isEmpty) {
       emit(CatalogListState<T>());
@@ -137,6 +142,7 @@ class CatalogListBloc<T> extends Bloc<CatalogListEvent, CatalogListState<T>> {
     }
     try {
       final result = await load(0);
+      if (generation != _generation) return;
       emit(
         CatalogListState<T>(
           status: CatalogListStatus.ready,
@@ -146,6 +152,7 @@ class CatalogListBloc<T> extends Bloc<CatalogListEvent, CatalogListState<T>> {
         ),
       );
     } on Failure catch (failure) {
+      if (generation != _generation) return;
       if (state.items.isEmpty) {
         emit(CatalogListState<T>(status: CatalogListStatus.failure, message: failure.message));
       } else {
@@ -159,9 +166,11 @@ class CatalogListBloc<T> extends Bloc<CatalogListEvent, CatalogListState<T>> {
     Emitter<CatalogListState<T>> emit,
   ) async {
     if (!state.hasMore || state.loadingMore || state.status != CatalogListStatus.ready) return;
+    final generation = _generation;
     emit(state.copyWith(loadingMore: true));
     try {
       final result = await load(state.page + 1);
+      if (generation != _generation) return;
       emit(
         state.copyWith(
           items: [...state.items, ...result.items],
@@ -171,6 +180,7 @@ class CatalogListBloc<T> extends Bloc<CatalogListEvent, CatalogListState<T>> {
         ),
       );
     } on Failure catch (failure) {
+      if (generation != _generation) return;
       emit(state.copyWith(loadingMore: false, notice: _notice(failure.message, isError: true)));
     }
   }

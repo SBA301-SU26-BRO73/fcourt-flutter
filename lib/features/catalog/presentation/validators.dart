@@ -5,6 +5,9 @@ class CatalogValidators {
   static const maxFeatures = 30;
   static const maxFeatureLength = 255;
 
+  /// Giá trị lớn nhất của `Integer` (Java) ở `maxBranches` và `maxCourts`.
+  static const maxInt = 2147483647;
+
   static String? required(String? value, String label, {int? max}) {
     final text = value?.trim() ?? '';
     if (text.isEmpty) return 'Vui lòng nhập $label';
@@ -33,6 +36,8 @@ class CatalogValidators {
     final amount = int.tryParse(text);
     if (amount == null) return '$label phải là số nguyên';
     if (amount < 1) return '$label phải từ 1 trở lên';
+    // BE nhận `Integer`; số lớn hơn làm Jackson báo "Malformed request body" không rõ ô nào.
+    if (amount > maxInt) return '$label tối đa $maxInt';
     return null;
   }
 

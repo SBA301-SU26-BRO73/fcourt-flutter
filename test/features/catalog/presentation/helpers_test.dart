@@ -73,6 +73,14 @@ void main() {
       expect(CatalogValidators.positiveInt('1', 'Số sân'), isNull);
     });
 
+    test('positiveInt: không vượt Integer của BE (2147483647)', () {
+      expect(CatalogValidators.positiveInt('2147483647', 'Số sân'), isNull);
+      expect(
+        CatalogValidators.positiveInt('2147483648', 'Số sân'),
+        'Số sân tối đa 2147483647',
+      );
+    });
+
     test('parseFeatures: bỏ dòng trống, cắt khoảng trắng, bỏ trùng, giữ thứ tự', () {
       expect(
         CatalogValidators.parseFeatures('  A \n\nB\nA\n   \n C'),

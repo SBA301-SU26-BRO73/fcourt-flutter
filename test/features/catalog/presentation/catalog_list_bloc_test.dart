@@ -138,6 +138,28 @@ void main() {
       expect(calls, 1);
       await bloc.close();
     });
+
+    test('làm mới khi đang tải thêm thì bỏ trang cũ về muộn, không nhân đôi', () async {
+      final more = Completer<PageResult<CourtType>>();
+      final bloc = _bloc(
+        load: (page) async => page == 0
+            ? pageOf([badminton], totalPages: 2)
+            : more.future,
+      )..emit(_ready([badminton], hasMore: true));
+
+      bloc.add(const CatalogMoreRequested());
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      bloc.add(const CatalogRefreshed());
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      more.complete(pageOf([football], page: 1, totalPages: 2));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      expect(bloc.state.items, [badminton]);
+      expect(bloc.state.page, 0);
+      expect(bloc.state.hasMore, isTrue);
+      expect(bloc.state.loadingMore, isFalse);
+      await bloc.close();
+    });
   });
 
   group('CatalogItemDeleted', () {

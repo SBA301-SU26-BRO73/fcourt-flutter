@@ -56,6 +56,9 @@ class CatalogRepositoryImpl implements CatalogRepository {
       return await call();
     } on DioException catch (e) {
       throw failureFromDio(e);
+    } on TypeError {
+      // Body sai hợp đồng: báo lỗi thay vì để bloc kẹt ở trạng thái đang tải.
+      throw const UnknownFailure();
     }
   }
 
