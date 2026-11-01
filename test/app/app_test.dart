@@ -8,6 +8,7 @@ import 'package:fcourt/features/health/domain/entities/health_status.dart';
 import 'package:fcourt/features/health/domain/repositories/health_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../features/auth/helpers.dart';
@@ -129,6 +130,41 @@ void main() {
 
     verify(() => repository.logout()).called(1);
     expect(find.widgetWithText(FilledButton, 'Đăng nhập'), findsOneWidget);
+  });
+
+  testWidgets('từ màn đăng nhập mở được màn quên mật khẩu', (tester) async {
+    when(() => repository.restoreSession()).thenAnswer((_) async => null);
+    await pumpApp(tester);
+
+    await tester.tap(find.text('Quên mật khẩu?'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quên mật khẩu'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Gửi link đặt lại'), findsOneWidget);
+  });
+
+  testWidgets('link đặt lại mật khẩu điền sẵn token khi chưa đăng nhập', (tester) async {
+    when(() => repository.restoreSession()).thenAnswer((_) async => null);
+    await pumpApp(tester);
+
+    GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/reset-password?token=abc123');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Đặt lại mật khẩu'), findsWidgets);
+    expect(
+      tester.widget<TextFormField>(find.widgetWithText(TextFormField, 'Mã đặt lại mật khẩu')).controller?.text,
+      'abc123',
+    );
+  });
+
+  testWidgets('link đặt lại mật khẩu vẫn mở được khi đang đăng nhập sẵn', (tester) async {
+    when(() => repository.restoreSession()).thenAnswer((_) async => customerUser);
+    await pumpApp(tester);
+
+    GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/reset-password?token=abc123');
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextFormField, 'Mã đặt lại mật khẩu'), findsOneWidget);
   });
 
   testWidgets('từ màn đăng nhập mở được hai màn đăng ký', (tester) async {
