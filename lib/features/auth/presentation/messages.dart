@@ -24,6 +24,8 @@ class AuthMessages {
     'legalDocuments accepts at most 5 files': 'Tối đa 5 giấy tờ pháp lý',
     'courtImages accepts at most 10 files': 'Tối đa 10 ảnh sân',
     'Account not found': 'Không tìm thấy tài khoản',
+    'password is too long: at most 72 bytes, and accented letters take 2 to 3 bytes each':
+        'Mật khẩu quá dài: tối đa 72 byte, chữ có dấu tính 2 đến 3 byte',
     // Lỗi chung từ bộ lọc bảo mật của BE.
     'Authentication is required': 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại',
     'You are not allowed to perform this action': 'Bạn không có quyền thực hiện thao tác này',
