@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,6 +18,12 @@ class FcourtApp extends StatefulWidget {
 
 class _FcourtAppState extends State<FcourtApp> {
   late final GoRouter _router = createRouter(widget.dependencies);
+  @override
+  void dispose() {
+    _router.dispose();
+    unawaited(widget.dependencies.offline?.close());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

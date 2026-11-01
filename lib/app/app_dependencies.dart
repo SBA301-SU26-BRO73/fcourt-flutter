@@ -14,6 +14,8 @@ import '../features/operations/domain/counter.dart';
 import '../features/operations/data/http_counter_repository.dart';
 import '../features/pos/domain/pos.dart';
 import '../features/pos/data/http_pos_repository.dart';
+import '../features/offline/data/offline_runtime.dart';
+import '../features/offline/data/offline_operations.dart';
 
 /// Nơi lắp ráp các dependency của app (không dùng thư viện DI để giữ đơn giản).
 /// Thêm repository của feature mới vào đây, và tạo bản giả trong test qua
@@ -26,6 +28,7 @@ class AppDependencies {
     this.operations,
     this.counter,
     this.pos,
+    this.offline,
   });
 
   final AppConfig config;
@@ -34,12 +37,20 @@ class AppDependencies {
   final OperationsRepository? operations;
   final CounterRepository? counter;
   final PosRepository? pos;
+  final OfflineRuntime? offline;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
     final dio = createDio(config, tokenStorage);
+    final offline = supportsOffline
+        ? OfflineRuntime(config, tokenStorage)
+        : null;
+    final operations = HttpOperationsRepository(
+      createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
+    );
     return AppDependencies(
       config: config,
+      offline: offline,
       pos: HttpPosRepository(
         createDio(config, tokenStorage, baseUrl: config.posBaseUrl),
       ),
@@ -48,9 +59,9 @@ class AppDependencies {
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
         createDio(config, tokenStorage, baseUrl: config.facilityBaseUrl),
       ),
-      operations: HttpOperationsRepository(
-        createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
-      ),
+      operations: offline == null
+          ? operations
+          : OfflineOperations(operations, offline.coordinator),
       counter: HttpCounterRepository(
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
         // Public availability reads never carry employee credentials.

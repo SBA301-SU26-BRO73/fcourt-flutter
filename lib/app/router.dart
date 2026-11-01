@@ -23,6 +23,7 @@ GoRouter createRouter(AppDependencies dependencies) {
           builder: (_, _) => SchedulePage(
             repository: dependencies.operations!,
             counter: dependencies.counter,
+            offline: dependencies.offline,
           ),
         ),
       if (dependencies.staffRepository != null)
