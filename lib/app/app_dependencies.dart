@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
 import '../core/config/app_config.dart';
@@ -23,6 +24,9 @@ import '../features/booking/domain/repositories/booking_repository.dart';
 import '../features/payment/data/repositories/payment_repository_impl.dart';
 import '../features/payment/data/repositories/qr_gallery_saver.dart';
 import '../features/payment/domain/repositories/payment_repository.dart';
+import '../features/payment/data/repositories/ticket_repository_impl.dart';
+import '../features/payment/data/repositories/ticket_gallery_saver.dart';
+import '../features/payment/domain/repositories/ticket_repository.dart';
 import '../features/payment/data/repositories/admin_payment_repository_impl.dart';
 import '../features/payment/domain/repositories/admin_payment_repository.dart';
 import '../features/payment/data/repositories/receipt_repository_impl.dart';
@@ -55,6 +59,9 @@ class AppDependencies {
     this.staffRepository,
     this.paymentRepository,
     this.qrSaver,
+    this.ticketRepository,
+    this.ticketSaver,
+    this.onBookingHistory,
     this.adminPaymentRepository,
     this.receiptRepository,
     this.receiptPicker,
@@ -76,6 +83,9 @@ class AppDependencies {
   final StaffRepository? staffRepository;
   final PaymentRepository? paymentRepository;
   final QrSaver? qrSaver;
+  final TicketRepository? ticketRepository;
+  final TicketSaver? ticketSaver;
+  final VoidCallback? onBookingHistory;
   final AdminPaymentRepository? adminPaymentRepository;
   final ReceiptRepository? receiptRepository;
   final ReceiptPicker? receiptPicker;
@@ -129,6 +139,8 @@ class AppDependencies {
       ),
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
+      ticketRepository: TicketRepositoryImpl(dio),
+      ticketSaver: TicketGallerySaver(),
       adminPaymentRepository: AdminPaymentRepositoryImpl(dio),
       receiptRepository: ReceiptRepositoryImpl(dio),
       receiptPicker: DeviceReceiptPicker(),

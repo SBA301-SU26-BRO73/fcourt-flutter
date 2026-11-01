@@ -58,6 +58,7 @@ import '../src/features/customer_slots/domain/court_slot.dart';
 import '../features/booking/presentation/pages/booking_summary_screen.dart';
 import '../features/payment/domain/entities/payment_checkout.dart';
 import '../features/payment/presentation/pages/payment_checkout_screen.dart';
+import '../features/payment/presentation/pages/booking_success_screen.dart';
 import '../features/payment/presentation/pages/admin_payment_approval_screen.dart';
 import '../features/payment/presentation/pages/payment_waiting_screen.dart';
 
@@ -200,6 +201,27 @@ GoRouter createRouter(
         },
       ),
       GoRoute(
+        path: '/payments/ticket',
+        builder: (context, state) {
+          final args = state.extra;
+          final repository = dependencies.ticketRepository;
+          final saver = dependencies.ticketSaver;
+          if (args is! CheckoutArguments ||
+              repository == null ||
+              saver == null) {
+            return const Scaffold(
+              body: Center(child: Text('Vui lòng chọn vé đặt sân.')),
+            );
+          }
+          return BookingSuccessScreen(
+            repository: repository,
+            saver: saver,
+            arguments: args,
+            onHistory: dependencies.onBookingHistory,
+          );
+        },
+      ),
+      GoRoute(
         path: '/payments/receipt',
         builder: (context, state) {
           final args = state.extra;
@@ -216,9 +238,7 @@ GoRouter createRouter(
             repository: repository,
             picker: picker,
             arguments: args,
-            onConfirmed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Thanh toán đã xác nhận')),
-            ),
+            onConfirmed: () => context.go('/payments/ticket', extra: args),
           );
         },
       ),
