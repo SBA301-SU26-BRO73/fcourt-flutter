@@ -11,6 +11,7 @@ import 'walk_in_sheet.dart';
 import 'checkout_dialog.dart';
 import 'available_court_slots.dart';
 import 'week_board.dart';
+import 'manual_check_in.dart';
 
 class SchedulePage extends StatelessWidget {
   const SchedulePage({super.key, required this.repository, this.counter});
@@ -32,6 +33,16 @@ class ScheduleBoard extends StatefulWidget {
 
 class _ScheduleBoardState extends State<ScheduleBoard>
     with WidgetsBindingObserver {
+  Future<void> _manual() async {
+    final cubit = context.read<ScheduleCubit>();
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ManualCheckIn(repository: cubit.repository),
+    );
+    if (mounted && result == true) await cubit.refresh();
+  }
+
   Timer? _poll;
   @override
   void initState() {
@@ -160,6 +171,11 @@ class _ScheduleBoardState extends State<ScheduleBoard>
         appBar: AppBar(
           title: Text(state.weekly ? 'Lịch sân theo tuần' : 'Lịch sân hôm nay'),
           actions: [
+            IconButton(
+              onPressed: _manual,
+              tooltip: 'Nhập mã vé',
+              icon: const Icon(Icons.keyboard),
+            ),
             IconButton(
               onPressed: state.loading ? null : cubit.refresh,
               tooltip: 'Làm mới lịch',
