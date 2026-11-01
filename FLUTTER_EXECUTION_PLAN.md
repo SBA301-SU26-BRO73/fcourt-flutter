@@ -132,3 +132,10 @@ OS behavior, deployed gateway/accounts/migrations/secrets, existing IAM employee
 create/edit/disable authority, atomic walk-in ownership/contact persistence and
 checkout fee/settlement authority. No real environment was supplied. These are
 explicit remaining dependencies, not established by fixture-based Flutter tests.
+
+## Review follow-up (2026-11-01)
+
+The missing owning APIs are now implemented in backend support PRs #29/#30/#31,
+plus hold #41 and facility #42. See [review handoff](docs/review/REVIEW_HANDOFF.md)
+for current verification, configuration and dependency order. This supersedes the
+older authority-pending entries above. Physical device acceptance remains open.
