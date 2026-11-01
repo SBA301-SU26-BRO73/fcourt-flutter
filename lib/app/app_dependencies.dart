@@ -1,3 +1,5 @@
+import '../features/transactions/domain/transaction.dart';
+import '../features/transactions/data/customer_transactions_impl.dart';
 import '../features/booking_history/domain/cancellation.dart';
 import '../features/booking_history/data/cancellation_repository_impl.dart';
 import '../features/booking_history/domain/booking.dart';
@@ -40,6 +42,7 @@ class AppDependencies {
     this.onBookingHistory,
     this.bookingRepository,
     this.cancellationRepository,
+    this.customerTransactions,
   });
 
   final AppConfig config;
@@ -54,6 +57,7 @@ class AppDependencies {
   final VoidCallback? onBookingHistory;
   final BookingRepository? bookingRepository;
   final CancellationRepository? cancellationRepository;
+  final CustomerTransactions? customerTransactions;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -62,6 +66,7 @@ class AppDependencies {
       config: config,
       bookingRepository: BookingRepositoryImpl(dio),
       cancellationRepository: CancellationRepositoryImpl(dio),
+      customerTransactions: CustomerTransactionsImpl(dio),
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),

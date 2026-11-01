@@ -1,3 +1,4 @@
+import '../features/transactions/presentation/customer_transaction_history_screen.dart';
 import '../features/booking_history/presentation/booking_history_screen.dart';
 import '../features/booking_history/presentation/booking_detail_screen.dart';
 
@@ -19,6 +20,18 @@ GoRouter createRouter(AppDependencies dependencies) {
   return GoRouter(
     routes: [
       GoRoute(
+        path: '/payments/history',
+        builder: (context, state) {
+          final repository = dependencies.customerTransactions;
+          if (repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Lịch sử thanh toán chưa khả dụng')),
+            );
+          }
+          return CustomerTransactionHistoryScreen(repository: repository);
+        },
+      ),
+      GoRoute(
         path: '/bookings',
         builder: (context, state) {
           final repository = dependencies.bookingRepository;
@@ -30,6 +43,9 @@ GoRouter createRouter(AppDependencies dependencies) {
           return BookingHistoryScreen(
             repository: repository,
             onDetail: (id) => context.push('/bookings/$id'),
+            onTransactions: dependencies.customerTransactions == null
+                ? null
+                : () => context.push('/payments/history'),
           );
         },
       ),
