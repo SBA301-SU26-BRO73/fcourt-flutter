@@ -44,6 +44,23 @@ void main() {
       }
     });
 
+    test('danh mục chỉ dành cho super admin, vai trò khác về trang chủ', () {
+      expect(authRedirect(AuthStatus.authenticated, AppRoutes.catalog, role: UserRole.superAdmin), isNull);
+      for (final role in [UserRole.customer, UserRole.staff, UserRole.admin]) {
+        expect(
+          authRedirect(AuthStatus.authenticated, AppRoutes.catalog, role: role),
+          AppRoutes.home,
+          reason: role.name,
+        );
+      }
+      expect(authRedirect(AuthStatus.authenticated, AppRoutes.catalog), AppRoutes.home);
+    });
+
+    test('danh mục: chưa đăng nhập về đăng nhập, đang khôi phục phiên về màn chờ', () {
+      expect(authRedirect(AuthStatus.unauthenticated, AppRoutes.catalog), AppRoutes.login);
+      expect(authRedirect(AuthStatus.unknown, AppRoutes.catalog), AppRoutes.splash);
+    });
+
     test('đã đăng nhập: các màn trong app ở nguyên chỗ', () {
       expect(authRedirect(AuthStatus.authenticated, AppRoutes.home), isNull);
       expect(authRedirect(AuthStatus.authenticated, AppRoutes.profile), isNull);

@@ -12,6 +12,8 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../features/auth/helpers.dart';
+import '../features/catalog/catalog_harness.dart' show settle;
+import '../features/catalog/helpers.dart';
 import 'package:fcourt/src/features/customer_discovery/domain/discovery_repository.dart';
 
 class _FakeHealthRepository implements HealthRepository {
@@ -31,10 +33,12 @@ class _FakeDiscoveryRepository implements DiscoveryRepository {
 
 void main() {
   late MockAuthRepository repository;
+  late MockCatalogRepository catalogRepository;
   late StreamController<void> sessionExpired;
 
   setUp(() {
     repository = MockAuthRepository();
+    catalogRepository = MockCatalogRepository();
     sessionExpired = StreamController<void>.broadcast();
   });
 
@@ -50,6 +54,7 @@ void main() {
           config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
           healthRepository: _FakeHealthRepository(),
           authRepository: repository,
+          catalogRepository: catalogRepository,
           discoveryRepository: _FakeDiscoveryRepository(),
           sessionExpired: sessionExpired.stream,
         ),
@@ -76,6 +81,7 @@ void main() {
           config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
           healthRepository: _FakeHealthRepository(),
           authRepository: repository,
+          catalogRepository: catalogRepository,
           discoveryRepository: _FakeDiscoveryRepository(),
         ),
       ),
@@ -178,6 +184,34 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(TextFormField, 'Mã đặt lại mật khẩu'), findsOneWidget);
+  });
+
+  testWidgets('super admin mở được màn danh mục từ trang chủ', (tester) async {
+    when(() => repository.restoreSession()).thenAnswer((_) async => superAdminUser);
+    when(() => catalogRepository.courtTypes(page: 0, size: 20))
+        .thenAnswer((_) async => pageOf([badminton]));
+    when(() => catalogRepository.plans(page: 0, size: 20))
+        .thenAnswer((_) async => pageOf([basicPlan]));
+    await pumpApp(tester);
+
+    await tester.tap(find.text('Quản lý danh mục'));
+    await settle(tester);
+
+    expect(find.text('Danh mục hệ thống'), findsOneWidget);
+    expect(find.text('Cầu lông'), findsOneWidget);
+    verify(() => catalogRepository.courtTypes(page: 0, size: 20)).called(1);
+  });
+
+  testWidgets('vai trò khác vào thẳng /catalog thì bị đưa về trang chủ và không gọi BE', (tester) async {
+    when(() => repository.restoreSession()).thenAnswer((_) async => adminUser);
+    await pumpApp(tester);
+
+    GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/catalog');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Danh mục hệ thống'), findsNothing);
+    expect(find.text('Xin chào, Chu San'), findsOneWidget);
+    verifyNever(() => catalogRepository.courtTypes(page: any(named: 'page'), size: any(named: 'size')));
   });
 
   testWidgets('từ màn đăng nhập mở được hai màn đăng ký', (tester) async {

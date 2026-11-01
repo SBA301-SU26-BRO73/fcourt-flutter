@@ -22,6 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../auth/helpers.dart';
+import '../../catalog/helpers.dart';
 
 class _FakeHealthRepository implements HealthRepository {
   @override
@@ -124,6 +125,7 @@ Future<void> pumpRouterAt(
       healthRepository: _FakeHealthRepository(),
       authRepository: auth,
       discoveryRepository: _FakeDiscoveryRepository(),
+      catalogRepository: MockCatalogRepository(),
       courtOwnerApprovalRepository: repository,
     ),
     authBloc,
