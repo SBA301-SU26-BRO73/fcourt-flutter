@@ -77,16 +77,20 @@ class AppDependencies {
         headers: const {'Accept': 'application/json'},
       ),
     );
+    final catalogRepository = CatalogRepositoryImpl(
+      CatalogRemoteDataSource(dio),
+    );
     return AppDependencies(
       config: config,
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
       adminFacility: AdminFacilityDependencies.create(
         config,
         tokenStorage,
+        catalogRepository,
         onSessionExpired: onSessionExpired,
       ),
       authRepository: AuthRepositoryImpl(AuthRemoteDataSource(dio), tokenStorage),
-      catalogRepository: CatalogRepositoryImpl(CatalogRemoteDataSource(dio)),
+      catalogRepository: catalogRepository,
       sessionExpired: sessionExpired.stream,
       discoveryRepository: DiscoveryRepositoryImpl(
         DiscoveryRemoteDataSource(publicDio),
