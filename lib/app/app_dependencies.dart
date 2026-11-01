@@ -1,3 +1,5 @@
+import '../features/transactions/domain/branch_ledger.dart';
+import '../features/transactions/data/admin_transactions_impl.dart';
 import '../features/transactions/domain/transaction.dart';
 import '../features/transactions/data/customer_transactions_impl.dart';
 import '../features/booking_history/domain/cancellation.dart';
@@ -43,6 +45,7 @@ class AppDependencies {
     this.bookingRepository,
     this.cancellationRepository,
     this.customerTransactions,
+    this.adminTransactions,
   });
 
   final AppConfig config;
@@ -58,6 +61,7 @@ class AppDependencies {
   final BookingRepository? bookingRepository;
   final CancellationRepository? cancellationRepository;
   final CustomerTransactions? customerTransactions;
+  final AdminTransactions? adminTransactions;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -67,6 +71,7 @@ class AppDependencies {
       bookingRepository: BookingRepositoryImpl(dio),
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
+      adminTransactions: AdminTransactionsImpl(dio),
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),

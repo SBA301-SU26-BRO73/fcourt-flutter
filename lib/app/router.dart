@@ -1,3 +1,4 @@
+import '../features/transactions/presentation/admin_transaction_history_screen.dart';
 import '../features/transactions/presentation/customer_transaction_history_screen.dart';
 import '../features/booking_history/presentation/booking_history_screen.dart';
 import '../features/booking_history/presentation/booking_detail_screen.dart';
@@ -19,6 +20,22 @@ import '../features/payment/presentation/pages/payment_checkout_screen.dart';
 GoRouter createRouter(AppDependencies dependencies) {
   return GoRouter(
     routes: [
+      GoRoute(
+        path: '/admin/branches/:branchId/transactions',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['branchId'] ?? '');
+          final repository = dependencies.adminTransactions;
+          if (id == null || id <= 0 || repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Vui lòng chọn chi nhánh hợp lệ')),
+            );
+          }
+          return AdminTransactionHistoryScreen(
+            repository: repository,
+            branchId: id,
+          );
+        },
+      ),
       GoRoute(
         path: '/payments/history',
         builder: (context, state) {
@@ -118,6 +135,9 @@ GoRouter createRouter(AppDependencies dependencies) {
           return AdminPaymentApprovalScreen(
             repository: repository,
             branchId: id,
+            onLedger: dependencies.adminTransactions == null
+                ? null
+                : () => context.push('/admin/branches/$id/transactions'),
           );
         },
       ),
