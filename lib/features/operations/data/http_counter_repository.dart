@@ -93,9 +93,14 @@ class HttpCounterRepository implements CounterRepository {
     return CashReceipt(invoice['receiptCode'] as String, base, fee, total);
   });
   @override
-  Future<void> checkout(int booking, String key) => _call(() async {
+  Future<void> checkout(
+    int booking,
+    String key, {
+    required int expectedSurcharge,
+  }) => _call(() async {
     final r = (await staff.put<Map<String, dynamic>>(
       '/api/staff/bookings/$booking/checkout',
+      data: {'expectedSurcharge': (expectedSurcharge / 100).toStringAsFixed(2)},
       options: Options(headers: {'Idempotency-Key': key}),
     )).data!;
     if (r['bookingId'] != booking || r['status'] != 'COMPLETED') {
