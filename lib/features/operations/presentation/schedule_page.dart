@@ -75,6 +75,7 @@ class _ScheduleBoardState extends State<ScheduleBoard> {
       ),
     );
     if (mounted && result == true) {
+      setState(() => _availabilityGeneration++);
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Đã trả sân')));
       await cubit.load();
@@ -182,6 +183,7 @@ class _ScheduleBoardState extends State<ScheduleBoard> {
                             ),
                             repository: widget.counter!,
                             courtId: court.id,
+                            sessions: court.sessions,
                             date: businessToday(),
                             onSelected: (slot) =>
                                 _walkIn(court, initialSlotId: slot.id),
