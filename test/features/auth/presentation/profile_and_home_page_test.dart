@@ -134,6 +134,20 @@ void main() {
       });
     }
 
+    testWidgets('chỉ super admin thấy nút quản lý danh mục', (tester) async {
+      await pumpScreen(tester, const HomePage(), signedIn: superAdminUser);
+
+      expect(find.text('Quản lý danh mục'), findsOneWidget);
+    });
+
+    for (final user in [customerUser, adminUser]) {
+      testWidgets('vai trò ${user.role.name} không thấy nút quản lý danh mục', (tester) async {
+        await pumpScreen(tester, const HomePage(), signedIn: user);
+
+        expect(find.text('Quản lý danh mục'), findsNothing);
+      });
+    }
+
     testWidgets('chưa có người dùng thì không dựng gì', (tester) async {
       await pumpScreen(tester, const HomePage());
 

@@ -46,6 +46,14 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(user.role.label),
+              if (user.role == UserRole.superAdmin) ...[
+                const SizedBox(height: 24),
+                FilledButton.tonalIcon(
+                  onPressed: () => context.push(AppRoutes.catalog),
+                  icon: const Icon(Icons.category_outlined),
+                  label: const Text('Quản lý danh mục'),
+                ),
+              ],
             ],
           ),
         ),

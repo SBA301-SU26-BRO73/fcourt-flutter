@@ -1,4 +1,5 @@
 import 'package:fcourt/app/auth_redirect.dart';
+import 'package:fcourt/features/auth/domain/entities/user_role.dart';
 import 'package:fcourt/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -40,6 +41,23 @@ void main() {
       for (final status in AuthStatus.values) {
         expect(authRedirect(status, AppRoutes.resetPassword), isNull, reason: status.name);
       }
+    });
+
+    test('danh mục chỉ dành cho super admin, vai trò khác về trang chủ', () {
+      expect(authRedirect(AuthStatus.authenticated, AppRoutes.catalog, role: UserRole.superAdmin), isNull);
+      for (final role in [UserRole.customer, UserRole.staff, UserRole.admin]) {
+        expect(
+          authRedirect(AuthStatus.authenticated, AppRoutes.catalog, role: role),
+          AppRoutes.home,
+          reason: role.name,
+        );
+      }
+      expect(authRedirect(AuthStatus.authenticated, AppRoutes.catalog), AppRoutes.home);
+    });
+
+    test('danh mục: chưa đăng nhập về đăng nhập, đang khôi phục phiên về màn chờ', () {
+      expect(authRedirect(AuthStatus.unauthenticated, AppRoutes.catalog), AppRoutes.login);
+      expect(authRedirect(AuthStatus.unknown, AppRoutes.catalog), AppRoutes.splash);
     });
 
     test('đã đăng nhập: các màn trong app ở nguyên chỗ', () {
