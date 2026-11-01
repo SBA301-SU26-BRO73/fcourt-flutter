@@ -30,11 +30,20 @@ Future<void> queueOfflineWorker() async {
 }
 
 class OfflineRuntime {
-  OfflineRuntime(AppConfig config, TokenStorage tokens) {
+  OfflineRuntime(
+    AppConfig config,
+    TokenStorage tokens, {
+    bool allowRefresh = true,
+  }) {
     coordinator = OfflineCoordinator(
       store: store,
       remote: HttpOfflineRemote(
-        createDio(config, tokens, baseUrl: config.staffBaseUrl),
+        createDio(
+          config,
+          tokens,
+          baseUrl: config.staffBaseUrl,
+          allowRefresh: allowRefresh,
+        ),
       ),
       identity: SecureOfflineIdentity(tokens),
       onQueued: queueOfflineWorker,
@@ -68,6 +77,9 @@ void offlineWorkerDispatcher() {
     final runtime = OfflineRuntime(
       AppConfig.fromEnvironment(),
       SecureTokenStorage(),
+      // The foreground isolate owns token rotation; an expired worker waits for
+      // the next foreground refresh instead of racing its rotating credential.
+      allowRefresh: false,
     );
     try {
       await runtime.coordinator.flush();
