@@ -147,6 +147,14 @@ void main() {
     );
 
     blocTest<ChangePasswordBloc, SubmissionState>(
+      'ChangePasswordStarted xóa kết quả lần trước',
+      build: build,
+      seed: () => const SubmissionState.failure('Current password is incorrect'),
+      act: (bloc) => bloc.add(const ChangePasswordStarted()),
+      expect: () => [const SubmissionState()],
+    );
+
+    blocTest<ChangePasswordBloc, SubmissionState>(
       'gửi hai lần liên tiếp chỉ gọi BE một lần',
       setUp: () => when(
         () => repository.changePassword(

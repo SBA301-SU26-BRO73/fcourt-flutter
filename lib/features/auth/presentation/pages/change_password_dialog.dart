@@ -15,6 +15,8 @@ class ChangePasswordDialog extends StatefulWidget {
 
   /// Mở hộp thoại với [bloc] của màn hình gọi (dialog nằm ngoài cây widget của màn đó).
   static Future<bool?> show(BuildContext context, ChangePasswordBloc bloc) {
+    // Bloc sống theo trang tài khoản nên còn giữ kết quả của lần mở trước.
+    bloc.add(const ChangePasswordStarted());
     return showDialog<bool>(
       context: context,
       barrierDismissible: false,

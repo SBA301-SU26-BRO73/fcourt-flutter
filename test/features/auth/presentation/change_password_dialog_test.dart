@@ -147,6 +147,24 @@ void main() {
     expect(find.text('Mật khẩu mới phải khác mật khẩu hiện tại'), findsOneWidget);
   });
 
+  testWidgets('mở lại sau khi lỗi thì không hiện lỗi cũ', (tester) async {
+    stubChange().thenThrow(const ServerFailure('Current password is incorrect', statusCode: 400));
+    await openDialog(tester);
+    await fill(tester);
+    await tester.tap(dialogButton());
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Mật khẩu hiện tại không đúng'), findsOneWidget);
+
+    await tester.tap(find.text('Hủy'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Đổi mật khẩu'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mật khẩu hiện tại'), findsOneWidget);
+    expect(find.text('Mật khẩu hiện tại không đúng'), findsNothing);
+  });
+
   testWidgets('hủy thì đóng hộp thoại mà không gọi BE', (tester) async {
     await openDialog(tester);
 

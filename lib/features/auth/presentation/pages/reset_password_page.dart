@@ -40,6 +40,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   Future<void> _paste() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
     final text = data?.text?.trim();
     if (text != null && text.isNotEmpty) setState(() => _token.text = text);
   }
