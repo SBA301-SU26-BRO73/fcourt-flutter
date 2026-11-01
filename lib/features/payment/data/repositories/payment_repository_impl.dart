@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 import '../../domain/entities/payment_checkout.dart';
@@ -25,7 +27,11 @@ class PaymentRepositoryImpl implements PaymentRepository {
       );
       final json = response.data;
       if (json == null) throw const FormatException('Empty checkout');
-      return CheckoutModel.fromJson(json, arguments.bookingId);
+      return CheckoutModel.fromJson(
+        json,
+        arguments.bookingId,
+        serverClockAhead: _serverClockAhead(response.headers.value('date')),
+      );
     } on DioException catch (error) {
       throw switch (error.response?.statusCode) {
         410 => const PaymentFailure('Phiên giữ chỗ đã hết hạn', expired: true),
@@ -41,6 +47,17 @@ class PaymentRepositoryImpl implements PaymentRepository {
       throw const PaymentFailure(
         'Thông tin thanh toán không hợp lệ. Vui lòng thử lại.',
       );
+    }
+  }
+
+  static Duration _serverClockAhead(String? header) {
+    if (header == null) return Duration.zero;
+    try {
+      return HttpDate.parse(header).difference(DateTime.now().toUtc());
+    } on HttpException {
+      return Duration.zero;
+    } on FormatException {
+      return Duration.zero;
     }
   }
 }
