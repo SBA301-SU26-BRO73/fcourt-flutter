@@ -71,3 +71,11 @@ token. Wire the summary callback to this route when that creation contract lands
 Actual API integration, Android gallery acceptance and a Mobile Banking app scan
 remain to be verified on a device. Receipt upload and waiting/polling belong to
 SCRUM-35 and are not part of this screen.
+
+## Receipt upload / waiting — SCRUM-35
+
+Checkout now opens `/payments/receipt` with `CheckoutArguments` in router `extra`; credentials never appear in URLs. `ReceiptRepository` creates a cancellable session per booking. The camera/gallery picker compresses to JPEG (quality 82, 1600 target dimensions), bounds original input at 30 MiB and final upload at 5 MiB. Android lost-picker recovery is handled. The screen previews the photo, displays progress and allows retry without replacing an already submitted bill.
+
+`POST /api/payments/{bookingId}/upload-receipt` uses multipart `file`; `GET /api/payments/{bookingId}/status` returns `id`, `bookingId`, `status`, optional `rejectionReason`. Guest credentials remain in `X-Hold-Token`; signed-in requests use the existing authenticated Dio. A missing receipt (404) shows the picker. Polling runs every 4 seconds after the previous request finishes, pauses in the background, refreshes on resume, stops for terminal decisions, and cancels network requests on dispose/session replacement. The waiting ripple animates while awaiting approval. Confirmation calls `onConfirmed` exactly once; SCRUM-39 supplies the ticket route. No five-minute cancellation runs once a receipt is awaiting review.
+
+Validation: `flutter analyze --no-pub` and `flutter test --no-pub` (31 tests) cover header-only credentials, malformed/mismatched status, image size, upload, nonoverlapping polling, pause/resume, terminal navigation and disposal. Android camera/gallery/compression and real API acceptance still require a device and integrated backend. This task builds on Flutter PR #2; its delta has three commits. Backend contract: SCRUM-34 / backend PR #5.
