@@ -29,6 +29,8 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
   bool _loading = false, _saving = false, _paused = false;
   Timer? _retry;
   int _generation = 0;
+  int _syncRetries = 0;
+  static const _maxSyncRetries = 15;
   @override
   void initState() {
     super.initState();
@@ -64,8 +66,9 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
     if (!_paused) _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool automatic = false}) async {
     if (_loading || _paused) return;
+    if (!automatic) _syncRetries = 0;
     final generation = _generation;
     _retry?.cancel();
     setState(() {
@@ -81,8 +84,12 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
     } on PaymentFailure catch (e) {
       if (mounted && generation == _generation) {
         setState(() => _error = e.message);
-        if (e is TicketNotReady && !_paused) {
-          _retry = Timer(const Duration(seconds: 4), _load);
+        if (e is TicketNotReady && !_paused && _syncRetries < _maxSyncRetries) {
+          _syncRetries++;
+          _retry = Timer(
+            const Duration(seconds: 4),
+            () => _load(automatic: true),
+          );
         }
       }
     } finally {
