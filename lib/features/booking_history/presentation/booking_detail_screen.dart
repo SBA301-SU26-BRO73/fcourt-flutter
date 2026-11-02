@@ -15,13 +15,11 @@ class BookingDetailScreen extends StatefulWidget {
     required this.id,
     this.onTicket,
     this.cancellation,
-    this.onRefund,
   });
   final BookingRepository repository;
   final int id;
   final ValueChanged<int>? onTicket;
   final CancellationRepository? cancellation;
-  final ValueChanged<int>? onRefund;
   @override
   State<BookingDetailScreen> createState() => _BookingDetailScreenState();
 }
@@ -190,13 +188,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               OutlinedButton(
                 onPressed: _cancel,
                 child: const Text('Hủy đặt sân'),
-              ),
-            if (b.status == 'CANCELLED' &&
-                b.paymentStatus == 'CONFIRMED' &&
-                widget.onRefund != null)
-              FilledButton(
-                onPressed: () => widget.onRefund!(b.id),
-                child: const Text('Yêu cầu / theo dõi hoàn tiền'),
               ),
             if (b.hasTicket && widget.onTicket != null)
               FilledButton.icon(
