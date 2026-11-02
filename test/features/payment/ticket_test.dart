@@ -216,4 +216,25 @@ void main() {
       expect(repo.calls, 3);
     },
   );
+
+  testWidgets('ticket synchronization retries stop after a bounded number', (
+    tester,
+  ) async {
+    final tickets = Tickets()..pending = true;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BookingSuccessScreen(
+          repository: tickets,
+          saver: Saver(),
+          arguments: args,
+        ),
+      ),
+    );
+    for (var i = 0; i < 40; i++) {
+      await tester.pump(const Duration(seconds: 4));
+    }
+    expect(tickets.calls, lessThanOrEqualTo(16));
+    expect(find.text('Tải lại vé'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 }
