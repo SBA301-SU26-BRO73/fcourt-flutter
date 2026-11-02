@@ -29,10 +29,11 @@ class _Session implements ReceiptSession {
     try {
       final response = await dio.get<Map<String, dynamic>>(
         '/api/payments/${arguments.bookingId}/status',
+        queryParameters: const {'compact': true},
         options: options,
         cancelToken: _cancel,
       );
-      return parseReceipt(response.data, arguments.bookingId);
+      return parsePollingReceipt(response.data, arguments.bookingId);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return null;
       throw receiptFailure(e);
@@ -72,6 +73,32 @@ class _Session implements ReceiptSession {
       throw const PaymentFailure('Phản hồi tải biên lai không hợp lệ');
     }
   }
+}
+
+PaymentReceipt parsePollingReceipt(Map<String, dynamic>? json, int bookingId) {
+  if (json == null || !json.containsKey('paymentStatus')) {
+    return parseReceipt(json, bookingId);
+  }
+  if (json['bookingId'] != bookingId ||
+      json['updatedAt'] is! String ||
+      DateTime.tryParse(json['updatedAt'] as String) == null ||
+      (json['rejectReason'] != null &&
+          (json['rejectReason'] is! String ||
+              (json['rejectReason'] as String).length > 500))) {
+    throw const FormatException('Invalid compact status');
+  }
+  final status = switch (json['paymentStatus']) {
+    'PENDING' => ReceiptStatus.pending,
+    'SUCCESS' => ReceiptStatus.confirmed,
+    'REJECTED' => ReceiptStatus.rejected,
+    _ => throw const FormatException('Invalid compact state'),
+  };
+  return PaymentReceipt(
+    id: 0,
+    bookingId: bookingId,
+    status: status,
+    rejectionReason: json['rejectReason'] as String?,
+  );
 }
 
 PaymentReceipt parseReceipt(Map<String, dynamic>? json, int bookingId) {

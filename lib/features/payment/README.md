@@ -114,3 +114,24 @@ not hide the ticket. System brightness and WRITE_SETTINGS permissions are unused
 Plugin: screen_brightness. Real screen luminance/readability still needs Android
 acceptance. This task adds three commits after SCRUM-56; PR targets dev with its
 unmerged dependencies. Analyze/tests and APK results are recorded in the PR.
+
+## Bounded polling experience — SCRUM-73
+
+Status requests use `compact=true`; parse minimal PENDING/SUCCESS/REJECTED with booking
+identity, rejection reason and timestamp checks. Legacy DTO parsing remains available
+for older backend deployments. Polls stay sequential every four seconds; errors back
+ off to at most 30 seconds. Background polling pauses; an absolute ten-minute deadline
+cancels the session and timers. A manual check opens a new session for one request and
+does not restart automatic polling. Submitted receipts are never locally cancelled by
+that UI timeout. Progress shows submitted → reconciliation → confirmation.
+
+Rejected receipts show an explanation dialog and support action leading to booking
+contact details. `onRetryReceipt` is an optional fresh-booking/hold callback; it is not
+wired to resubmit against a cancelled booking. Current backend rejects bill replacement
+and payment rejection cancels the booking, so same-booking reupload would be unsafe.
+Fresh hold/rebooking integration is required before the new-image acceptance criterion
+can pass. No slot is reopened and no receipt is overwritten by this client change.
+
+Validation: analyze passes; 64 tests pass, including compact API contract, ten-minute
+stop/manual check and rejection/support modal. Existing cancellation/lifecycle/poll
+nonoverlap tests remain green. Task adds three commits on SCRUM-71; backend SCRUM-72.

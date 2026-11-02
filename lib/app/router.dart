@@ -336,6 +336,7 @@ GoRouter createRouter(
             picker: picker,
             arguments: args,
             onConfirmed: () => context.go('/payments/ticket', extra: args),
+            onSupport: () => context.go('/bookings/${args.bookingId}'),
           );
         },
       ),
