@@ -26,7 +26,11 @@ class ScheduleCubit extends Cubit<ScheduleState> {
   Future<void> loadWeek(DateTime date) async {
     final start = weekMonday(date);
     final version = ++_version;
-    emit(ScheduleState(loading: true, weekly: true, anchor: start));
+    final sameWeek = state.weekly && state.anchor == start;
+    final kept = sameWeek ? state.data : null;
+    emit(
+      ScheduleState(data: kept, loading: true, weekly: true, anchor: start),
+    );
     try {
       final data = await repository.week(
         calendarDate(start),
@@ -37,7 +41,14 @@ class ScheduleCubit extends Cubit<ScheduleState> {
       }
     } on Failure catch (e) {
       if (!isClosed && version == _version) {
-        emit(ScheduleState(error: e.message, weekly: true, anchor: start));
+        emit(
+          ScheduleState(
+            data: kept,
+            error: e.message,
+            weekly: true,
+            anchor: start,
+          ),
+        );
       }
     }
   }

@@ -85,6 +85,9 @@ class AuthInterceptor extends Interceptor {
         }
       }
       if (tokens == null) return handler.next(err);
+      // A multipart body has already been finalized on the first upload.
+      final body = request.data;
+      if (body is FormData) request.data = body.clone();
       request.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
       request.extra[_retriedKey] = true;
       request.extra[_retryAccessKey] = tokens.accessToken;
@@ -101,9 +104,8 @@ class AuthInterceptor extends Interceptor {
         data: {'refreshToken': current.refreshToken},
         options: Options(extra: {skipAuthKey: true}),
       );
-      final body = response.data;
-      final data = body is Map ? body['data'] : null;
-      if (data is! Map) return null;
+      final data = _tokenPayload(response.data);
+      if (data == null) return null;
       final access = data['accessToken'];
       if (access is! String || access.isEmpty) return null;
       final refresh = data['refreshToken'];
@@ -118,7 +120,7 @@ class AuthInterceptor extends Interceptor {
       await tokenStorage.save(tokens);
       return tokens;
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+      if (_isRejected(e)) {
         return null;
       }
       // Transient refresh failures preserve the session and remain retryable offline.
@@ -154,4 +156,16 @@ class _RefreshSession {
           _pending.remove(current);
         });
   }
+}
+
+bool _isRejected(DioException error) {
+  final status = error.response?.statusCode;
+  return status != null && status >= 400 && status < 500 && status != 429;
+}
+
+/// auth-service returns tokens at the JSON root; older services wrap them in `data`.
+Map<dynamic, dynamic>? _tokenPayload(Object? body) {
+  if (body is! Map) return null;
+  final wrapped = body['data'];
+  return wrapped is Map ? wrapped : body;
 }
