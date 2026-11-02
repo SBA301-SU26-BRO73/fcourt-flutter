@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:fcourt/core/error/failure.dart';
 import 'package:fcourt/features/operations/data/http_operations_repository.dart';
 import 'package:fcourt/features/operations/domain/schedule.dart';
 import 'package:fcourt/features/operations/presentation/schedule_cubit.dart';
@@ -62,8 +63,8 @@ void main() {
       );
       final dio = Dio(BaseOptions(baseUrl: 'http://test'))
         ..httpClientAdapter = adapter;
-      final result = await HttpOperationsRepository(dio)
-          .week('2026-10-26', '2026-11-01');
+      final result =
+          await HttpOperationsRepository(dio).week('2026-10-26', '2026-11-01');
       expect(result.courts.first.sessions.single.endingSoon, isTrue);
       expect(result.courts.last.sessions, isEmpty);
       expect(adapter.requests.single.queryParameters, {
@@ -123,4 +124,27 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  test('refreshing the same week keeps the board while loading and on failure',
+      () async {
+    final fake = ControlledWeek();
+    final cubit = ScheduleCubit(fake);
+    await cubit.loadWeek(DateTime(2026, 11, 2));
+    expect(cubit.state.data, isNotNull);
+    fake.pending = Completer();
+    final refresh = cubit.refresh();
+    expect(cubit.state.loading, isTrue);
+    expect(cubit.state.data, isNotNull);
+    fake.pending!.completeError(const NetworkFailure());
+    await refresh;
+    expect(cubit.state.error, isNotNull);
+    expect(cubit.state.data, isNotNull);
+    await cubit.close();
+  });
+}
+
+class ControlledWeek extends FakeOperations {
+  Completer<BranchSchedule>? pending;
+  @override
+  Future<BranchSchedule> week(String start, String end) =>
+      pending?.future ?? Future.value(const BranchSchedule(7, []));
 }
