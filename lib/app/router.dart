@@ -109,6 +109,7 @@ GoRouter createRouter(
           builder: (_, _) => SchedulePage(
             repository: dependencies.operations!,
             counter: dependencies.counter,
+            offline: dependencies.offline,
           ),
         ),
       if (dependencies.staffRepository != null)
@@ -247,7 +248,6 @@ GoRouter createRouter(
           return AdminTransactionHistoryScreen(
             repository: repository,
             branchId: id,
-            exporter: dependencies.ledgerExporter,
           );
         },
       ),

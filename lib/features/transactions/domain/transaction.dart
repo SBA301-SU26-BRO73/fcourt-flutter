@@ -10,21 +10,11 @@ class PaymentTransaction {
     required this.status,
     required this.occurredAt,
     this.receipt,
-    this.transactionType = 'BOOKING_PAYMENT',
-    this.transactionKey,
   });
   final int id, bookingId, amount;
   final String code, bookingCode, branch, court, status;
   final DateTime occurredAt;
   final Uri? receipt;
-  final String transactionType;
-  final String? transactionKey;
-  String get key => transactionKey ?? 'P:$id';
-  String get typeLabel => switch (transactionType) {
-    'REFUND' => 'Hoàn tiền',
-    'WALK_IN_CASH' => 'Tiền mặt tại quầy',
-    _ => 'Thanh toán đặt sân',
-  };
   String get label => switch (status) {
     'SUCCESS' => 'Thành công',
     'PENDING' => 'Đang chờ duyệt',

@@ -12,6 +12,7 @@ Dio createDio(
   TokenStorage tokenStorage, {
   String? baseUrl,
   void Function()? onSessionExpired,
+  bool allowRefresh = true,
 }) {
   final options = BaseOptions(
     baseUrl: baseUrl ?? config.apiBaseUrl,
@@ -28,6 +29,7 @@ Dio createDio(
       dio: dio,
       refreshDio: refreshDio,
       tokenStorage: tokenStorage,
+      allowRefresh: allowRefresh,
       onSessionExpired: onSessionExpired,
     ),
   );

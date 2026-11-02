@@ -45,6 +45,7 @@ class _FcourtAppState extends State<FcourtApp> {
   @override
   void dispose() {
     _sessionExpired.cancel();
+    unawaited(widget.dependencies.offline?.close());
     _refresh.dispose();
     _router.dispose();
     _authBloc.close();

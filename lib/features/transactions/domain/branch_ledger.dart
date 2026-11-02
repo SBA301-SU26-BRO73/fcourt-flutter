@@ -5,12 +5,11 @@ class LedgerQuery {
     required this.branchId,
     this.status = 'ALL',
     this.search = '',
-    this.transactionType = 'ALL',
     this.fromDate,
     this.toDate,
   });
   final int branchId;
-  final String status, search, transactionType;
+  final String status, search;
   final DateTime? fromDate, toDate;
 }
 
@@ -19,18 +18,12 @@ class LedgerPage {
     this.transactions,
     this.received,
     this.pending,
-    this.rejectedCount, {
-    this.refunded = 0,
-    int? netRevenue,
-  }) : netRevenue = netRevenue ?? received - refunded;
+    this.rejectedCount,
+  );
   final TransactionPage transactions;
-  final int received, pending, rejectedCount, refunded, netRevenue;
+  final int received, pending, rejectedCount;
 }
 
 abstract interface class AdminTransactions {
   Future<LedgerPage> load(LedgerQuery query, {int page = 0});
-}
-
-abstract interface class LedgerReportExporter {
-  Future<void> export(LedgerQuery query);
 }

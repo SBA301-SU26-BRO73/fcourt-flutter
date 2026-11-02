@@ -24,7 +24,6 @@ import '../features/booking/domain/repositories/booking_repository.dart';
 import '../features/payment/data/repositories/payment_repository_impl.dart';
 import '../features/payment/data/repositories/qr_gallery_saver.dart';
 import '../features/payment/domain/repositories/payment_repository.dart';
-import '../features/transactions/data/ledger_report_exporter.dart';
 import '../features/refunds/domain/admin_refunds.dart';
 import '../features/refunds/data/admin_refunds_impl.dart';
 import '../features/refunds/domain/refund.dart';
@@ -57,6 +56,8 @@ import '../features/operations/domain/counter.dart';
 import '../features/operations/data/http_counter_repository.dart';
 import '../features/pos/domain/pos.dart';
 import '../features/pos/data/http_pos_repository.dart';
+import '../features/offline/data/offline_runtime.dart';
+import '../features/offline/data/offline_operations.dart';
 import 'admin_facility_dependencies.dart';
 import '../features/super_admin/data/datasources/super_admin_remote_data_source.dart';
 import '../features/super_admin/data/repositories/court_owner_approval_repository_impl.dart';
@@ -80,6 +81,7 @@ class AppDependencies {
     this.operations,
     this.counter,
     this.pos,
+    this.offline,
     this.paymentRepository,
     this.qrSaver,
     this.bookingHistoryRepository,
@@ -96,7 +98,6 @@ class AppDependencies {
     this.adminTransactions,
     this.refundRepository,
     this.adminRefunds,
-    this.ledgerExporter,
   });
 
   final AppConfig config;
@@ -114,6 +115,7 @@ class AppDependencies {
   final OperationsRepository? operations;
   final CounterRepository? counter;
   final PosRepository? pos;
+  final OfflineRuntime? offline;
   final PaymentRepository? paymentRepository;
   final QrSaver? qrSaver;
   final history.BookingRepository? bookingHistoryRepository;
@@ -130,7 +132,6 @@ class AppDependencies {
   final AdminTransactions? adminTransactions;
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
-  final LedgerReportExporter? ledgerExporter;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -156,6 +157,12 @@ class AppDependencies {
     );
     final catalogRepository = CatalogRepositoryImpl(
       CatalogRemoteDataSource(dio),
+    );
+    final offline = supportsOffline
+        ? OfflineRuntime(config, tokenStorage)
+        : null;
+    final operations = HttpOperationsRepository(
+      createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
     );
     return AppDependencies(
       config: config,
@@ -183,7 +190,6 @@ class AppDependencies {
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
-      ledgerExporter: CsvLedgerExporter(AdminTransactionsImpl(dio)),
       refundRepository: RefundRepositoryImpl(dio),
       adminRefunds: AdminRefundsImpl(dio),
       ticketRepository: TicketRepositoryImpl(dio),
@@ -195,9 +201,10 @@ class AppDependencies {
       courtOwnerApprovalRepository: CourtOwnerApprovalRepositoryImpl(
         SuperAdminRemoteDataSource(authDio),
       ),
-      operations: HttpOperationsRepository(
-        createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
-      ),
+      offline: offline,
+      operations: offline == null
+          ? operations
+          : OfflineOperations(operations, offline.coordinator),
       pos: HttpPosRepository(
         createDio(config, tokenStorage, baseUrl: config.posBaseUrl),
       ),
