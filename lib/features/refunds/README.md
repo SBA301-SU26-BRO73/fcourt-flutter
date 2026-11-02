@@ -21,21 +21,3 @@ SCRUM-73, targets dev with inherited unmerged dependencies.
 Analyze and all 67 tests pass, including no client-supplied amount, malformed amount /
 unsafe proof rejection and form-to-timeline flow. Actual Android/account/cancellation /
 bank transfer acceptance remains pending; the app does not initiate transfers.
-
-## Admin settlement — SCRUM-97
-
-`/admin/branches/:branchId/refunds` lists pending/approved requests with pagination and
-refresh. A guarded modal presents beneficiary details and an exact VietQR refund URI
-(including leading-zero account numbers, integer amount and refund reference). Admin
-accepts the request, transfers manually, chooses/captures proof and submits multipart
-completion. Rejection requires an explanation. Busy state blocks duplicate actions /
-dismissal; after closing, the list reloads. QR failures leave readable account details.
-
-Proof selection reuses ReceiptPicker/compression; no API credential is forwarded to the
-VietQR image host. The backend verifies role/branch and actual image bytes. The client
-never calls a bank transfer API. Real Android camera/gallery and bank transfer acceptance
-remain device/integration work. Pending notification email is owned by notification-service.
-
-Analyze, all 70 tests and debug APK build pass. Tests check exact reverse-QR routing and
-amount, branch query/multipart transport, and accept+proof gating before completion.
-This adds three commits after SCRUM-95; backend SCRUM-96 / backend #27.

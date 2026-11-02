@@ -78,10 +78,6 @@ class RefundRepositoryImpl implements RefundRepository {
       return v;
     }
 
-    if (!RegExp(r'^970[0-9]{3}$').hasMatch(text('bankBin')) ||
-        !RegExp(r'^[0-9]{6,20}$').hasMatch(text('bankAccountNumber'))) {
-      throw const FormatException();
-    }
     final status = text('status');
     if (!{'PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'}.contains(status)) {
       throw const FormatException();
