@@ -79,7 +79,6 @@ Checkout now opens `/payments/receipt` with `CheckoutArguments` in router `extra
 `POST /api/payments/{bookingId}/upload-receipt` uses multipart `file`; `GET /api/payments/{bookingId}/status` returns `id`, `bookingId`, `status`, optional `rejectionReason`. Guest credentials remain in `X-Hold-Token`; signed-in requests use the existing authenticated Dio. A missing receipt (404) shows the picker. Polling runs every 4 seconds after the previous request finishes, pauses in the background, refreshes on resume, stops for terminal decisions, and cancels network requests on dispose/session replacement. The waiting ripple animates while awaiting approval. Confirmation calls `onConfirmed` exactly once; SCRUM-39 supplies the ticket route. No five-minute cancellation runs once a receipt is awaiting review.
 
 Validation: `flutter analyze --no-pub` and `flutter test --no-pub` (31 tests) cover header-only credentials, malformed/mismatched status, image size, upload, nonoverlapping polling, pause/resume, terminal navigation and disposal. Android camera/gallery/compression and real API acceptance still require a device and integrated backend. This task builds on Flutter PR #2; its delta has three commits. Backend contract: SCRUM-34 / backend PR #5.
-
 ## Admin receipt review — SCRUM-37
 
 `/admin/branches/:branchId/payments` opens `AdminPaymentApprovalScreen` using the authenticated shared Dio. The backend enforces admin role and ownership. The list shows customer (or guest fallback), booking code, exact VND and submission time; supports pull-to-refresh, empty/error/retry and 50-item pagination. A modal allows pinch-to-zoom, receipt rotation, confirm, or reject with a required reason up to 500 characters. Actions disable while saving and the modal blocks dismissal during a request. Success removes the row, refreshes and shows a SnackBar; failed decisions retain the modal and display the server-facing error.
@@ -87,7 +86,6 @@ Validation: `flutter analyze --no-pub` and `flutter test --no-pub` (31 tests) co
 API contract: `GET /api/admin/payments/pending?branchId=&offset=`, `PUT /api/admin/payments/{id}/confirm`, `PUT /api/admin/payments/{id}/reject` with JSON reason. Data is validated for matching branch, pending status, integer amount, timestamp and HTTPS Cloudinary receipt URL. A decision counts as successful only if its returned ID and final status match. Depends on backend SCRUM-36 / PR #7 and Flutter PR #3; no pending PR needs to be merged to review this delta.
 
 Validation: analyze has no issues; all 35 unit/widget tests pass, including duplicate-action blocking, zoom/rotation, reject validation, list refresh, malformed/foreign-branch payload and recovery from load failure. An Android debug APK built successfully with the new picker/compression plugins. Live account/branch integration and device acceptance remain pending.
-
 ## Confirmed booking ticket — SCRUM-39
 
 Confirmed receipt polling replaces the waiting route with `/payments/ticket`, keeping `CheckoutArguments` (including guest token) in memory. `BookingSuccessScreen` loads owner-authorized ticket metadata and PNG through the shared Dio; it never forwards credentials to an upstream-supplied image URL. The server's relative QR path must match the fixed booking API path. The ticket shows branch, court, date/slots, QR and the raw numeric check-in code for reading at the counter. Resuming the app refreshes authorization/state. A 409 while booking confirmation synchronizes retries every four seconds without overlap; retries stop in the background and on dispose. Other failures offer explicit retry.
@@ -116,24 +114,3 @@ not hide the ticket. System brightness and WRITE_SETTINGS permissions are unused
 Plugin: screen_brightness. Real screen luminance/readability still needs Android
 acceptance. This task adds three commits after SCRUM-56; PR targets dev with its
 unmerged dependencies. Analyze/tests and APK results are recorded in the PR.
-
-## Bounded polling experience — SCRUM-73
-
-Status requests use `compact=true`; parse minimal PENDING/SUCCESS/REJECTED with booking
-identity, rejection reason and timestamp checks. Legacy DTO parsing remains available
-for older backend deployments. Polls stay sequential every four seconds; errors back
- off to at most 30 seconds. Background polling pauses; an absolute ten-minute deadline
-cancels the session and timers. A manual check opens a new session for one request and
-does not restart automatic polling. Submitted receipts are never locally cancelled by
-that UI timeout. Progress shows submitted → reconciliation → confirmation.
-
-Rejected receipts show an explanation dialog and support action leading to booking
-contact details. `onRetryReceipt` is an optional fresh-booking/hold callback; it is not
-wired to resubmit against a cancelled booking. Current backend rejects bill replacement
-and payment rejection cancels the booking, so same-booking reupload would be unsafe.
-Fresh hold/rebooking integration is required before the new-image acceptance criterion
-can pass. No slot is reopened and no receipt is overwritten by this client change.
-
-Validation: analyze passes; 64 tests pass, including compact API contract, ten-minute
-stop/manual check and rejection/support modal. Existing cancellation/lifecycle/poll
-nonoverlap tests remain green. Task adds three commits on SCRUM-71; backend SCRUM-72.

@@ -1,7 +1,11 @@
 import '../../domain/entities/payment_checkout.dart';
 
 class CheckoutModel {
-  static PaymentCheckout fromJson(Map<String, dynamic> json, int bookingId) {
+  static PaymentCheckout fromJson(
+    Map<String, dynamic> json,
+    int bookingId, {
+    Duration serverClockAhead = Duration.zero,
+  }) {
     String text(String key) {
       final value = json[key];
       if (value is! String || value.isEmpty) {
@@ -35,7 +39,7 @@ class CheckoutModel {
       accountNumber: text('bankAccountNumber'),
       accountName: text('bankAccountName'),
       transferContent: text('transferContent'),
-      expiresAt: expiresAt.toUtc(),
+      expiresAt: expiresAt.toUtc().subtract(serverClockAhead),
     );
   }
 }
