@@ -97,3 +97,20 @@ The shared AuthInterceptor now clones finalized multipart bodies before retrying
 Validation: `flutter analyze --no-pub` has no issues; all 42 tests pass; `flutter build apk --debug --dart-define-from-file=env/dev.json` succeeds. Tests cover ticket identity, QR-path allowlist, header-only credentials, synchronization retry/lifecycle, save/permission feedback, booking-session replacement, full PNG export and multipart auth replay. A committed 600×600 ZXing fixture encodes a fixed non-customer test code. Visually reviewed ticket/admin list/modal at 390×844 using a temporary harness outside deliverable code; exported the complete ticket PNG and independently decoded it with backend ZXing, recovering the exact 32-digit code.
 
 Backend depends on SCRUM-38 / backend PR #8; Flutter delta builds on PR #4 without waiting for approval. Live booking/auth/facility consumers, Android camera/gallery permission acceptance and the future history integration are still pending. There is no emulator or Android device connected in this workspace; debug APK build and widget rendering do not substitute for that device acceptance.
+
+## Counter presentation — SCRUM-67
+
+The ticket/modal shows the exact 32-digit check-in credential in large bold text,
+with a clipboard button and success/failure feedback. Counter guidance allows QR
+scanning or reading the numeric code; the code is not shortened or reformatted.
+The staff manual endpoint accepts up to 128 characters (SCRUM-65), so the existing
+numeric credential remains compatible at the request-contract boundary.
+
+`TicketBrightnessScope` raises only application brightness while the ticket card
+is mounted and app resumed. A serialized, shared lease restores the previous app
+override (or system brightness) on background/disposal; multiple visible scopes
+cannot restore one another prematurely. Unsupported/failed platform control does
+not hide the ticket. System brightness and WRITE_SETTINGS permissions are unused.
+Plugin: screen_brightness. Real screen luminance/readability still needs Android
+acceptance. This task adds three commits after SCRUM-56; PR targets dev with its
+unmerged dependencies. Analyze/tests and APK results are recorded in the PR.
