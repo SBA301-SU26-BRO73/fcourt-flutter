@@ -12,11 +12,17 @@ class WalkInSheet extends StatefulWidget {
     required this.courtId,
     required this.courtName,
     required this.date,
+    this.initialSlotId,
+    this.recentGuests = const {},
+    this.onBooked,
   });
   final CounterRepository repository;
   final int courtId;
   final String courtName;
   final String date;
+  final int? initialSlotId;
+  final Map<String, String> recentGuests;
+  final void Function(String phone, String name)? onBooked;
   @override
   State<WalkInSheet> createState() => _WalkInSheetState();
 }
@@ -58,7 +64,10 @@ class _WalkInSheetState extends State<WalkInSheet> {
       if (mounted) {
         setState(() {
           _slots = slots;
-          _start = null;
+          final index = slots.indexWhere(
+            (s) => s.id == widget.initialSlotId && s.available,
+          );
+          _start = index < 0 ? null : index;
           _count = 1;
         });
       }
@@ -87,6 +96,7 @@ class _WalkInSheetState extends State<WalkInSheet> {
         _key,
       );
       if (!mounted) return;
+      widget.onBooked?.call(_phone.text.trim(), _name.text.trim());
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
@@ -194,7 +204,25 @@ class _WalkInSheetState extends State<WalkInSheet> {
               validator: validateStaffPhone,
               decoration: const InputDecoration(labelText: 'Số điện thoại'),
               keyboardType: TextInputType.phone,
+              onChanged: (_) => setState(() {}),
             ),
+            if (!_busy && !_uncertain && _phone.text.length >= 3)
+              Wrap(
+                spacing: 8,
+                children: widget.recentGuests.entries
+                    .where((e) => e.key.startsWith(_phone.text))
+                    .take(5)
+                    .map(
+                      (e) => ActionChip(
+                        label: Text('${e.value} · ${e.key}'),
+                        onPressed: () => setState(() {
+                          _phone.text = e.key;
+                          _name.text = e.value;
+                        }),
+                      ),
+                    )
+                    .toList(),
+              ),
             const SizedBox(height: 16),
             Text(
               'Tiền sân dự tính: ${moneyLabel(_selection.fold(0, (total, s) => total + s.price))}',

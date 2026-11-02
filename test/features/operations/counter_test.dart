@@ -4,6 +4,8 @@ import 'package:fcourt/features/operations/domain/counter.dart';
 import 'package:fcourt/features/operations/data/http_counter_repository.dart';
 import 'package:fcourt/features/operations/presentation/walk_in_sheet.dart';
 import 'package:fcourt/features/operations/presentation/checkout_dialog.dart';
+import 'package:fcourt/features/operations/presentation/available_court_slots.dart';
+import 'package:fcourt/features/operations/domain/schedule.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -53,6 +55,136 @@ class FakeCounter implements CounterRepository {
 }
 
 void main() {
+  testWidgets(
+    'authoritative playing session is red and blocks stale available slot',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AvailableCourtSlots(
+              repository: FakeCounter(),
+              courtId: 21,
+              date: '2026-11-01',
+              onSelected: (_) => fail('Occupied slot must not be selectable'),
+              sessions: const [
+                CourtSession(
+                  bookingId: 42,
+                  date: '2026-11-01',
+                  start: '09:00',
+                  end: '09:30',
+                  status: 'CHECKED_IN',
+                  name: 'Khoa',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final button = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, '09:00\nĐang chơi · Khoa'),
+      );
+      expect(button.onPressed, isNull);
+      expect(
+        button.style!.backgroundColor!.resolve({WidgetState.disabled}),
+        const Color(0xFFB3261E),
+      );
+    },
+  );
+  testWidgets('tapped slot prefills exact start and exposes recent contact', (
+    tester,
+  ) async {
+    final fake = FakeCounter();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: WalkInSheet(
+            repository: fake,
+            courtId: 21,
+            courtName: 'Sân 1',
+            date: '2026-11-01',
+            initialSlotId: 2,
+            recentGuests: const {'0912345678': 'Khoa'},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('09:30–10:00'), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField).at(1), '091');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Khoa · 0912345678'));
+    await tester.tap(find.text('Khoa · 0912345678'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextFormField>(find.byType(TextFormField).first)
+          .controller!
+          .text,
+      'Khoa',
+    );
+    await tester.ensureVisible(find.text('Xác nhận & thu tiền mặt'));
+    await tester.tap(find.text('Xác nhận & thu tiền mặt'));
+    await tester.pumpAndSettle();
+    expect(fake.selected, [2]);
+    expect(find.text('Đã tạo đơn tiền mặt'), findsOneWidget);
+  });
+  testWidgets('stale tapped slot cannot submit a newly occupied time', (
+    tester,
+  ) async {
+    final fake = FakeCounter();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: WalkInSheet(
+            repository: fake,
+            courtId: 21,
+            courtName: 'Sân 1',
+            date: '2026-11-01',
+            initialSlotId: 3,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Xác nhận & thu tiền mặt'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(fake.keys, isEmpty);
+  });
+  testWidgets('slot strip emits only available selected identity', (
+    tester,
+  ) async {
+    int? selected;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AvailableCourtSlots(
+            repository: FakeCounter(),
+            courtId: 21,
+            date: '2026-11-01',
+            onSelected: (slot) => selected = slot.id,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('09:30\nTrống'));
+    expect(selected, 2);
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, '10:00\nĐã đặt'),
+          )
+          .onPressed,
+      isNull,
+    );
+  });
   test('availability sorts slots and rejects duplicate identities', () async {
     var duplicate = false;
     final dio = Dio(BaseOptions(baseUrl: 'http://test'))

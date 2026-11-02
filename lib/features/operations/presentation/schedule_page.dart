@@ -7,6 +7,7 @@ import 'scanner_page.dart';
 import '../domain/counter.dart';
 import 'walk_in_sheet.dart';
 import 'checkout_dialog.dart';
+import 'available_court_slots.dart';
 
 class SchedulePage extends StatelessWidget {
   const SchedulePage({super.key, required this.repository, this.counter});
@@ -27,8 +28,13 @@ class ScheduleBoard extends StatefulWidget {
 }
 
 class _ScheduleBoardState extends State<ScheduleBoard> {
-  Future<void> _walkIn(CourtSchedule court) async {
+  final Map<int, Map<String, String>> _recentGuestsByBranch = {};
+  int _availabilityGeneration = 0;
+  Future<void> _walkIn(CourtSchedule court, {int? initialSlotId}) async {
     final cubit = context.read<ScheduleCubit>();
+    final branchId = cubit.state.data?.branchId;
+    if (branchId == null) return;
+    final recentGuests = _recentGuestsByBranch.putIfAbsent(branchId, () => {});
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -39,6 +45,20 @@ class _ScheduleBoardState extends State<ScheduleBoard> {
         courtId: court.id,
         courtName: court.name,
         date: businessToday(),
+        initialSlotId: initialSlotId,
+        recentGuests: recentGuests,
+        onBooked: (phone, name) {
+          if (mounted) {
+            setState(() {
+              recentGuests[phone] = name;
+              if (recentGuests.length > 50) {
+                recentGuests.remove(recentGuests.keys.first);
+              }
+              _availabilityGeneration++;
+            });
+          }
+          cubit.load();
+        },
       ),
     );
     if (mounted && result == true) await cubit.load();
@@ -55,6 +75,7 @@ class _ScheduleBoardState extends State<ScheduleBoard> {
       ),
     );
     if (mounted && result == true) {
+      setState(() => _availabilityGeneration++);
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Đã trả sân')));
       await cubit.load();
@@ -154,6 +175,18 @@ class _ScheduleBoardState extends State<ScheduleBoard> {
                             onPressed: () => _walkIn(court),
                             icon: const Icon(Icons.add),
                             label: const Text('Đặt tại quầy'),
+                          ),
+                        if (widget.counter != null)
+                          AvailableCourtSlots(
+                            key: ValueKey(
+                              '${court.id}-$_availabilityGeneration',
+                            ),
+                            repository: widget.counter!,
+                            courtId: court.id,
+                            sessions: court.sessions,
+                            date: businessToday(),
+                            onSelected: (slot) =>
+                                _walkIn(court, initialSlotId: slot.id),
                           ),
                         ...court.sessions.map(
                           (session) => ListTile(
