@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "checks": [
+    "inactive staff denied",
+    "reactivation through real IAM/staff, one audit on replay",
+    "read-only preview reaches booking authority",
+    "signed snapshot exposes hash rather than QR code",
+    "offline replay commits once in authority and staff audit",
+    "duplicate new command and tampered permit denied",
+    "printed manual code resolves in authority, QR cannot admit it again",
+    "create/edit/disable/reactivate through real IAM and owned branch",
+    "today and weekly schedule include live facility courts and empty courts",
+    "public hold blocks walk-in; cash booking and contact persist once",
+    "real POS order attaches once to booking before handover",
+    "overtime and POS total confirmed; checkout and POS settlement commit once"
+  ],
+  "discovery_and_jwks": "local fixtures",
+  "services": "real auth/staff/booking/facility/hold/POS jars",
+  "holds": "disposable Redis 7",
+  "database": "disposable PostgreSQL 16, separate service databases"
+}

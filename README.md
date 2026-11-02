@@ -2,6 +2,10 @@
 
 Ứng dụng Android của FCOURT. Viết bằng Flutter theo Clean Architecture, chia theo feature. Repo đã có sẵn thư viện cơ bản (gọi API, lưu token, điều hướng, state management) và một feature mẫu `health` để sao chép cấu trúc.
 
+Feature Customer Discovery (SCRUM-21) mở tại trang chủ. Hướng dẫn API,
+cấu hình discovery-service và các phần đang chờ backend ở
+[`docs/SCRUM-21.md`](docs/SCRUM-21.md).
+
 ## Yêu cầu
 
 - Flutter `3.47.7` (stable), đi kèm Dart `3.13.5`.
@@ -83,11 +87,38 @@ Quy tắc phụ thuộc: `presentation → domain ← data`. Chi tiết và các
 - Mọi thay đổi vào `main` và `dev` đi qua Pull Request, ít nhất 1 review, CI `analyze-and-test` phải xanh. Không push trực tiếp.
 - Không commit secret, token, file `.env`.
 
+## Quản lý nhân viên (SCRUM-27)
+
+Route `/admin/staff` dành cho ADMIN; mở từ “Quản lý nhân viên” ở màn hình
+kiểm tra kết nối. Cần phiên đăng nhập do feature Auth cung cấp, lưu trong
+`TokenStorage`; không nhập token hoặc hard-code tài khoản trong source.
+API xác thực role/ownership phía máy chủ cho mọi thao tác.
+
+Nếu không dùng gateway chung, cấu hình thêm `STAFF_BASE_URL` (staff: 8090)
+và `FACILITY_BASE_URL` (facility: 8083) bằng dart-define; refresh token vẫn
+đi qua `API_BASE_URL`. Không đặt token/secret trong JSON được commit.
+
+Form sửa giữ nguyên email, chi nhánh và các ca làm đã có. Lỗi mạng/5xx giữ
+nguyên dữ liệu và UUID để thử lại; đóng form khi kết quả chưa rõ cần đối soát
+danh sách trước khi tạo lại. Mở khóa cần API bổ sung của staff và IAM:
+`POST /api/admin/staff/{id}/reactivate`.
+
+Xem [kế hoạch triển khai](FLUTTER_EXECUTION_PLAN.md) và
+[kiểm chứng SCRUM-27](docs/validation/SCRUM-27.md).
+
 ## Chưa có trong khung
 
 - Android flavors (dev/prod). Hiện tách môi trường bằng `env/*.json`.
 - Firebase/FCM, Google Maps, đăng nhập Google. Owner feature tương ứng tự thêm khi cần.
 
-## Android release
+## Check-in offline (SCRUM-116)
 
-Cấu hình keystore, GitHub Secrets và kiểm chứng chữ ký APK/AAB: [docs/android-release.md](docs/android-release.md). Release thiếu signing config sẽ dừng; quy trình không dùng debug key để phát hành.
+Android có snapshot SQLite theo nhân viên/chi nhánh/ngày và hàng đợi bền vững.
+Đồng bộ đầu ca khi có mạng, chỉ nhận vé trong cửa sổ hợp lệ và cache dưới 12 giờ.
+Kết quả offline là tạm thời; kiểm tra hàng đợi/xung đột sau khi kết nối lại.
+Đổi tài khoản hoặc đăng xuất không cho phép dùng snapshot của phiên cũ.
+
+Backend cần khóa ký permit và credential staff-to-booking riêng; tuyệt đối không
+đưa secret này vào ứng dụng. Workmanager hỗ trợ gửi nền nhưng phụ thuộc Android;
+không coi thời gian reconnect là cam kết khi chưa đo trên thiết bị.
+Xem [kiểm chứng và cấu hình SCRUM-116](docs/validation/SCRUM-116.md).
