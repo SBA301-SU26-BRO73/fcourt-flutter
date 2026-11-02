@@ -50,6 +50,7 @@ import 'admin_facility_routes.dart';
 import 'app_dependencies.dart';
 import 'auth_redirect.dart';
 import '../features/staff/presentation/staff_page.dart';
+import '../features/pos/presentation/pos_page.dart';
 import '../features/operations/presentation/schedule_page.dart';
 import '../src/features/customer_discovery/domain/discovery_repository.dart';
 import '../src/features/customer_discovery/presentation/discovery_cubit.dart';
@@ -96,6 +97,11 @@ GoRouter createRouter(
     redirect: (context, state) =>
         authRedirect(authBloc.state.status, state.matchedLocation, role: authBloc.state.role),
     routes: [
+      if (dependencies.pos != null)
+        GoRoute(
+          path: '/staff/pos',
+          builder: (_, _) => PosPage(repository: dependencies.pos!),
+        ),
       if (dependencies.operations != null)
         GoRoute(
           path: '/staff/schedule',

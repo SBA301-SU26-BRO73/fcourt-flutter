@@ -52,6 +52,8 @@ import '../features/operations/data/http_operations_repository.dart';
 import '../features/operations/domain/schedule.dart';
 import '../features/operations/domain/counter.dart';
 import '../features/operations/data/http_counter_repository.dart';
+import '../features/pos/domain/pos.dart';
+import '../features/pos/data/http_pos_repository.dart';
 import 'admin_facility_dependencies.dart';
 import '../features/super_admin/data/datasources/super_admin_remote_data_source.dart';
 import '../features/super_admin/data/repositories/court_owner_approval_repository_impl.dart';
@@ -74,6 +76,7 @@ class AppDependencies {
     this.staffRepository,
     this.operations,
     this.counter,
+    this.pos,
     this.paymentRepository,
     this.qrSaver,
     this.bookingHistoryRepository,
@@ -105,6 +108,7 @@ class AppDependencies {
   final StaffRepository? staffRepository;
   final OperationsRepository? operations;
   final CounterRepository? counter;
+  final PosRepository? pos;
   final PaymentRepository? paymentRepository;
   final QrSaver? qrSaver;
   final history.BookingRepository? bookingHistoryRepository;
@@ -184,6 +188,9 @@ class AppDependencies {
       ),
       operations: HttpOperationsRepository(
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
+      ),
+      pos: HttpPosRepository(
+        createDio(config, tokenStorage, baseUrl: config.posBaseUrl),
       ),
       counter: HttpCounterRepository(
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
