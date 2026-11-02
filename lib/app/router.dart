@@ -188,10 +188,10 @@ GoRouter createRouter(
           return AdminPaymentApprovalScreen(
             repository: repository,
             branchId: id,
-            onLedger: dependencies.adminTransactions == null
             onRefunds: dependencies.adminRefunds == null
                 ? null
                 : () => context.push('/admin/branches/$id/refunds'),
+            onLedger: dependencies.adminTransactions == null
                 ? null
                 : () => context.push('/admin/branches/$id/transactions'),
           );
