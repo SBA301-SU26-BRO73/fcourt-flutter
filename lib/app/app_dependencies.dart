@@ -24,6 +24,8 @@ import '../features/booking/domain/repositories/booking_repository.dart';
 import '../features/payment/data/repositories/payment_repository_impl.dart';
 import '../features/payment/data/repositories/qr_gallery_saver.dart';
 import '../features/payment/domain/repositories/payment_repository.dart';
+import '../features/transactions/domain/transaction.dart';
+import '../features/transactions/data/customer_transactions_impl.dart';
 import '../features/booking_history/domain/cancellation.dart';
 import '../features/booking_history/data/cancellation_repository_impl.dart';
 import '../features/booking_history/domain/booking.dart' as history;
@@ -79,6 +81,7 @@ class AppDependencies {
     this.receiptPicker,
     this.bookingRepository,
     this.cancellationRepository,
+    this.customerTransactions,
     this.courtOwnerApprovalRepository,
   });
 
@@ -107,6 +110,7 @@ class AppDependencies {
   final ReceiptPicker? receiptPicker;
   final BookingRepository? bookingRepository;
   final CancellationRepository? cancellationRepository;
+  final CustomerTransactions? customerTransactions;
   final CourtOwnerApprovalRepository? courtOwnerApprovalRepository;
 
   factory AppDependencies.create(AppConfig config) {
@@ -158,6 +162,7 @@ class AppDependencies {
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
       cancellationRepository: CancellationRepositoryImpl(dio),
+      customerTransactions: CustomerTransactionsImpl(dio),
       ticketRepository: TicketRepositoryImpl(dio),
       ticketSaver: TicketGallerySaver(),
       adminPaymentRepository: AdminPaymentRepositoryImpl(dio),
