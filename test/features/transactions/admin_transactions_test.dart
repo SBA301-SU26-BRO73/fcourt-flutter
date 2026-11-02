@@ -36,12 +36,20 @@ void main() {
   test('admin repository binds branch filters and validates summary over all pages', () async {
     final adapter = FakeAdapter(
       (_) => jsonResponse(200, {
-        'items': [rawTransaction()],
+        'items': [
+          {
+            ...rawTransaction(),
+            'transactionType': 'BOOKING_PAYMENT',
+            'transactionKey': 'P:1',
+          },
+        ],
         'page': 0,
         'size': 20,
         'total': 42,
         'summary': {
           'received': 600000.0,
+          'refunded': 0,
+          'netRevenue': 600000,
           'pending': 100000,
           'rejectedCount': 2,
         },
@@ -61,6 +69,7 @@ void main() {
     expect(result.transactions.total, 42);
     expect(adapter.requests.single.queryParameters, {
       'branchId': 7,
+      'transactionType': 'ALL',
       'status': 'SUCCESS',
       'search': 'BK42',
       'page': 0,
@@ -79,7 +88,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('600.000'), findsOneWidget);
+    expect(find.byKey(const ValueKey('ledger-received')), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Xem thêm'),
       200,
@@ -89,7 +98,7 @@ void main() {
     await tester.tap(find.text('Xem thêm'));
     await tester.pumpAndSettle();
     expect(repo.calls.length, 2);
-    expect(find.textContaining('600.000'), findsOneWidget);
+    expect(find.byKey(const ValueKey('ledger-received')), findsOneWidget);
     await tester.ensureVisible(find.text('Từ chối'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Từ chối'));

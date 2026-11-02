@@ -24,6 +24,7 @@ import '../features/booking/domain/repositories/booking_repository.dart';
 import '../features/payment/data/repositories/payment_repository_impl.dart';
 import '../features/payment/data/repositories/qr_gallery_saver.dart';
 import '../features/payment/domain/repositories/payment_repository.dart';
+import '../features/transactions/data/ledger_report_exporter.dart';
 import '../features/refunds/domain/admin_refunds.dart';
 import '../features/refunds/data/admin_refunds_impl.dart';
 import '../features/refunds/domain/refund.dart';
@@ -98,6 +99,7 @@ class AppDependencies {
     this.adminTransactions,
     this.refundRepository,
     this.adminRefunds,
+    this.ledgerExporter,
   });
 
   final AppConfig config;
@@ -132,6 +134,7 @@ class AppDependencies {
   final AdminTransactions? adminTransactions;
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
+  final LedgerReportExporter? ledgerExporter;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -190,6 +193,7 @@ class AppDependencies {
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
+      ledgerExporter: CsvLedgerExporter(AdminTransactionsImpl(dio)),
       refundRepository: RefundRepositoryImpl(dio),
       adminRefunds: AdminRefundsImpl(dio),
       ticketRepository: TicketRepositoryImpl(dio),

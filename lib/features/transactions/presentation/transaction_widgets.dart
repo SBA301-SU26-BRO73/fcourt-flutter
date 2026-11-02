@@ -60,17 +60,31 @@ class TransactionTile extends StatelessWidget {
           Text(
             '${entry.code} · ${entry.bookingCode}\n${DateFormat('dd/MM/yyyy HH:mm').format(entry.occurredAt.toUtc().add(const Duration(hours: 7)))}',
           ),
-          Chip(label: Text(entry.label), visualDensity: VisualDensity.compact),
+          Wrap(
+            spacing: 6,
+            children: [
+              Chip(
+                label: Text(entry.typeLabel),
+                visualDensity: VisualDensity.compact,
+              ),
+              Chip(
+                label: Text(entry.label),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
         ],
       ),
       trailing: Text(
-        vnd(entry.amount),
+        '${entry.amount >= 0 ? '+' : ''}${vnd(entry.amount)}',
         style: TextStyle(
-          color: switch (entry.status) {
-            'SUCCESS' => Colors.green,
-            'REJECTED' => Theme.of(context).colorScheme.error,
-            _ => null,
-          },
+          color: entry.transactionType == 'REFUND'
+              ? Theme.of(context).colorScheme.error
+              : switch (entry.status) {
+                  'SUCCESS' => Colors.green,
+                  'REJECTED' => Theme.of(context).colorScheme.error,
+                  _ => null,
+                },
           fontWeight: FontWeight.bold,
         ),
       ),
