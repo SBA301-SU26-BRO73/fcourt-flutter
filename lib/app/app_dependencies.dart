@@ -44,6 +44,8 @@ import '../features/staff/domain/staff.dart';
 import '../features/staff/data/http_staff_repository.dart';
 import '../features/operations/data/http_operations_repository.dart';
 import '../features/operations/domain/schedule.dart';
+import '../features/operations/domain/counter.dart';
+import '../features/operations/data/http_counter_repository.dart';
 import 'admin_facility_dependencies.dart';
 import '../features/super_admin/data/datasources/super_admin_remote_data_source.dart';
 import '../features/super_admin/data/repositories/court_owner_approval_repository_impl.dart';
@@ -65,6 +67,7 @@ class AppDependencies {
     this.slotRepository,
     this.staffRepository,
     this.operations,
+    this.counter,
     this.paymentRepository,
     this.qrSaver,
     this.bookingHistoryRepository,
@@ -92,6 +95,7 @@ class AppDependencies {
   final SlotRepository? slotRepository;
   final StaffRepository? staffRepository;
   final OperationsRepository? operations;
+  final CounterRepository? counter;
   final PaymentRepository? paymentRepository;
   final QrSaver? qrSaver;
   final history.BookingRepository? bookingHistoryRepository;
@@ -165,6 +169,17 @@ class AppDependencies {
       ),
       operations: HttpOperationsRepository(
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
+      ),
+      counter: HttpCounterRepository(
+        createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
+        // Public availability reads never carry employee credentials.
+        Dio(
+          BaseOptions(
+            baseUrl: config.discoveryUrl,
+            connectTimeout: const Duration(seconds: 10),
+            receiveTimeout: const Duration(seconds: 20),
+          ),
+        ),
       ),
     );
   }
