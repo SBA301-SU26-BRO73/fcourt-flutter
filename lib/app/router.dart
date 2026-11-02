@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../features/transactions/presentation/admin_transaction_history_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -59,6 +60,7 @@ import '../src/features/customer_slots/domain/court_slot.dart';
 import '../features/booking/presentation/pages/booking_summary_screen.dart';
 import '../features/payment/domain/entities/payment_checkout.dart';
 import '../features/payment/presentation/pages/payment_checkout_screen.dart';
+import '../features/transactions/presentation/customer_transaction_history_screen.dart';
 import '../features/booking_history/presentation/booking_history_screen.dart';
 import '../features/booking_history/presentation/booking_detail_screen.dart';
 import '../features/payment/presentation/pages/booking_success_screen.dart';
@@ -184,7 +186,38 @@ GoRouter createRouter(
           return AdminPaymentApprovalScreen(
             repository: repository,
             branchId: id,
+            onLedger: dependencies.adminTransactions == null
+                ? null
+                : () => context.push('/admin/branches/$id/transactions'),
           );
+        },
+      ),
+      GoRoute(
+        path: '/admin/branches/:branchId/transactions',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['branchId'] ?? '');
+          final repository = dependencies.adminTransactions;
+          if (id == null || id <= 0 || repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Vui lòng chọn chi nhánh hợp lệ')),
+            );
+          }
+          return AdminTransactionHistoryScreen(
+            repository: repository,
+            branchId: id,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/payments/history',
+        builder: (context, state) {
+          final repository = dependencies.customerTransactions;
+          if (repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Lịch sử thanh toán chưa khả dụng')),
+            );
+          }
+          return CustomerTransactionHistoryScreen(repository: repository);
         },
       ),
       GoRoute(
@@ -199,6 +232,9 @@ GoRouter createRouter(
           return BookingHistoryScreen(
             repository: repository,
             onDetail: (id) => context.push('/bookings/$id'),
+            onTransactions: dependencies.customerTransactions == null
+                ? null
+                : () => context.push('/payments/history'),
           );
         },
       ),

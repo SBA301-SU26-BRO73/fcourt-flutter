@@ -11,9 +11,11 @@ class BookingHistoryScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.onDetail,
+    this.onTransactions,
   });
   final BookingRepository repository;
   final FutureOr<void> Function(int) onDetail;
+  final VoidCallback? onTransactions;
   @override
   State<BookingHistoryScreen> createState() => _BookingHistoryScreenState();
 }
@@ -86,7 +88,17 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Lịch sử đặt sân')),
+    appBar: AppBar(
+      title: const Text('Lịch sử đặt sân'),
+      actions: [
+        if (widget.onTransactions != null)
+          IconButton(
+            tooltip: 'Lịch sử thanh toán',
+            onPressed: widget.onTransactions,
+            icon: const Icon(Icons.receipt_long),
+          ),
+      ],
+    ),
     body: Column(
       children: [
         Padding(
