@@ -35,6 +35,7 @@ class FakeStaff implements StaffRepository {
   List<StaffBranch> branchRows = [const StaffBranch(7, 'Cơ sở 1')];
   List<StaffMember> rows = [member];
   Failure? error;
+  Failure? toggleError;
   final keys = <String>[];
   Future<List<StaffMember>> Function(int)? loader;
   @override
@@ -55,6 +56,7 @@ class FakeStaff implements StaffRepository {
   @override
   Future<void> setActive(StaffMember member, bool active, String key) async {
     keys.add(key);
+    if (toggleError != null) throw toggleError!;
   }
 }
 
@@ -70,6 +72,37 @@ void main() {
     await tester.pumpAndSettle();
     expect(fake.keys, hasLength(1));
     expect(find.text('Đã cập nhật trạng thái'), findsOneWidget);
+  });
+
+  testWidgets('lost disable response does not reuse key for the unlock', (
+    tester,
+  ) async {
+    final fake = FakeStaff()..toggleError = const NetworkFailure();
+    await tester.pumpWidget(MaterialApp(home: StaffPage(repository: fake)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Khóa tài khoản'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Xác nhận'));
+    await tester.pumpAndSettle();
+    fake.toggleError = null;
+    fake.rows = [
+      const StaffMember(
+        id: 4,
+        branchId: 7,
+        name: 'Khoa',
+        email: 'khoa@example.com',
+        phone: '0912345678',
+        active: false,
+      ),
+    ];
+    await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mở khóa'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Xác nhận'));
+    await tester.pumpAndSettle();
+    expect(fake.keys, hasLength(2));
+    expect(fake.keys[1], isNot(fake.keys[0]));
   });
 
   testWidgets('empty list and load failure provide recovery', (tester) async {
