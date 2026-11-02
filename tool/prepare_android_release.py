@@ -36,7 +36,7 @@ def main():
     config = directory / 'signing.properties'
     config.write_text(properties({'storeFile': keystore, 'storePassword': os.environ['ANDROID_STORE_PASSWORD'], 'keyAlias': os.environ['ANDROID_KEY_ALIAS'], 'keyPassword': os.environ['ANDROID_KEY_PASSWORD']}), encoding='utf-8')
     environment = directory / 'production.json'
-    environment.write_text(json.dumps({'API_BASE_URL': os.environ['PRODUCTION_API_BASE_URL']}))
+    environment.write_text(json.dumps({'APP_ENV': 'prod', 'API_BASE_URL': os.environ['PRODUCTION_API_BASE_URL']}))
     for path in [keystore, config, environment]:
         path.chmod(0o600)
     with open(os.environ['GITHUB_ENV'], 'a') as target:
