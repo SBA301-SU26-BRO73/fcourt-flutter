@@ -87,8 +87,6 @@ Quy tắc phụ thuộc: `presentation → domain ← data`. Chi tiết và các
 - Mọi thay đổi vào `main` và `dev` đi qua Pull Request, ít nhất 1 review, CI `analyze-and-test` phải xanh. Không push trực tiếp.
 - Không commit secret, token, file `.env`.
 
-## Chưa có trong khung
-
 ## Quản lý nhân viên (SCRUM-27)
 
 Route `/admin/staff` dành cho ADMIN; mở từ “Quản lý nhân viên” ở màn hình
@@ -108,5 +106,19 @@ danh sách trước khi tạo lại. Mở khóa cần API bổ sung của staff 
 Xem [kế hoạch triển khai](FLUTTER_EXECUTION_PLAN.md) và
 [kiểm chứng SCRUM-27](docs/validation/SCRUM-27.md).
 
+## Chưa có trong khung
+
 - Android flavors (dev/prod). Hiện tách môi trường bằng `env/*.json`.
 - Firebase/FCM, Google Maps, đăng nhập Google. Owner feature tương ứng tự thêm khi cần.
+
+## Check-in offline (SCRUM-116)
+
+Android có snapshot SQLite theo nhân viên/chi nhánh/ngày và hàng đợi bền vững.
+Đồng bộ đầu ca khi có mạng, chỉ nhận vé trong cửa sổ hợp lệ và cache dưới 12 giờ.
+Kết quả offline là tạm thời; kiểm tra hàng đợi/xung đột sau khi kết nối lại.
+Đổi tài khoản hoặc đăng xuất không cho phép dùng snapshot của phiên cũ.
+
+Backend cần khóa ký permit và credential staff-to-booking riêng; tuyệt đối không
+đưa secret này vào ứng dụng. Workmanager hỗ trợ gửi nền nhưng phụ thuộc Android;
+không coi thời gian reconnect là cam kết khi chưa đo trên thiết bị.
+Xem [kiểm chứng và cấu hình SCRUM-116](docs/validation/SCRUM-116.md).
