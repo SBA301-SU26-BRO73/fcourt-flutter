@@ -1,0 +1,47 @@
+// VietQR public bank directory snapshot, 2026-11-01. Source: https://api.vietqr.io/v2/banks
+class VietnamBank {
+  const VietnamBank(this.bin, this.name);
+  final String bin, name;
+}
+
+const vietnamBanks = <VietnamBank>[
+  VietnamBank('970415', 'VietinBank'),
+  VietnamBank('970436', 'Vietcombank'),
+  VietnamBank('970418', 'BIDV'),
+  VietnamBank('970405', 'Agribank'),
+  VietnamBank('970448', 'OCB'),
+  VietnamBank('970422', 'MBBank'),
+  VietnamBank('970407', 'Techcombank'),
+  VietnamBank('970416', 'ACB'),
+  VietnamBank('970432', 'VPBank'),
+  VietnamBank('970423', 'TPBank'),
+  VietnamBank('970403', 'Sacombank'),
+  VietnamBank('970437', 'HDBank'),
+  VietnamBank('970454', 'VietCapitalBank'),
+  VietnamBank('970429', 'SCB'),
+  VietnamBank('970441', 'VIB'),
+  VietnamBank('970443', 'SHB'),
+  VietnamBank('970431', 'Eximbank'),
+  VietnamBank('970426', 'MSB'),
+  VietnamBank('970400', 'SaigonBank'),
+  VietnamBank('970409', 'BacABank'),
+  VietnamBank('970412', 'PVcomBank'),
+  VietnamBank('970414', 'MBV'),
+  VietnamBank('970419', 'NCB'),
+  VietnamBank('970424', 'ShinhanBank'),
+  VietnamBank('970425', 'ABBANK'),
+  VietnamBank('970427', 'VietABank'),
+  VietnamBank('970428', 'NamABank'),
+  VietnamBank('970430', 'PGBank'),
+  VietnamBank('970433', 'VietBank'),
+  VietnamBank('970438', 'BaoVietBank'),
+  VietnamBank('970440', 'SeABank'),
+  VietnamBank('970446', 'COOPBANK'),
+  VietnamBank('970449', 'LPBank'),
+  VietnamBank('970452', 'KienLongBank'),
+  VietnamBank('970434', 'IndovinaBank'),
+  VietnamBank('970444', 'CBBank'),
+  VietnamBank('970457', 'Woori'),
+  VietnamBank('970462', 'KookminHN'),
+  VietnamBank('970463', 'KookminHCM'),
+];
