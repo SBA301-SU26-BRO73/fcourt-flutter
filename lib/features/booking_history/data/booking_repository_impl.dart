@@ -22,7 +22,7 @@ class BookingRepositoryImpl implements BookingRepository {
           data['items'] is! List) {
         throw const FormatException();
       }
-      final items = (data['items'] as List).map(_booking).toList();
+      final items = (data['items'] as List).map(parse).toList();
       if (items.length > 20 ||
           items.map((b) => b.id).toSet().length != items.length) {
         throw const FormatException();
@@ -39,7 +39,7 @@ class BookingRepositoryImpl implements BookingRepository {
   Future<Booking> detail(int id) async {
     try {
       final response = await dio.get<Map<String, dynamic>>('/api/bookings/$id');
-      final booking = _booking(response.data);
+      final booking = parse(response.data);
       if (booking.id != id) throw const FormatException();
       return booking;
     } on DioException catch (e) {
@@ -49,7 +49,7 @@ class BookingRepositoryImpl implements BookingRepository {
     }
   }
 
-  Booking _booking(dynamic raw) {
+  static Booking parse(dynamic raw) {
     if (raw is! Map<String, dynamic>) throw const FormatException();
     String requiredText(String key) {
       final v = raw[key];
