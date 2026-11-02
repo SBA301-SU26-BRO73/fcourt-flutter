@@ -215,6 +215,7 @@ GoRouter createRouter(
           return BookingDetailScreen(
             repository: repository,
             id: id,
+            cancellation: dependencies.cancellationRepository,
             onTicket:
                 dependencies.ticketRepository == null ||
                     dependencies.ticketSaver == null
