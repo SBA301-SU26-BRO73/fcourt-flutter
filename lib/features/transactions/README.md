@@ -20,18 +20,3 @@ Task adds three commits on SCRUM-67, targeting dev with inherited dependency com
 Validation: analyze and 58 Flutter tests pass, including request contract, invalid
 money/origins/status/time, pagination/receipt sheet and auth failure/retry checks.
 Live profile/Android/network acceptance remains pending with the upstream owners.
-
-## Admin branch ledger — SCRUM-71
-
-`/admin/branches/:branchId/transactions` shows totals over the complete filtered result
-(received/pending/rejected count), date range, status chips, debounced name/phone/code
-search, pagination and receipt review. The pending-receipt screen links to the ledger.
-A branch change clears filters/data. Generation checks prevent late search/page replies
-from replacing a newer filter; totals clear while a new filter loads. Error responses
-never become fake zero totals. Summaries must be nonnegative whole VND.
-
-Backend: SCRUM-70 / backend #24. UI uses the shared authenticated Dio; backend remains
-the role/ownership authority. This adds three commits after SCRUM-69. Net refund/cash
-reporting follows in SCRUM-99. Analyze and all 61 tests pass, including bound branch/date
-query fields, all-result summaries across pagination and stale debounced response/dispose.
-Live Android/admin/account and backend acceptance remains pending.
