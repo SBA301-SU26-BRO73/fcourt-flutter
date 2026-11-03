@@ -122,3 +122,7 @@ Backend cần khóa ký permit và credential staff-to-booking riêng; tuyệt �
 đưa secret này vào ứng dụng. Workmanager hỗ trợ gửi nền nhưng phụ thuộc Android;
 không coi thời gian reconnect là cam kết khi chưa đo trên thiết bị.
 Xem [kiểm chứng và cấu hình SCRUM-116](docs/validation/SCRUM-116.md).
+
+## Android release
+
+Cấu hình keystore, GitHub Secrets và kiểm chứng chữ ký APK/AAB: [docs/android-release.md](docs/android-release.md). Release thiếu signing config sẽ dừng; quy trình không dùng debug key để phát hành.
