@@ -43,10 +43,10 @@ jobs:
           flutter-version: 3.47.7
           channel: stable
           cache: true
-      - name: Build Android release smoke
-        run: flutter build apk --release --dart-define-from-file=env/dev.json
+      - name: Build Android debug smoke
+        run: flutter build apk --debug --dart-define-from-file=env/dev.json
       - uses: actions/upload-artifact@v4
         with:
-          name: android-release-smoke
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: android-debug-smoke
+          path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
