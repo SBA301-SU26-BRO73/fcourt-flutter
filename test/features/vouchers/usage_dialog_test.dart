@@ -92,6 +92,12 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Lượt dùng SAVE'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('usage-phone')))
+            .enabled,
+        isFalse,
+      );
       expect(find.text('SĐT chưa được cung cấp'), findsWidgets);
       expect(find.textContaining('Ghi nhận lúc:'), findsWidgets);
       expect(repo.calls, ['0:']);
