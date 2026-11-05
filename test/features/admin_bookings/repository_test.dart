@@ -32,6 +32,41 @@ Map<String, dynamic> pageJson(
 
 void main() {
   test(
+    'empty filters paginate and preserve nullable contact snapshots',
+    () async {
+      final adapter = FakeAdapter(
+        (_) => jsonResponse(
+          200,
+          pageJson(
+            [
+              {
+                ...bookingJson(),
+                'customerPhone': null,
+                'customerName': null,
+                'receiptImageUrl': null,
+                'paymentStatus': null,
+              },
+            ],
+            page: 1,
+            total: 41,
+          ),
+        ),
+      );
+      final page = await AdminBookingRepositoryImpl(
+        Dio()..httpClientAdapter = adapter,
+      ).search(const AdminBookingQuery(branchId: 1), page: 1);
+      expect(page.hasMore, isTrue);
+      expect(page.items.single.receiptUri, isNull);
+      expect(adapter.requests.single.queryParameters, {
+        'branchId': 1,
+        'page': 1,
+        'size': 20,
+        'sortBy': 'date',
+        'direction': 'DESC',
+      });
+    },
+  );
+  test(
     'bad scope identity dates amounts and receipt URLs fail closed',
     () async {
       for (final change in <Map<String, dynamic>>[
