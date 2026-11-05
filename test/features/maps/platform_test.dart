@@ -140,7 +140,7 @@ void main() {
         opener: (url) async {
           calls.add(url);
           if (calls.length == 1)
-            throw const PlatformException(code: 'unavailable');
+            throw PlatformException(code: 'unavailable');
           return true;
         },
       );
