@@ -398,7 +398,7 @@ GoRouter createRouter(
             return const Scaffold(body: Center(child: Text('Quản lý voucher chưa khả dụng')));
           }
           return BlocProvider(create: (_) => VoucherCubit(repository, facility.branchRepository)..initialize(),
-            child: const VoucherManagementScreen());
+            child: VoucherManagementScreen(usages: dependencies.voucherUsages));
         },
       ),
       GoRoute(
