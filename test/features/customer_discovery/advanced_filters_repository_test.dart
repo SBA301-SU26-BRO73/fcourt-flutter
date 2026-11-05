@@ -9,6 +9,42 @@ import '../../helpers/fake_adapter.dart';
 
 void main() {
   test(
+    'invalid filters fail before HTTP and dependency errors stay failures',
+    () async {
+      final adapter = FakeAdapter(
+        (_) => jsonResponse(503, {'detail': 'Availability unavailable'}),
+      );
+      final repository = DiscoveryRepositoryImpl(
+        DiscoveryRemoteDataSource(Dio()..httpClientAdapter = adapter),
+      );
+      for (final filters in [
+        const DiscoveryFilters(minPrice: '-1'),
+        const DiscoveryFilters(minPrice: 'NaN'),
+        const DiscoveryFilters(maxPrice: '10000000000'),
+        const DiscoveryFilters(minPrice: '0.001'),
+        const DiscoveryFilters(minPrice: '20', maxPrice: '10'),
+        const DiscoveryFilters(timeSlot: '23:00 - 00:00'),
+        const DiscoveryFilters(timeSlot: '18:00 - 18:00'),
+        const DiscoveryFilters(timeSlot: '25:00 - 26:00'),
+        DiscoveryFilters(city: 'a' * 101),
+      ]) {
+        await expectLater(
+          repository.search(filters: filters),
+          throwsA(isA<ServerFailure>()),
+        );
+      }
+      expect(adapter.requests, isEmpty);
+      await expectLater(
+        repository.search(
+          filters: const DiscoveryFilters(hasAvailableSlotsToday: true),
+        ),
+        throwsA(
+          isA<ServerFailure>().having((e) => e.statusCode, 'status', 503),
+        ),
+      );
+    },
+  );
+  test(
     'single price bound and time filter omit unspecified parameters',
     () async {
       final adapter = FakeAdapter(
