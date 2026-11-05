@@ -30,6 +30,34 @@ Voucher voucher({int id = 1, int branchId = 1}) =>
     VoucherModel.parse(voucherJson(id: id, branchId: branchId), branchId);
 
 void main() {
+  test('duplicate code is localized while auth and service failures remain actionable', () async {
+    var status = 409;
+    final repository = VoucherRepositoryImpl(
+      Dio()
+        ..httpClientAdapter = FakeAdapter(
+          (_) => jsonResponse(status, {'detail': 'Error'}),
+        ),
+    );
+    await expectLater(
+      repository.save(VoucherDraft.fromVoucher(voucher())),
+      throwsA(
+        isA<ServerFailure>().having(
+          (e) => e.message,
+          'message',
+          contains('đã tồn tại'),
+        ),
+      ),
+    );
+    status = 401;
+    await expectLater(repository.list(1), throwsA(isA<UnauthorizedFailure>()));
+    for (final code in [403, 503]) {
+      status = code;
+      await expectLater(
+        repository.list(1),
+        throwsA(isA<ServerFailure>().having((e) => e.statusCode, 'code', code)),
+      );
+    }
+  });
   test(
     'cross-branch invalid data and duplicate identities fail closed',
     () async {
