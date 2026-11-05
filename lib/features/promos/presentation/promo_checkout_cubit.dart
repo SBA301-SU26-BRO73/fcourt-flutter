@@ -147,7 +147,7 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
       );
     } catch (error) {
       failure = _message(error);
-      uncertain = error is! PromoFailure || error.uncertain;
+      uncertain = uncertain || error is! PromoFailure || error.uncertain;
     }
     if (isClosed || revision != _revision) return;
     try {
