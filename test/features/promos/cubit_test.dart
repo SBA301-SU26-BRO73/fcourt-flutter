@@ -81,6 +81,31 @@ class PromoPayments implements PaymentRepository {
 }
 
 void main() {
+  test('unknown outcome stays blocked and retries same code until application is confirmed', () async {
+    final store = PromoStore()
+      ..failure = const PromoFailure('Mất phản hồi', uncertain: true);
+    final controller = PromoCheckoutCubit(
+      PromoPayments(store),
+      store,
+      const CheckoutArguments(bookingId: 42),
+    );
+    await controller.load();
+    await controller.apply('SAVE');
+    expect(controller.state.transferAllowed, isFalse);
+    expect(controller.state.retryCode, 'SAVE');
+    store.failure = const PromoFailure('Tạm chưa áp dụng được');
+    await controller.apply('OTHER');
+    expect(store.codes, ['SAVE', 'SAVE']);
+    expect(controller.state.transferAllowed, isFalse);
+    await controller.load();
+    expect(controller.state.retryCode, 'SAVE');
+    store.failure = null;
+    await controller.apply('OTHER');
+    expect(store.codes.last, 'SAVE');
+    expect(controller.state.retryCode, isNull);
+    expect(controller.state.transferAllowed, isTrue);
+    await controller.close();
+  });
   test('successful apply hides old transfer and publishes only reconciled final QR', () async {
     final store = PromoStore()..pending = Completer<PromoApplication>();
     final controller = PromoCheckoutCubit(
