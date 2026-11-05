@@ -87,6 +87,7 @@ void main() {
       expect(billing.calls.where((e) => e.startsWith('checkout')).length, 1);
       expect(find.text('Chờ thanh toán'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
+      await cubit.close();
     },
   );
   testWidgets(
