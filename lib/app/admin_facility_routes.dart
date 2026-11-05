@@ -10,15 +10,18 @@ import '../features/admin_facility/domain/entities/court.dart';
 import '../features/admin_facility/domain/usecases/apply_slot_template.dart';
 import '../features/admin_facility/domain/usecases/branch_usecases.dart';
 import '../features/admin_facility/domain/usecases/court_usecases.dart';
+import '../features/admin_facility/domain/usecases/pricing_usecases.dart';
 import '../features/admin_facility/presentation/bloc/branch_form_bloc.dart';
 import '../features/admin_facility/presentation/bloc/branch_list_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_form_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_list_bloc.dart';
+import '../features/admin_facility/presentation/bloc/pricing_rule_bloc.dart';
 import '../features/admin_facility/presentation/bloc/slot_template_bloc.dart';
 import '../features/admin_facility/presentation/pages/branch_form_screen.dart';
 import '../features/admin_facility/presentation/pages/branch_list_screen.dart';
 import '../features/admin_facility/presentation/pages/court_form_screen.dart';
 import '../features/admin_facility/presentation/pages/court_list_screen.dart';
+import '../features/admin_facility/presentation/pages/pricing_rule_config_screen.dart';
 import '../features/admin_facility/presentation/pages/time_slot_template_screen.dart';
 import 'admin_facility_dependencies.dart';
 
@@ -99,6 +102,8 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
                 context.push<Court>('/admin/courts/${court.id}/edit'),
             onOpenSlotTemplate: (court) =>
                 context.push('/admin/courts/${court.id}/slot-template'),
+            onOpenPricing: (court) =>
+                context.push('/admin/courts/${court.id}/pricing'),
           ),
         ),
       ),
@@ -130,6 +135,23 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
             courtId: courtId,
           )..add(const CourtFormStarted()),
           child: const CourtFormScreen(),
+        ),
+      ),
+    ),
+    GoRoute(
+      path: '/admin/courts/:courtId/pricing',
+      builder: (context, state) => _withId(
+        state.pathParameters['courtId'],
+        (courtId) => BlocProvider(
+          create: (_) => PricingRuleBloc(
+            courtId: courtId,
+            getCourt: GetCourt(courts),
+            getRules: GetPricingRules(deps.pricingRuleRepository),
+            saveRule: SavePricingRule(deps.pricingRuleRepository),
+            deleteRule: DeletePricingRule(deps.pricingRuleRepository),
+            copyToWeekend: CopyWeekdayToWeekend(deps.pricingRuleRepository),
+          )..add(const PricingRuleStarted()),
+          child: const PricingRuleConfigScreen(),
         ),
       ),
     ),

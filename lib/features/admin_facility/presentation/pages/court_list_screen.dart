@@ -13,12 +13,14 @@ class CourtListScreen extends StatelessWidget {
     required this.onCreateCourt,
     required this.onEditCourt,
     required this.onOpenSlotTemplate,
+    required this.onOpenPricing,
   });
 
   /// Mở form tạo sân cho chi nhánh, trả về sân đã tạo hoặc `null` khi hủy.
   final Future<Court?> Function(int branchId) onCreateCourt;
   final Future<Court?> Function(Court court) onEditCourt;
   final void Function(Court court) onOpenSlotTemplate;
+  final void Function(Court court) onOpenPricing;
 
   Future<void> _openForm(
     BuildContext context,
@@ -109,6 +111,7 @@ class CourtListScreen extends StatelessWidget {
               updating: state.updatingIds.contains(court.id),
               onTap: () => _openForm(context, () => onEditCourt(court)),
               onSlotTemplate: () => onOpenSlotTemplate(court),
+              onPricing: () => onOpenPricing(court),
               onMaintenanceChanged: (value) => bloc.add(
                 CourtMaintenanceToggled(court.id, maintenance: value),
               ),
@@ -161,6 +164,7 @@ class CourtCard extends StatelessWidget {
     required this.updating,
     required this.onTap,
     required this.onSlotTemplate,
+    required this.onPricing,
     required this.onMaintenanceChanged,
   });
 
@@ -169,6 +173,7 @@ class CourtCard extends StatelessWidget {
   final bool updating;
   final VoidCallback onTap;
   final VoidCallback onSlotTemplate;
+  final VoidCallback onPricing;
   final ValueChanged<bool> onMaintenanceChanged;
 
   @override
@@ -187,6 +192,13 @@ class CourtCard extends StatelessWidget {
                 children: [
                   CourtStatusBadge(court.status),
                   const Spacer(),
+                  IconButton(
+                    key: Key('court-pricing-${court.id}'),
+                    tooltip: 'Cấu hình giá',
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.payments_outlined),
+                    onPressed: onPricing,
+                  ),
                   IconButton(
                     tooltip: 'Mẫu khung giờ',
                     visualDensity: VisualDensity.compact,
