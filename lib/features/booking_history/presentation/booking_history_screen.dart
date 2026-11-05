@@ -12,10 +12,12 @@ class BookingHistoryScreen extends StatefulWidget {
     required this.repository,
     required this.onDetail,
     this.onTransactions,
+    this.onReview,
   });
   final BookingRepository repository;
   final FutureOr<void> Function(int) onDetail;
   final VoidCallback? onTransactions;
+  final Future<void> Function(int)? onReview;
   @override
   State<BookingHistoryScreen> createState() => _BookingHistoryScreenState();
 }
@@ -152,7 +154,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                         '${booking.date} · ${booking.slots.join(', ')}\n${booking.label}\n${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0).format(booking.amount)}${_tab == 0 ? '\n${booking.countdown(DateTime.now())}' : ''}',
                       ),
                       isThreeLine: true,
-                      trailing: const Icon(Icons.chevron_right),
+                      trailing: booking.status == 'COMPLETED' && widget.onReview != null
+                        ? TextButton(onPressed: () => widget.onReview!(booking.id),
+                            child: const Text('Đánh giá sân'))
+                        : const Icon(Icons.chevron_right),
                       onTap: () async {
                         await widget.onDetail(booking.id);
                         if (mounted) await _load(reset: true);

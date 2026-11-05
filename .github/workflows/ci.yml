@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, dev, 'feat/**']
+    branches: [main, dev, 'feat/**', 'feature/**']
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -44,7 +44,7 @@ jobs:
           channel: stable
           cache: true
       - name: Build Android debug smoke
-        run: flutter build apk --debug --dart-define-from-file=env/dev.json
+        run: bash .github/scripts/build-android-debug.sh
       - uses: actions/upload-artifact@v4
         with:
           name: android-debug-smoke
