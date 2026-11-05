@@ -43,6 +43,32 @@ Future<void> pumpCheckout(
 
 void main() {
   testWidgets(
+    'invalid voucher error appears red below input after safe reconciliation',
+    (tester) async {
+      final store = PromoStore()
+        ..failure = const PromoFailure('Mã khuyến mãi không tồn tại');
+      await pumpCheckout(tester, store, PromoPayments(store));
+      await tester.tap(find.text('Áp dụng'));
+      await tester.pumpAndSettle();
+      final input = find.widgetWithText(TextField, 'Mã khuyến mãi');
+      final field = tester.widget<TextField>(input);
+      expect(field.decoration!.errorText, 'Mã khuyến mãi không tồn tại');
+      expect(
+        field.decoration!.errorStyle!.color,
+        Theme.of(tester.element(input)).colorScheme.error,
+      );
+      expect(field.controller!.text, 'SAVE');
+      expect(find.textContaining('Khuyến mãi:'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text('QR:160000'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('QR:160000'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets(
     'apply removes old QR while pending then displays green discount and final QR',
     (tester) async {
       final store = PromoStore()..pending = Completer<PromoApplication>();
