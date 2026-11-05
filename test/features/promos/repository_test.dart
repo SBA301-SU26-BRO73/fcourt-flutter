@@ -27,6 +27,47 @@ Map<String, dynamic> applyJson() => {
 };
 
 void main() {
+  test('business errors preserve Vietnamese detail and service failures are uncertain', () async {
+    var status = 400;
+    final adapter = FakeAdapter(
+      (_) =>
+          jsonResponse(status, {'detail': 'Mã khuyến mãi đã hết lượt sử dụng'}),
+    );
+    final repository = PromoRepositoryImpl(
+      Dio(),
+      Dio()..httpClientAdapter = adapter,
+    );
+    await expectLater(
+      repository.apply(42, 'SAVE', 16000000),
+      throwsA(
+        isA<PromoFailure>()
+            .having(
+              (e) => e.message,
+              'message',
+              'Mã khuyến mãi đã hết lượt sử dụng',
+            )
+            .having((e) => e.uncertain, 'uncertain', isFalse),
+      ),
+    );
+    status = 503;
+    await expectLater(
+      repository.apply(42, 'SAVE', 16000000),
+      throwsA(
+        isA<PromoFailure>().having((e) => e.uncertain, 'uncertain', isTrue),
+      ),
+    );
+    status = 401;
+    await expectLater(
+      repository.apply(42, 'SAVE', 16000000),
+      throwsA(
+        isA<PromoFailure>().having(
+          (e) => e.message,
+          'message',
+          contains('khách sở hữu'),
+        ),
+      ),
+    );
+  });
   test(
     'invalid money arithmetic identities and snapshot metadata fail closed',
     () async {
