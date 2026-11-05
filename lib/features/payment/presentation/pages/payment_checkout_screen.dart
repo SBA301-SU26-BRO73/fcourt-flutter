@@ -157,24 +157,30 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
         },
         builder: (context, state) {
           if (state.loading) {
-            return const Center(child: CircularProgressIndicator());
+            return PopScope(
+              canPop: state.retryCode == null,
+              child: const Center(child: CircularProgressIndicator()),
+            );
           }
           if (state.expired) return _expiredPage().body!;
           final checkout = state.checkout;
           if (checkout == null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(state.error ?? 'Chưa tải được thông tin thanh toán'),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      onPressed: _checkout.load,
-                      child: const Text('Thử lại'),
-                    ),
-                  ],
+            return PopScope(
+              canPop: state.retryCode == null,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(state.error ?? 'Chưa tải được thông tin thanh toán'),
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: _checkout.load,
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
