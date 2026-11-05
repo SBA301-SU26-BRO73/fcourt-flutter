@@ -30,6 +30,36 @@ Voucher voucher({int id = 1, int branchId = 1}) =>
     VoucherModel.parse(voucherJson(id: id, branchId: branchId), branchId);
 
 void main() {
+  test(
+    'cross-branch invalid data and duplicate identities fail closed',
+    () async {
+      for (final change in <Map<String, dynamic>>[
+        {'branchId': 2},
+        {'id': -1},
+        {'discountValue': -1},
+        {'discountValue': 101},
+        {'usedCount': 11},
+        {'status': 'PAUSED'},
+        {'startDate': '2099-11-04T17:00:00'},
+        {'endDate': '2099-01-01T00:00:00Z'},
+      ]) {
+        final repository = VoucherRepositoryImpl(
+          Dio()
+            ..httpClientAdapter = FakeAdapter(
+              (_) => jsonResponse(200, {
+                'items': [
+                  {...voucherJson(), ...change},
+                ],
+                'page': 0,
+                'size': 20,
+                'total': 1,
+              }),
+            ),
+        );
+        await expectLater(repository.list(1), throwsA(isA<UnknownFailure>()));
+      }
+    },
+  );
   test('activation gets latest details before full replacement and cannot revive expired dates', () async {
     var expired = false;
     final adapter = FakeAdapter(
