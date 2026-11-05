@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../features/auth/helpers.dart';
+import '../features/booking_history/booking_history_test.dart' show Repository;
 import '../features/catalog/catalog_harness.dart' show settle;
 import '../features/catalog/helpers.dart';
 import 'package:fcourt/src/features/customer_discovery/domain/discovery_repository.dart';
@@ -56,12 +57,25 @@ void main() {
           authRepository: repository,
           catalogRepository: catalogRepository,
           discoveryRepository: _FakeDiscoveryRepository(),
+          bookingHistoryRepository: Repository(),
           sessionExpired: sessionExpired.stream,
         ),
       ),
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('khách hàng mở lịch sử đặt sân từ trang chủ', (tester) async {
+    when(() => repository.restoreSession()).thenAnswer((_) async => customerUser);
+    await pumpApp(tester);
+    await tester.tap(find.text('Lịch sử đặt sân'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sắp diễn ra'), findsOneWidget);
+    expect(find.text('Thủ Đức · Sân 1'), findsOneWidget);
+    expect(GoRouterState.of(tester.element(find.text('Thủ Đức · Sân 1')))
+        .uri.path, '/bookings');
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('chưa có phiên thì vào màn đăng nhập', (tester) async {
     when(() => repository.restoreSession()).thenAnswer((_) async => null);

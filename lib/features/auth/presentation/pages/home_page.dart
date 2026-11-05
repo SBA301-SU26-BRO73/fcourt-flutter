@@ -61,6 +61,12 @@ class HomePage extends StatelessWidget {
                   icon: const Icon(Icons.search),
                   label: const Text('Tìm sân'),
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/bookings'),
+                  icon: const Icon(Icons.history),
+                  label: const Text('Lịch sử đặt sân'),
+                ),
               ],
             ],
           ),
