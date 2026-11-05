@@ -154,11 +154,8 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
                       key: ValueKey(row.id),
                       voucher: row,
                       now: DateTime.now().toUtc(),
-                      busy:
-                          state.busyIds.contains(row.id) ||
-                          state.loading ||
-                          state.loadingMore ||
-                          _editing,
+                  busy: state.busyIds.contains(row.id),
+                  blocked: state.loading || state.loadingMore || _editing,
                       onEdit: () => _edit(cubit, id: row.id),
                       onEnabled: (enabled) => cubit.setEnabled(row, enabled),
                     );
