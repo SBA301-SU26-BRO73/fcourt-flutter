@@ -67,6 +67,47 @@ Future<GoRouter> openSearch(WidgetTester tester, DiscoveryCubit cubit) async {
 
 void main() {
   testWidgets(
+    'invalid draft blocks requests and availability failures can retry',
+    (tester) async {
+      final repository = SheetRepository();
+      final cubit = DiscoveryCubit(repository);
+      await openSearch(tester, cubit);
+      await tester.tap(find.text('Bộ lọc (0)'));
+      await tester.pumpAndSettle();
+      repository.fail = true;
+      await tester.tap(find.text('Còn giờ trống hôm nay'));
+      await tester.pumpAndSettle();
+      expect(find.text('Không tải được giờ trống'), findsWidgets);
+      repository.fail = false;
+      await tester.tap(find.text('Thử lại').last);
+      await tester.pumpAndSettle();
+      expect(find.text('1 chi nhánh phù hợp'), findsOneWidget);
+      final calls = repository.requests.length;
+      final min = find.widgetWithText(TextField, 'Giá từ');
+      await tester.ensureVisible(min);
+      await tester.enterText(min, '-1');
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(repository.requests.length, calls);
+      expect(
+        find.text('Vui lòng kiểm tra bộ lọc để cập nhật kết quả'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Xem kết quả'),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.text('Đặt lại'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(min).controller!.text, isEmpty);
+      expect(find.text('8 chi nhánh phù hợp'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets(
     'live count and selected filters survive detail navigation and reset',
     (tester) async {
       final repository = SheetRepository();
