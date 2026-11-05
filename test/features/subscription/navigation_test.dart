@@ -46,6 +46,7 @@ void main() {
           RestoreSession(MockAuthRepository()),
           Logout(MockAuthRepository()),
         )..add(AuthSignedIn(user));
+        addTearDown(auth.close);
         final refresh = AuthRefreshNotifier(auth.stream);
         final billing = Billing();
         final router = createRouter(
@@ -82,7 +83,6 @@ void main() {
         await tester.pumpWidget(const SizedBox());
         router.dispose();
         refresh.dispose();
-        await auth.close();
       }
     },
   );
