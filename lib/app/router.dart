@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../features/subscription/presentation/subscription_cubit.dart';
+import '../features/subscription/presentation/subscription_screen.dart';
 import '../features/refunds/presentation/admin_refund_approval_screen.dart';
 import '../features/refunds/presentation/customer_refund_screen.dart';
 import '../features/transactions/presentation/admin_transaction_history_screen.dart';
@@ -98,6 +100,12 @@ GoRouter createRouter(
     redirect: (context, state) =>
         authRedirect(authBloc.state.status, state.matchedLocation, role: authBloc.state.role),
     routes: [
+      GoRoute(path: '/admin/subscription', builder: (context, state) {
+        final repository = dependencies.subscriptions;
+        if (repository == null) return const Scaffold(body: Center(child: Text('Gói dịch vụ chưa khả dụng')));
+        return BlocProvider(create: (_) => SubscriptionCubit(repository,
+          dependencies.subscriptionCheckoutLauncher)..refresh(), child: const SubscriptionScreen());
+      }),
       if (dependencies.pos != null)
         GoRoute(
           path: '/staff/pos',
