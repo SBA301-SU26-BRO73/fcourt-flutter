@@ -113,6 +113,7 @@ class _SlotCell extends StatelessWidget {
     final label = selected ? 'Đã chọn' : slot.displayLabel;
     final time = '${slotTime(slot.startMinute)}–${slotTime(slot.endMinute)}';
     final cell = Semantics(
+      container: true,
       button: true,
       enabled: enabled,
       selected: selected,
