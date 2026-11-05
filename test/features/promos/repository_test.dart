@@ -27,6 +27,44 @@ Map<String, dynamic> applyJson() => {
 };
 
 void main() {
+  test(
+    'invalid money arithmetic identities and snapshot metadata fail closed',
+    () async {
+      for (final change in <Map<String, dynamic>>[
+        {'bookingId': 99},
+        {'applicationId': 'invalid'},
+        {'discountAmount': -1},
+        {'finalAmount': 120001},
+        {'originalAmount': 160001},
+        {'discountAmount': .001},
+      ]) {
+        final repository = PromoRepositoryImpl(
+          Dio(),
+          Dio()
+            ..httpClientAdapter = FakeAdapter(
+              (_) => jsonResponse(200, {...applyJson(), ...change}),
+            ),
+        );
+        await expectLater(
+          repository.apply(42, 'SAVE', 16000000),
+          throwsA(
+            isA<PromoFailure>().having((e) => e.uncertain, 'uncertain', isTrue),
+          ),
+        );
+      }
+      final repository = PromoRepositoryImpl(
+        Dio()
+          ..httpClientAdapter = FakeAdapter(
+            (_) => jsonResponse(200, {
+              ...snapshotJson(applied: true),
+              'totalPrice': 0,
+            }),
+          ),
+        Dio(),
+      );
+      await expectLater(repository.snapshot(42), throwsA(isA<PromoFailure>()));
+    },
+  );
   test('apply sends original amount and JWT while snapshot never substitutes guest token', () async {
     final apiAdapter = FakeAdapter(
       (_) => jsonResponse(200, snapshotJson(applied: true)),
