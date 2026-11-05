@@ -42,7 +42,10 @@ import '../features/catalog/presentation/pages/catalog_page.dart';
 import '../features/health/domain/usecases/get_health_status.dart';
 import '../features/health/presentation/bloc/health_bloc.dart';
 import '../features/health/presentation/pages/health_page.dart';
+import '../features/super_admin/domain/repositories/platform_overview_repository.dart';
 import '../features/super_admin/domain/usecases/owner_approval_usecases.dart';
+import '../features/super_admin/presentation/bloc/platform_overview_cubit.dart';
+import '../features/super_admin/presentation/pages/super_admin_overview_screen.dart';
 import '../features/super_admin/presentation/bloc/owner_detail_cubit.dart';
 import '../features/super_admin/presentation/bloc/pending_owners_cubit.dart';
 import '../features/super_admin/presentation/pages/owner_approval_detail_screen.dart';
@@ -249,6 +252,8 @@ GoRouter createRouter(
             repository: repository,
             branchId: id,
             exporter: dependencies.ledgerExporter,
+            revenueReports: dependencies.adminFacility?.revenueReportRepository,
+            fileOpener: dependencies.adminFacility?.reportFileOpener,
           );
         },
       ),
@@ -494,6 +499,18 @@ GoRouter createRouter(
         ),
       ),
       ...adminFacilityRoutes(dependencies.adminFacility),
+      GoRoute(
+        path: AppRoutes.superAdminOverview,
+        builder: (context, state) {
+          final repository = dependencies.platformOverview;
+          if (repository == null) return const _UnavailableScreen();
+          return BlocProvider(
+            create: (_) => PlatformOverviewCubit(GetPlatformOverview(repository))
+              ..load(),
+            child: const SuperAdminOverviewScreen(),
+          );
+        },
+      ),
       GoRoute(
         path: '/super-admin/owners/pending',
         builder: (context, state) {

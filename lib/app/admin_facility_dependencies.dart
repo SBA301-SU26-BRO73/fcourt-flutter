@@ -13,6 +13,10 @@ import '../features/admin_facility/domain/repositories/branch_repository.dart';
 import '../features/admin_facility/domain/repositories/court_repository.dart';
 import '../features/admin_facility/domain/repositories/slot_template_repository.dart';
 import '../features/catalog/domain/repositories/catalog_repository.dart';
+import '../features/report_export/data/report_file_store.dart';
+import '../features/report_export/data/revenue_report_remote_data_source.dart';
+import '../features/report_export/data/revenue_report_repository_impl.dart';
+import '../features/report_export/domain/report_export.dart';
 
 /// Repository cho các màn hình chủ sân: chi nhánh, sân, mẫu khung giờ
 /// (facility-service) và dashboard (reporting-service).
@@ -23,6 +27,8 @@ class AdminFacilityDependencies {
     required this.courtTypeRepository,
     required this.slotTemplateRepository,
     required this.dashboardRepository,
+    this.revenueReportRepository,
+    this.reportFileOpener = const OpenFilexOpener(),
   });
 
   final BranchRepository branchRepository;
@@ -30,6 +36,10 @@ class AdminFacilityDependencies {
   final CourtTypeRepository courtTypeRepository;
   final SlotTemplateRepository slotTemplateRepository;
   final DashboardRepository dashboardRepository;
+
+  /// SCRUM-77: tải báo cáo doanh thu; `null` thì ẩn nút xuất.
+  final RevenueReportRepository? revenueReportRepository;
+  final ReportFileOpener reportFileOpener;
 
   /// Mỗi service có Dio riêng theo `FACILITY_BASE_URL` / `REPORTING_BASE_URL`
   /// (mặc định `API_BASE_URL`), cùng chung TokenStorage để gắn Bearer token.
@@ -61,6 +71,17 @@ class AdminFacilityDependencies {
       courtTypeRepository: CatalogCourtTypeRepository(catalogRepository),
       slotTemplateRepository: SlotTemplateRepositoryImpl(facility),
       dashboardRepository: DashboardRepositoryImpl(reporting),
+      revenueReportRepository: RevenueReportRepositoryImpl(
+        RevenueReportRemoteDataSource(
+          createDio(
+            config,
+            tokenStorage,
+            baseUrl: config.reportingUrl,
+            onSessionExpired: onSessionExpired,
+          ),
+        ),
+        const DeviceReportFileStore(),
+      ),
     );
   }
 }

@@ -13,6 +13,7 @@ class AppRoutes {
   static const home = '/home';
   static const profile = '/profile';
   static const catalog = '/catalog';
+  static const superAdminOverview = '/super-admin/overview';
   static const discover = '/discover';
   static const health = '/health';
   static const staff = '/admin/staff';
