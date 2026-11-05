@@ -29,8 +29,9 @@ class _PromoCodeInputState extends State<PromoCodeInput> {
   void didUpdateWidget(PromoCodeInput oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.applied && !oldWidget.applied) _code.clear();
-    if (widget.initialCode != oldWidget.initialCode && !widget.applied)
+    if (widget.initialCode != oldWidget.initialCode && !widget.applied) {
       _code.text = widget.initialCode;
+    }
   }
 
   @override
