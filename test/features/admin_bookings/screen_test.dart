@@ -38,6 +38,7 @@ void main() {
       tester.getBottomRight(find.byType(CustomScrollView)) - const Offset(24, 40),
       const Offset(0, 400),
     );
+    await tester.pump();
     await tester.pump(const Duration(seconds: 1));
     expect(repository.calls.length, before + 1);
     expect(repository.calls.last.query.status, AdminBookingStatus.confirmed);
