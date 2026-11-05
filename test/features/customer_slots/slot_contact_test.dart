@@ -6,6 +6,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('missing or malformed phone never exposes a call action', (
+    tester,
+  ) async {
+    var calls = 0;
+    for (final phone in <String?>[
+      null,
+      '',
+      'tel:0901234567',
+      'https://evil.example',
+      '0901;1234567',
+    ]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SlotContactSheet(
+              key: ValueKey(phone),
+              contact: SlotRestriction(
+                isPrivateEvent: false,
+                contactPhone: phone,
+                contactName: 'Liên hệ sân',
+              ),
+              launcher: (_) async {
+                calls++;
+                return true;
+              },
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Gọi chủ sân'), findsNothing);
+      expect(find.text('Chưa có số điện thoại hợp lệ để gọi.'), findsOneWidget);
+    }
+    expect(calls, 0);
+  });
   testWidgets('public contact calls only tel and prevents duplicate launches', (
     tester,
   ) async {
