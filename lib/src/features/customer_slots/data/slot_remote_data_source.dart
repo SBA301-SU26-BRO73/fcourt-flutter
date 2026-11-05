@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/network/auth_interceptor.dart';
 import '../domain/court_slot.dart';
+import '../domain/slot_restriction.dart';
 
 class SlotRemoteDataSource {
   SlotRemoteDataSource(this.dio);
@@ -39,6 +40,7 @@ class SlotRemoteDataSource {
         endMinute: end == 0 ? 1440 : end,
         priceMinor: scaled.round(),
         status: SlotStatus.fromApi(row['status'] as String),
+        restriction: _restriction(row['restriction'], row['status']),
       );
     }).toList()..sort((a, b) => a.startMinute.compareTo(b.startMinute));
     if (slots.length > 48 ||
@@ -51,6 +53,27 @@ class SlotRemoteDataSource {
       }
     }
     return List.unmodifiable(slots);
+  }
+
+  // Additive proposal in SCRUM-220; legacy responses have no restriction field.
+  SlotRestriction? _restriction(dynamic raw, dynamic status) {
+    if (status != 'OUT_OF_SERVICE' ||
+        raw is! Map ||
+        !{'PRIVATE_EVENT', 'OUT_OF_SERVICE'}.contains(raw['type']))
+      return null;
+    String? publicText(String key, int max) {
+      final value = raw[key];
+      if (value is! String || value.trim().isEmpty || value.length > max)
+        return null;
+      return value.trim();
+    }
+
+    return SlotRestriction(
+      isPrivateEvent: raw['type'] == 'PRIVATE_EVENT',
+      publicReason: publicText('publicReason', 500),
+      contactName: publicText('contactName', 100),
+      contactPhone: publicText('contactPhone', 100),
+    );
   }
 
   int _minute(String value) {
