@@ -14,6 +14,10 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
   final CheckoutArguments arguments;
   int _revision = 0;
 
+  bool _expired(Object error) =>
+      (error is PaymentFailure && error.expired) ||
+      (error is PromoFailure && error.expired);
+
   String _message(Object error) => switch (error) {
     PromoFailure failure => failure.message,
     PaymentFailure failure => failure.message,
@@ -93,6 +97,7 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
             blocked: true,
             retryCode: retryCode,
             error: _message(error),
+            expired: _expired(error),
           ),
         );
     }
@@ -176,6 +181,7 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
                 ? normalized
                 : before.retryCode,
             promoError: failure ?? _message(error),
+            expired: _expired(error),
             error: 'Chưa thể hiển thị mã thanh toán. Hãy tải lại để đối soát.',
           ),
         );
@@ -220,6 +226,7 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
             promo: before.promo,
             loading: false,
             promoError: _message(error),
+            expired: _expired(error),
           ),
         );
     }
