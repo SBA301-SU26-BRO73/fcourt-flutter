@@ -40,6 +40,9 @@ void main() {
   testWidgets(
     'deduplicated event contact opens without changing availability or selection',
     (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       final repository = RestrictedSlots();
       await tester.pumpWidget(
         MaterialApp(
@@ -58,6 +61,7 @@ void main() {
       await tester.pump();
       expect(find.text('Liên hệ sự kiện'), findsOneWidget);
       await tester.ensureVisible(find.text('Liên hệ sự kiện'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Liên hệ sự kiện'));
       await tester.pumpAndSettle();
       expect(find.text('Gọi chủ sân'), findsOneWidget);
