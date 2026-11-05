@@ -66,6 +66,25 @@ Finder field(String label) => find.widgetWithText(TextField, label);
 
 void main() {
   testWidgets(
+    'changed inclusive date range maps to Vietnam midnight boundaries',
+    (tester) async {
+      final repository = EditorRepository();
+      await openEditor(tester, repository, id: 1);
+      await tester.ensureVisible(find.byIcon(Icons.date_range));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.date_range));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.byType(DateRangePickerDialog))).pop(
+        DateTimeRange(start: DateTime(2099, 12, 1), end: DateTime(2099, 12, 2)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lưu voucher'));
+      await tester.pumpAndSettle();
+      expect(repository.drafts.single.startsAt, DateTime.utc(2099, 11, 30, 17));
+      expect(repository.drafts.single.endsAt, DateTime.utc(2099, 12, 2, 17));
+    },
+  );
+  testWidgets(
     'edit keeps stored instants when range is unchanged and enforces used count',
     (tester) async {
       final repository = EditorRepository();
