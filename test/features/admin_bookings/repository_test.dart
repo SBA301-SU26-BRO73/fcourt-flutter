@@ -32,6 +32,36 @@ Map<String, dynamic> pageJson(
 
 void main() {
   test(
+    'invalid requests skip HTTP and auth or upstream errors remain failures',
+    () async {
+      var status = 401;
+      final adapter = FakeAdapter(
+        (_) => jsonResponse(status, {'detail': 'Not allowed'}),
+      );
+      final repository = AdminBookingRepositoryImpl(
+        Dio()..httpClientAdapter = adapter,
+      );
+      await expectLater(
+        repository.search(const AdminBookingQuery(branchId: -1)),
+        throwsA(isA<ServerFailure>()),
+      );
+      expect(adapter.requests, isEmpty);
+      await expectLater(
+        repository.search(const AdminBookingQuery(branchId: 1)),
+        throwsA(isA<UnauthorizedFailure>()),
+      );
+      for (final code in [403, 503]) {
+        status = code;
+        await expectLater(
+          repository.search(const AdminBookingQuery(branchId: 1)),
+          throwsA(
+            isA<ServerFailure>().having((e) => e.statusCode, 'status', code),
+          ),
+        );
+      }
+    },
+  );
+  test(
     'empty filters paginate and preserve nullable contact snapshots',
     () async {
       final adapter = FakeAdapter(
