@@ -59,8 +59,9 @@ class ReviewFormCubit extends Cubit<ReviewFormState> {
       state.alreadyReviewed ||
       state.result != null;
   void rate(int rating) {
-    if (!locked && rating >= 1 && rating <= 5)
+    if (!locked && rating >= 1 && rating <= 5) {
       emit(state.copyWith(rating: rating));
+    }
   }
 
   void comment(String value) {
@@ -98,7 +99,7 @@ class ReviewFormCubit extends Cubit<ReviewFormState> {
       }
       emit(state.copyWith(picking: false));
     } catch (error) {
-      if (!isClosed)
+      if (!isClosed) {
         emit(
           state.copyWith(
             picking: false,
@@ -107,6 +108,7 @@ class ReviewFormCubit extends Cubit<ReviewFormState> {
                 : 'Không đọc được ảnh. Vui lòng chọn lại.',
           ),
         );
+      }
     }
   }
 
@@ -134,8 +136,9 @@ class ReviewFormCubit extends Cubit<ReviewFormState> {
         if (state.urls[i] != null) continue;
         final url = await uploader!.upload(state.photos[i]);
         if (isClosed) return;
-        if (!validReviewImageUrl(url))
+        if (!validReviewImageUrl(url)) {
           throw const ServerFailure('Dịch vụ ảnh chưa trả URL HTTPS hợp lệ.');
+        }
         final urls = [...state.urls]..[i] = url;
         emit(state.copyWith(urls: List.unmodifiable(urls)));
       }
@@ -147,7 +150,7 @@ class ReviewFormCubit extends Cubit<ReviewFormState> {
       );
       if (!isClosed) emit(state.copyWith(busy: false, result: result));
     } catch (error) {
-      if (!isClosed)
+      if (!isClosed) {
         emit(
           state.copyWith(
             busy: false,
@@ -157,6 +160,7 @@ class ReviewFormCubit extends Cubit<ReviewFormState> {
                 : 'Chưa gửi được đánh giá. Vui lòng thử lại.',
           ),
         );
+      }
     }
   }
 }
