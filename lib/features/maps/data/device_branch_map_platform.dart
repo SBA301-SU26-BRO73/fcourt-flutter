@@ -29,8 +29,9 @@ class DeviceBranchMapPlatform implements BranchMapPlatform {
 
   @override
   Future<BranchMapAvailability> availability() async {
-    if (kIsWeb || _platform != TargetPlatform.android)
+    if (kIsWeb || _platform != TargetPlatform.android) {
       return BranchMapAvailability.unavailable;
+    }
     try {
       return switch (await _channel
           .invokeMethod<String>('availability')
@@ -48,12 +49,14 @@ class DeviceBranchMapPlatform implements BranchMapPlatform {
   Future<bool> directions(BranchLocation location) async {
     if (!kIsWeb &&
         _platform == TargetPlatform.android &&
-        await _try(location.androidDirections))
+        await _try(location.androidDirections)) {
       return true;
+    }
     if (!kIsWeb &&
         _platform == TargetPlatform.iOS &&
-        await _try(location.appleDirections))
+        await _try(location.appleDirections)) {
       return true;
+    }
     return _try(location.googleDirections);
   }
 
