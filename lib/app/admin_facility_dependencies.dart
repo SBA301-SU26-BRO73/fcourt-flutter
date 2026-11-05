@@ -2,7 +2,9 @@ import '../core/config/app_config.dart';
 import '../core/network/dio_client.dart';
 import '../core/storage/token_storage.dart';
 import '../features/admin_dashboard/data/datasources/reporting_remote_data_source.dart';
+import '../features/admin_dashboard/data/repositories/analytics_repository_impl.dart';
 import '../features/admin_dashboard/data/repositories/dashboard_repository_impl.dart';
+import '../features/admin_dashboard/domain/repositories/analytics_repository.dart';
 import '../features/admin_dashboard/domain/repositories/dashboard_repository.dart';
 import '../features/admin_facility/data/datasources/facility_remote_data_source.dart';
 import '../features/admin_facility/data/repositories/branch_repository_impl.dart';
@@ -23,6 +25,7 @@ class AdminFacilityDependencies {
     required this.courtTypeRepository,
     required this.slotTemplateRepository,
     required this.dashboardRepository,
+    required this.analyticsRepository,
   });
 
   final BranchRepository branchRepository;
@@ -30,6 +33,7 @@ class AdminFacilityDependencies {
   final CourtTypeRepository courtTypeRepository;
   final SlotTemplateRepository slotTemplateRepository;
   final DashboardRepository dashboardRepository;
+  final AnalyticsRepository analyticsRepository;
 
   /// Mỗi service có Dio riêng theo `FACILITY_BASE_URL` / `REPORTING_BASE_URL`
   /// (mặc định `API_BASE_URL`), cùng chung TokenStorage để gắn Bearer token.
@@ -61,6 +65,7 @@ class AdminFacilityDependencies {
       courtTypeRepository: CatalogCourtTypeRepository(catalogRepository),
       slotTemplateRepository: SlotTemplateRepositoryImpl(facility),
       dashboardRepository: DashboardRepositoryImpl(reporting),
+      analyticsRepository: AnalyticsRepositoryImpl(reporting),
     );
   }
 }

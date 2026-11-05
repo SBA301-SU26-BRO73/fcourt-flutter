@@ -8,6 +8,7 @@ import 'package:fcourt/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fcourt/features/admin_dashboard/domain/entities/dashboard_stats.dart';
 import 'package:fcourt/features/admin_dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:fcourt/features/admin_dashboard/presentation/pages/admin_dashboard_screen.dart';
+import 'package:fcourt/features/admin_dashboard/presentation/pages/analytics_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/branch_form_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/branch_list_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/court_form_screen.dart';
@@ -25,6 +26,7 @@ import '../features/auth/helpers.dart';
 import '../features/catalog/helpers.dart';
 import '../features/admin_facility/fixtures.dart';
 import '../features/admin_facility/mocks.dart';
+import '../features/admin_dashboard/analytics_helpers.dart';
 
 class _FakeHealthRepository implements HealthRepository {
   @override
@@ -88,6 +90,30 @@ void main() {
     final courts = MockCourtRepository();
     final types = MockCourtTypeRepository();
     final dashboard = _MockDashboardRepository();
+    final analytics = MockAnalyticsRepository();
+    registerAnalyticsFallbacks();
+    when(
+      () => analytics.getRevenueChart(
+        branchId: any(named: 'branchId'),
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        granularity: any(named: 'granularity'),
+      ),
+    ).thenAnswer((_) async => sampleRevenueChart);
+    when(
+      () => analytics.getTopCourts(
+        branchId: any(named: 'branchId'),
+        period: any(named: 'period'),
+        date: any(named: 'date'),
+      ),
+    ).thenAnswer((_) async => sampleTopCourts);
+    when(
+      () => analytics.getPeakHours(
+        branchId: any(named: 'branchId'),
+        period: any(named: 'period'),
+        date: any(named: 'date'),
+      ),
+    ).thenAnswer((_) async => samplePeakHours());
     when(() => branches.getBranches())
         .thenAnswer((_) async => [sampleBranch()]);
     when(() => branches.getBranch(1)).thenAnswer((_) async => sampleBranch());
@@ -115,11 +141,13 @@ void main() {
       courtTypeRepository: types,
       slotTemplateRepository: MockSlotTemplateRepository(),
       dashboardRepository: dashboard,
+      analyticsRepository: analytics,
     );
   });
 
   final cases = <String, Type>{
     '/admin/dashboard': AdminDashboardScreen,
+    '/admin/analytics': AnalyticsScreen,
     '/admin/branches': BranchListScreen,
     '/admin/branches/new': BranchFormScreen,
     '/admin/branches/1/edit': BranchFormScreen,

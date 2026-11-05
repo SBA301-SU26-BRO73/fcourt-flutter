@@ -9,9 +9,14 @@ import '../widgets/compact_currency.dart';
 
 /// SCRUM-13: tổng quan doanh thu, lượt đặt, sân hoạt động và tỷ lệ lấp đầy.
 class AdminDashboardScreen extends StatelessWidget {
-  const AdminDashboardScreen({super.key, this.onOpenBranches});
+  const AdminDashboardScreen({
+    super.key,
+    this.onOpenBranches,
+    this.onOpenAnalytics,
+  });
 
   final VoidCallback? onOpenBranches;
+  final VoidCallback? onOpenAnalytics;
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +24,12 @@ class AdminDashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Tổng quan'),
         actions: [
+          if (onOpenAnalytics != null)
+            IconButton(
+              tooltip: 'Phân tích',
+              icon: const Icon(Icons.insights_outlined),
+              onPressed: onOpenAnalytics,
+            ),
           if (onOpenBranches != null)
             IconButton(
               tooltip: 'Chi nhánh',
