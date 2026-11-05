@@ -89,8 +89,8 @@ void main() {
       expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
       final before = repository.lists;
       await tester.dragFrom(
-        tester.getBottomRight(find.byType(CustomScrollView)) -
-            const Offset(24, 40),
+        tester.getBottomLeft(find.byType(CustomScrollView)) +
+            const Offset(24, -40),
         const Offset(0, 400),
       );
       await tester.pump();
