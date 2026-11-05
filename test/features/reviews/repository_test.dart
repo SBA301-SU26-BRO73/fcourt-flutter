@@ -35,6 +35,29 @@ Map<String, dynamic> jsonPage() => {
 };
 
 void main() {
+  test(
+    '409 eligibility conflict is not rewritten as an existing review',
+    () async {
+      final repo = ReviewRepositoryImpl(
+        Dio()
+          ..httpClientAdapter = FakeAdapter(
+            (_) => jsonResponse(409, {
+              'detail': 'Chỉ được đánh giá sau khi đã hoàn thành chơi',
+            }),
+          ),
+      );
+      await expectLater(
+        repo.create(10, 5, '', []),
+        throwsA(
+          isA<ServerFailure>().having(
+            (error) => error.message,
+            'message',
+            contains('hoàn thành'),
+          ),
+        ),
+      );
+    },
+  );
   test('list maps real SCRUM104 envelope and global statistics', () async {
     final repo = ReviewRepositoryImpl(
       Dio()
