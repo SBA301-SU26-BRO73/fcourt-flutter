@@ -81,6 +81,21 @@ Future<void> initialize(
 
 void main() {
   testWidgets(
+    'unowned and empty branch selection never sends a booking query',
+    (tester) async {
+      final (cubit, repository, branches, _) = setup();
+      await cubit.initialize(branchId: 99);
+      expect(cubit.state.error, contains('không có quyền'));
+      expect(repository.calls, isEmpty);
+      when(() => branches.getBranches()).thenAnswer((_) async => []);
+      await cubit.initialize();
+      expect(cubit.state.error, isNull);
+      expect(cubit.state.branches, isEmpty);
+      expect(repository.calls, isEmpty);
+      await cubit.close();
+    },
+  );
+  testWidgets(
     'pagination retries retain rows and preserve all selected filters',
     (tester) async {
       final (cubit, repository, _, _) = setup();
