@@ -30,6 +30,39 @@ Voucher voucher({int id = 1, int branchId = 1}) =>
     VoucherModel.parse(voucherJson(id: id, branchId: branchId), branchId);
 
 void main() {
+  test('activation gets latest details before full replacement and cannot revive expired dates', () async {
+    var expired = false;
+    final adapter = FakeAdapter(
+      (r) => jsonResponse(200, {
+        ...voucherJson(
+          status: r.method == 'PUT'
+              ? (r.data as Map)['status'] as String
+              : 'ACTIVE',
+        ),
+        'usedCount': 7,
+        if (expired) 'endDate': '2020-01-01T00:00:00Z',
+        if (expired) 'startDate': '2019-01-01T00:00:00Z',
+      }),
+    );
+    final repository = VoucherRepositoryImpl(
+      Dio()..httpClientAdapter = adapter,
+    );
+    final disabled = await repository.setEnabled(1, 1, false);
+    expect(adapter.requests.map((r) => r.method), ['GET', 'PUT']);
+    expect((adapter.requests.last.data as Map)['status'], 'EXPIRED');
+    expect(
+      (adapter.requests.last.data as Map).containsKey('usedCount'),
+      isFalse,
+    );
+    expect(disabled.status, VoucherStatus.expired);
+    expired = true;
+    await expectLater(
+      repository.setEnabled(1, 1, true),
+      throwsA(isA<ServerFailure>()),
+    );
+    expect(adapter.requests.last.method, 'GET');
+    expect(adapter.requests.length, 3);
+  });
   test(
     'list and CRUD map exact scoped contract and full decimal body',
     () async {
