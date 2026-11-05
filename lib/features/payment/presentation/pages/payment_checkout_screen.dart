@@ -220,7 +220,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                       if (widget.promos != null) ...[
                         PromoCodeInput(
                           key: ValueKey(
-                            'promo-${widget.arguments.bookingId}-${widget.arguments.holdToken}',
+                            'promo-$_generation',
                           ),
                           initialCode:
                               state.retryCode ?? widget.arguments.promoCode,
