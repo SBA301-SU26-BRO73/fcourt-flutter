@@ -55,7 +55,7 @@ void main() {
       }
       expect(toggles, 0);
       expect(
-        tester.getSemantics(find.byKey(const ValueKey('slot-1'))),
+        tester.getSemantics(find.bySemanticsLabel('07:00–07:30, 75.000 đ, Bao sân')),
         matchesSemantics(
           isButton: true,
           hasEnabledState: true,
