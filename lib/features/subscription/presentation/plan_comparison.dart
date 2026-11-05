@@ -23,13 +23,15 @@ class PlanComparison extends StatelessWidget {
               DataColumn(
                 label: SizedBox(
                   width: 180,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(plan.name),
-                      if (plan.popular) const Text('Phổ biến'),
-                    ],
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(plan.name),
+                        if (plan.popular) const Text('Phổ biến'),
+                      ],
+                    ),
                   ),
                 ),
               ),
