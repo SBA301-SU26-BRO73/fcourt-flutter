@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../domain/voucher.dart';
+import '../domain/voucher_usage_repository.dart';
+import 'voucher_usage_history_dialog.dart';
 import 'voucher_cubit.dart';
 import 'voucher_state.dart';
 import 'voucher_editor.dart';
 import 'voucher_card.dart';
 
 class VoucherManagementScreen extends StatefulWidget {
-  const VoucherManagementScreen({super.key});
+  const VoucherManagementScreen({super.key, this.usages});
+  final VoucherUsageRepository? usages;
   @override
   State<VoucherManagementScreen> createState() =>
       _VoucherManagementScreenState();
@@ -20,6 +23,17 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
     with WidgetsBindingObserver {
   late final Timer _clock;
   bool _editing = false;
+  Future<void> _history(Voucher row) async {
+    final repository = widget.usages;
+    if (_editing || repository == null) return;
+    setState(() => _editing = true);
+    try {
+      await showDialog<void>(context: context, builder: (_) =>
+        VoucherUsageHistoryDialog(repository: repository, voucherId: row.id, code: row.code));
+    } finally {
+      if (mounted) setState(() => _editing = false);
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -157,6 +171,7 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
                   busy: state.busyIds.contains(row.id),
                   blocked: state.loading || state.loadingMore || _editing,
                       onEdit: () => _edit(cubit, id: row.id),
+                      onUsage: widget.usages == null ? null : () => _history(row),
                       onEnabled: (enabled) => cubit.setEnabled(row, enabled),
                     );
                   },
