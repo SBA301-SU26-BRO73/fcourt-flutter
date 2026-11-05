@@ -98,8 +98,9 @@ class VoucherUsageRepositoryImpl implements VoucherUsageRepository {
             raw['size'] != VoucherUsagePage.size ||
             raw['total'] is! int ||
             raw['total'] < 0 ||
-            raw['items'] is! List)
+            raw['items'] is! List) {
           throw const FormatException();
+        }
         final totalDiscount = _money(raw['totalDiscountAmount']);
         final items = (raw['items'] as List)
             .map((item) => _row(item, voucherId))
@@ -109,8 +110,9 @@ class VoucherUsageRepositoryImpl implements VoucherUsageRepository {
             items.map((row) => row.id).toSet().length != items.length ||
             items.map((row) => row.bookingId).toSet().length != items.length ||
             items.fold<int>(0, (sum, row) => sum + row.discountMinor) >
-                totalDiscount)
+                totalDiscount) {
           throw const FormatException();
+        }
         if (phone.isNotEmpty &&
             items.any(
               (row) =>
