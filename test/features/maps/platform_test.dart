@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fcourt/features/maps/domain/branch_location.dart';
@@ -139,8 +138,9 @@ void main() {
         platform: TargetPlatform.android,
         opener: (url) async {
           calls.add(url);
-          if (calls.length == 1)
+          if (calls.length == 1) {
             throw PlatformException(code: 'unavailable');
+          }
           return true;
         },
       );
