@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as google;
-import 'package:mocktail/mocktail.dart';
 import 'package:fcourt/features/maps/domain/branch_location.dart';
 import 'package:fcourt/features/maps/presentation/branch_map_card.dart';
 import 'package:fcourt/features/maps/presentation/google_branch_map.dart';
