@@ -12,6 +12,31 @@ import 'cubit_test.dart' show setup, initialize, bookingRow;
 
 void main() {
   testWidgets(
+    'detail modal uses admin snapshot without a customer API lookup',
+    (tester) async {
+      final (cubit, repository, _, _) = setup();
+      addTearDown(cubit.close);
+      await initialize(tester, cubit, repository);
+      await tester.pumpWidget(
+        BlocProvider.value(
+          value: cubit,
+          child: const MaterialApp(home: AdminBookingManagementScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final card = find.textContaining('BK1 ·');
+      await tester.ensureVisible(card);
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminBookingDetail), findsOneWidget);
+      expect(find.text('SĐT: Chưa cung cấp'), findsOneWidget);
+      expect(find.text('Chưa có biên lai được cung cấp'), findsOneWidget);
+      expect(find.text('Check-in'), findsNothing);
+      expect(repository.calls.length, 1);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets(
     'mobile search court status and date controls update booking query',
     (tester) async {
       tester.view.physicalSize = const Size(412, 915);
