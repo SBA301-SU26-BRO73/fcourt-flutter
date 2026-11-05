@@ -111,8 +111,9 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
     } on PaymentFailure catch (error) {
       if (generation == _generation) _message(error.message);
     } catch (_) {
-      if (generation == _generation)
+      if (generation == _generation) {
         _message('Không lưu được mã QR. Vui lòng thử lại.');
+      }
     } finally {
       if (mounted && generation == _generation) setState(() => _saving = false);
     }
@@ -155,8 +156,9 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
           if (state.freeConfirmed) widget.onFreeConfirmed?.call();
         },
         builder: (context, state) {
-          if (state.loading)
+          if (state.loading) {
             return const Center(child: CircularProgressIndicator());
+          }
           if (state.expired) return _expiredPage().body!;
           final checkout = state.checkout;
           if (checkout == null) {
