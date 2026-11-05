@@ -64,7 +64,9 @@ class SlotGridPicker extends StatelessWidget {
               child: _SlotCell(
                 key: ValueKey('slot-${slot.id}'),
                 slot: slot,
-                selected: slot.status == SlotStatus.available && selectedIds.contains(slot.id),
+                selected:
+                    slot.status == SlotStatus.available &&
+                    selectedIds.contains(slot.id),
                 onTap: () {
                   if (onToggle(slot.id)) HapticFeedback.selectionClick();
                 },
@@ -93,7 +95,7 @@ class _SlotCell extends StatelessWidget {
     final color = slot.status.color;
     final label = selected ? 'Đã chọn' : slot.status.label;
     final time = '${slotTime(slot.startMinute)}–${slotTime(slot.endMinute)}';
-    return Semantics(
+    final cell = Semantics(
       button: true,
       enabled: enabled,
       selected: selected,
@@ -178,6 +180,10 @@ class _SlotCell extends StatelessWidget {
         ),
       ),
     );
+    final reason = slot.status.unavailableReason;
+    return reason == null
+        ? cell
+        : Tooltip(message: reason, excludeFromSemantics: true, child: cell);
   }
 }
 
