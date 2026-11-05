@@ -80,6 +80,40 @@ Future<void> initialize(
 }
 
 void main() {
+  testWidgets(
+    'pagination retries retain rows and preserve all selected filters',
+    (tester) async {
+      final (cubit, repository, _, _) = setup();
+      await initialize(tester, cubit, repository);
+      cubit.setStatus(AdminBookingStatus.confirmed);
+      repository.calls.last.result.complete(
+        AdminBookingPage([bookingRow(1)], 0, 41),
+      );
+      await tester.pump();
+      cubit.setDate(DateTime(2026, 11, 5));
+      repository.calls.last.result.complete(
+        AdminBookingPage([bookingRow(1)], 0, 41),
+      );
+      await tester.pump();
+      final failed = cubit.loadMore();
+      await cubit.loadMore();
+      expect(repository.calls.last.page, 1);
+      expect(repository.calls.last.query.status, AdminBookingStatus.confirmed);
+      expect(repository.calls.last.query.date, DateTime(2026, 11, 5));
+      repository.calls.last.result.completeError(const NetworkFailure());
+      await failed;
+      expect(cubit.state.items.single.id, 1);
+      expect(cubit.state.error, isNotNull);
+      final retry = cubit.loadMore();
+      repository.calls.last.result.complete(
+        AdminBookingPage([bookingRow(1), bookingRow(2)], 1, 22),
+      );
+      await retry;
+      expect(cubit.state.items.map((row) => row.id), [1, 2]);
+      expect(cubit.state.hasMore, isFalse);
+      await cubit.close();
+    },
+  );
   testWidgets('late courts and bookings from previous branch are ignored', (
     tester,
   ) async {
