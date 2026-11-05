@@ -1,4 +1,8 @@
 import 'dart:async';
+import '../features/reviews/domain/review.dart';
+import '../features/reviews/domain/review_photo.dart';
+import '../features/reviews/data/review_repository_impl.dart';
+import '../features/reviews/data/device_review_photo_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
@@ -100,6 +104,9 @@ class AppDependencies {
     this.refundRepository,
     this.adminRefunds,
     this.ledgerExporter,
+    this.reviews,
+    this.reviewPhotoPicker,
+    this.reviewPhotoUploader,
   });
 
   final AppConfig config;
@@ -135,6 +142,9 @@ class AppDependencies {
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
+  final ReviewRepository? reviews;
+  final ReviewPhotoPicker? reviewPhotoPicker;
+  final ReviewPhotoUploader? reviewPhotoUploader;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -190,6 +200,9 @@ class AppDependencies {
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
+      reviews: ReviewRepositoryImpl(createDio(config, tokenStorage,
+        baseUrl: config.discoveryUrl, onSessionExpired: onSessionExpired)),
+      reviewPhotoPicker: DeviceReviewPhotoPicker(),
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
