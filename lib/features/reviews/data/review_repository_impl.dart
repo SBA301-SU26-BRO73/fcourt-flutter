@@ -90,12 +90,14 @@ class ReviewRepositoryImpl implements ReviewRepository {
             row['percentage'] is! num ||
             !(row['percentage'] as num).isFinite ||
             row['percentage'] < 0 ||
-            row['percentage'] > 100)
+            row['percentage'] > 100) {
           throw const FormatException();
+        }
         counts[row['rating']] = row['count'];
         final expected = total == 0 ? 0 : row['count'] * 100 / total;
-        if ((expected - row['percentage']).abs() > .011)
+        if ((expected - row['percentage']).abs() > .011) {
           throw const FormatException();
+        }
       }
       final countSum = counts.values.fold<int>(0, (a, b) => a + b);
       final weighted = counts.entries.fold<int>(
@@ -110,8 +112,9 @@ class ReviewRepositoryImpl implements ReviewRepository {
               (total + ReviewPage.size - 1) ~/ ReviewPage.size ||
           items.length > ReviewPage.size ||
           items.length > total ||
-          items.map((e) => e.id).toSet().length != items.length)
+          items.map((e) => e.id).toSet().length != items.length) {
         throw const FormatException();
+      }
       return ReviewPage(
         items: List.unmodifiable(items),
         page: page,
