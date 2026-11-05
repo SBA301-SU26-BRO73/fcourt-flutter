@@ -32,6 +32,49 @@ Map<String, dynamic> pageJson(
 
 void main() {
   test(
+    'bad scope identity dates amounts and receipt URLs fail closed',
+    () async {
+      for (final change in <Map<String, dynamic>>[
+        {'branchId': 2},
+        {'courtId': 6},
+        {'status': 'UNKNOWN'},
+        {'id': -1},
+        {'date': '2026-02-31'},
+        {'date': '2026-11-06'},
+        {'totalPrice': -1},
+        {'createdAt': '2026-11-04T18:00:00'},
+        {'receiptImageUrl': 'https://evil.example/receipt.png'},
+        {
+          'receiptImageUrl':
+              'https://res.cloudinary.com@evil.example/image.png',
+        },
+        {'receiptImageUrl': 'http://res.cloudinary.com/image.png'},
+      ]) {
+        final adapter = FakeAdapter(
+          (_) => jsonResponse(
+            200,
+            pageJson([
+              {...bookingJson(), ...change},
+            ]),
+          ),
+        );
+        final repository = AdminBookingRepositoryImpl(
+          Dio()..httpClientAdapter = adapter,
+        );
+        await expectLater(
+          repository.search(
+            AdminBookingQuery(
+              branchId: 1,
+              courtId: 5,
+              date: DateTime(2026, 11, 5),
+            ),
+          ),
+          throwsA(isA<ServerFailure>()),
+        );
+      }
+    },
+  );
+  test(
     'authenticated admin API combines branch court status search and play date',
     () async {
       final adapter = FakeAdapter(
