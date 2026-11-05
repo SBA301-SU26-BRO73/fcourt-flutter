@@ -38,8 +38,9 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && mounted && !_editing)
+    if (state == AppLifecycleState.resumed && mounted && !_editing) {
       context.read<VoucherCubit>().refresh();
+    }
   }
 
   Future<void> _edit(VoucherCubit cubit, {int? id}) async {
