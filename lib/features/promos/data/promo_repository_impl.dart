@@ -17,8 +17,9 @@ class PromoRepositoryImpl implements PromoRepository {
   }
 
   DateTime _instant(dynamic raw) {
-    if (raw is! String || !RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(raw))
+    if (raw is! String || !RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(raw)) {
       throw const FormatException();
+    }
     return DateTime.tryParse(raw)?.toUtc() ?? (throw const FormatException());
   }
 
@@ -59,8 +60,9 @@ class PromoRepositoryImpl implements PromoRepository {
       if (raw == null ||
           raw['id'] != bookingId ||
           raw['status'] is! String ||
-          (raw['paymentFrozen'] != null && raw['paymentFrozen'] is! bool))
+          (raw['paymentFrozen'] != null && raw['paymentFrozen'] is! bool)) {
         throw const FormatException();
+      }
       final finalMinor = _money(raw['totalPrice']);
       final original = _money(raw['originalAmount'] ?? raw['totalPrice']);
       final discount = _money(raw['discountAmount'] ?? 0);
@@ -71,8 +73,9 @@ class PromoRepositoryImpl implements PromoRepository {
           (id != null &&
               (!_uuid(id) ||
                   raw['originalAmount'] == null ||
-                  raw['discountAmount'] == null)))
+                  raw['discountAmount'] == null))) {
         throw const FormatException();
+      }
       return BookingPromo(
         bookingId: bookingId,
         originalMinor: original,
@@ -118,14 +121,16 @@ class PromoRepositoryImpl implements PromoRepository {
           raw['bookingId'] != bookingId ||
           !_uuid(raw['applicationId']) ||
           raw['voucherId'] is! int ||
-          raw['voucherId'] <= 0)
+          raw['voucherId'] <= 0) {
         throw const FormatException();
+      }
       final original = _money(raw['originalAmount']),
           discount = _money(raw['discountAmount']),
           finalMinor = _money(raw['finalAmount']);
       _instant(raw['expiresAt']);
-      if (original != originalMinor || original - discount != finalMinor)
+      if (original != originalMinor || original - discount != finalMinor) {
         throw const FormatException();
+      }
       return PromoApplication(
         bookingId: bookingId,
         applicationId: raw['applicationId'] as String,
@@ -153,8 +158,9 @@ class PromoRepositoryImpl implements PromoRepository {
       if (raw == null ||
           raw['bookingId'] != bookingId ||
           raw['status'] != 'CONFIRMED' ||
-          raw['amount'] != 0)
+          raw['amount'] != 0) {
         throw const FormatException();
+      }
     } on DioException catch (error) {
       throw _failure(error);
     } on FormatException {
