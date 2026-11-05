@@ -43,6 +43,36 @@ Future<void> pumpCheckout(
 
 void main() {
   testWidgets(
+    'late apply response does not change checkout for another booking',
+    (tester) async {
+      final store = PromoStore()..pending = Completer<PromoApplication>();
+      final payments = PromoPayments(store);
+      await pumpCheckout(tester, store, payments);
+      await tester.tap(find.text('Áp dụng'));
+      await tester.pump();
+      await tester.pumpWidget(screen(store, payments, id: 43));
+      await tester.pumpAndSettle();
+      store.applied.add(42);
+      store.pending!.complete(store.application(42));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<PaymentCheckoutScreen>(find.byType(PaymentCheckoutScreen))
+            .arguments
+            .bookingId,
+        43,
+      );
+      expect(find.textContaining('Khuyến mãi:'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text('QR:160000'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('QR:120000'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets(
     'invalid voucher error appears red below input after safe reconciliation',
     (tester) async {
       final store = PromoStore()
