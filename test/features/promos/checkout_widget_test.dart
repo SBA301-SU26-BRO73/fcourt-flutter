@@ -43,6 +43,30 @@ Future<void> pumpCheckout(
 
 void main() {
   testWidgets(
+    'zero final total offers free confirmation and never renders zero QR',
+    (tester) async {
+      final store = PromoStore()..finalMinor = 0;
+      final payments = PromoPayments(store);
+      var confirmed = 0;
+      await pumpCheckout(tester, store, payments);
+      await tester.pumpWidget(
+        screen(store, payments, onFree: () => confirmed++),
+      );
+      await tester.tap(find.text('Áp dụng'));
+      await tester.pumpAndSettle();
+      expect(find.text('QR:0'), findsNothing);
+      expect(find.text('QR:160000'), findsNothing);
+      expect(find.byTooltip('Sao chép Số tiền'), findsNothing);
+      await tester.ensureVisible(find.text('Xác nhận đơn miễn phí'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xác nhận đơn miễn phí'));
+      await tester.pumpAndSettle();
+      expect(confirmed, 1);
+      expect(store.confirms, 1);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets(
     'late apply response does not change checkout for another booking',
     (tester) async {
       final store = PromoStore()..pending = Completer<PromoApplication>();
