@@ -79,7 +79,7 @@ class _BranchMapCardState extends State<BranchMapCard> {
     } catch (_) {
       availability = BranchMapAvailability.unavailable;
     }
-    if (!mounted || revision != _revision) return;
+    if (!mounted || revision != _revision || _availability != null) return;
     _timer?.cancel();
     setState(() {
       _availability = availability;
@@ -130,6 +130,10 @@ class _BranchMapCardState extends State<BranchMapCard> {
   @override
   Widget build(BuildContext context) {
     final location = widget.location;
+    final revision = _revision;
+    void ready() {
+      if (revision == _revision && !_fallback) _mapReady();
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -164,13 +168,13 @@ class _BranchMapCardState extends State<BranchMapCard> {
                           widget.nativeBuilder?.call(
                                 location,
                                 widget.name,
-                                _mapReady,
+                          ready,
                               ) ??
                               GoogleBranchMap(
                                 key: ValueKey(location.coordinates),
                                 location: location,
                                 name: widget.name,
-                                onReady: _mapReady,
+                          onReady: ready,
                               ),
                           if (!_ready)
                             const Positioned(
