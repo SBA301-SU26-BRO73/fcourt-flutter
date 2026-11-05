@@ -25,8 +25,9 @@ class VoucherCubit extends Cubit<VoucherState> {
       emit(VoucherState(branches: List.unmodifiable(owned), loading: false));
       if (owned.isNotEmpty) await selectBranch(owned.first.id);
     } catch (error) {
-      if (!isClosed && revision == _revision)
+      if (!isClosed && revision == _revision) {
         emit(VoucherState(loading: false, error: _message(error)));
+      }
     }
   }
 
@@ -49,8 +50,9 @@ class VoucherCubit extends Cubit<VoucherState> {
     if (state.loading ||
         state.loadingMore ||
         !state.hasMore ||
-        state.branchId == null)
+        state.branchId == null) {
       return;
+    }
     emit(state.copyWith(loadingMore: true));
     await _load(_revision, state.branchId!, state.page + 1);
   }
@@ -75,7 +77,7 @@ class VoucherCubit extends Cubit<VoucherState> {
         ),
       );
     } catch (error) {
-      if (!isClosed && revision == _revision)
+      if (!isClosed && revision == _revision) {
         emit(
           state.copyWith(
             loading: false,
@@ -83,12 +85,14 @@ class VoucherCubit extends Cubit<VoucherState> {
             error: _message(error),
           ),
         );
+      }
     }
   }
 
   Future<void> setEnabled(Voucher row, bool enabled) async {
-    if (state.branchId != row.branchId || state.busyIds.contains(row.id))
+    if (state.branchId != row.branchId || state.busyIds.contains(row.id)) {
       return;
+    }
     final branchRevision = _branchRevision;
     emit(state.copyWith(busyIds: Set.unmodifiable({...state.busyIds, row.id})));
     try {
@@ -106,8 +110,9 @@ class VoucherCubit extends Cubit<VoucherState> {
       );
       await refresh();
     } catch (error) {
-      if (!isClosed && branchRevision == _branchRevision)
+      if (!isClosed && branchRevision == _branchRevision) {
         emit(state.copyWith(error: _message(error)));
+      }
     } finally {
       if (!isClosed && branchRevision == _branchRevision) {
         emit(
