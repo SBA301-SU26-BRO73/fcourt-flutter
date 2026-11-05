@@ -74,8 +74,9 @@ class VoucherDraft {
       result['usageLimit'] =
           'Số lượt phải từ ${usedCount > 1 ? usedCount : 1} đến 2147483647';
     }
-    if (!startsAt.isBefore(endsAt))
+    if (!startsAt.isBefore(endsAt)) {
       result['dates'] = 'Ngày bắt đầu phải trước thời điểm kết thúc';
+    }
     return result;
   }
 }
