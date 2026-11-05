@@ -160,7 +160,9 @@ class ReviewRepositoryImpl implements ReviewRepository {
         return result;
       },
       localize: (error) => ServerFailure(switch (error.statusCode) {
-        409 => 'Đơn đặt sân này đã được đánh giá.',
+        409 => error.message.contains('hoàn thành')
+          ? 'Chỉ được đánh giá sau khi đã hoàn thành chơi.'
+          : error.message,
         403 => 'Bạn chỉ có thể đánh giá đơn của mình sau khi đã chơi xong.',
         404 => 'Không tìm thấy đơn đặt sân được phép đánh giá.',
         _ => error.message,
