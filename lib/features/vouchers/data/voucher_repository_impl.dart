@@ -29,8 +29,9 @@ class VoucherRepositoryImpl implements VoucherRepository {
 
   @override
   Future<VoucherPage> list(int branchId, {int page = 0}) async {
-    if (branchId <= 0 || page < 0 || page > 100000)
+    if (branchId <= 0 || page < 0 || page > 100000) {
       throw const ServerFailure('Chi nhánh hoặc trang không hợp lệ');
+    }
     return _call(() async {
       final raw = (await dio.get<Map<String, dynamic>>(
         '/api/admin/vouchers',
@@ -45,23 +46,26 @@ class VoucherRepositoryImpl implements VoucherRepository {
           raw['size'] != VoucherPage.size ||
           raw['items'] is! List ||
           raw['total'] is! int ||
-          raw['total'] < 0)
+          raw['total'] < 0) {
         throw const FormatException();
+      }
       final rows = (raw['items'] as List)
           .map((row) => VoucherModel.parse(row, branchId))
           .toList();
       if (rows.length > VoucherPage.size ||
           rows.map((row) => row.id).toSet().length != rows.length ||
-          raw['total'] < rows.length)
+          raw['total'] < rows.length) {
         throw const FormatException();
+      }
       return VoucherPage(List.unmodifiable(rows), page, raw['total'] as int);
     });
   }
 
   @override
   Future<Voucher> get(int id, int branchId) async {
-    if (id <= 0 || branchId <= 0)
+    if (id <= 0 || branchId <= 0) {
       throw const ServerFailure('Voucher không hợp lệ');
+    }
     return _call(() async {
       final row = VoucherModel.parse(
         (await dio.get<Map<String, dynamic>>('/api/admin/vouchers/$id')).data,
@@ -75,11 +79,12 @@ class VoucherRepositoryImpl implements VoucherRepository {
   @override
   Future<Voucher> save(VoucherDraft draft, {int? id, int usedCount = 0}) async {
     final errors = draft.errors(usedCount: usedCount);
-    if (errors.isNotEmpty || (id != null && id <= 0))
+    if (errors.isNotEmpty || (id != null && id <= 0)) {
       throw ServerFailure(
         'Vui lòng kiểm tra thông tin voucher',
         fieldErrors: errors,
       );
+    }
     return _call(() async {
       final body = VoucherModel.body(draft);
       final response = id == null
@@ -93,8 +98,9 @@ class VoucherRepositoryImpl implements VoucherRepository {
             );
       final row = VoucherModel.parse(response.data, draft.branchId);
       if ((id != null && row.id != id) ||
-          row.code != draft.code.trim().toUpperCase())
+          row.code != draft.code.trim().toUpperCase()) {
         throw const FormatException();
+      }
       return row;
     });
   }
@@ -102,10 +108,11 @@ class VoucherRepositoryImpl implements VoucherRepository {
   @override
   Future<Voucher> setEnabled(int id, int branchId, bool enabled) async {
     final current = await get(id, branchId);
-    if (enabled && current.expiredAt(DateTime.now().toUtc()))
+    if (enabled && current.expiredAt(DateTime.now().toUtc())) {
       throw const ServerFailure(
         'Voucher đã hết hạn. Hãy sửa thời hạn trước khi bật lại.',
       );
+    }
     return save(
       VoucherDraft.fromVoucher(
         current,
