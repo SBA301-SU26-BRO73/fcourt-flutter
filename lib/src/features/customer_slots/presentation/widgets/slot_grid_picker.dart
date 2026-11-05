@@ -97,6 +97,7 @@ class _SlotCell extends StatelessWidget {
       button: true,
       enabled: enabled,
       selected: selected,
+      hint: slot.status.unavailableReason,
       label:
           '$time${slot.endMinute == 1440 ? ', kết thúc ngày tiếp theo' : ''}, '
           '${slotMoney(slot.priceMinor)}, $label',
@@ -147,6 +148,8 @@ class _SlotCell extends StatelessWidget {
                             ? Icons.check_circle
                             : enabled
                             ? Icons.add_circle_outline
+                            : slot.status == SlotStatus.outOfService
+                            ? Icons.block
                             : Icons.lock_outline,
                         size: 20,
                         color: selected ? Colors.white : color,
