@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:fcourt/features/admin_facility/domain/entities/court.dart';
+
 import 'package:fcourt/core/error/failure.dart';
 import 'package:fcourt/features/admin_bookings/domain/admin_booking.dart';
 import 'package:fcourt/features/admin_bookings/domain/admin_booking_query.dart';
@@ -78,6 +80,31 @@ Future<void> initialize(
 }
 
 void main() {
+  testWidgets('late courts and bookings from previous branch are ignored', (
+    tester,
+  ) async {
+    final (cubit, repository, _, courts) = setup();
+    await initialize(tester, cubit, repository);
+    final lateCourts = Completer<List<Court>>();
+    when(() => courts.getCourts(1)).thenAnswer((_) => lateCourts.future);
+    final oldCourts = cubit.reloadCourts();
+    final oldBookings = cubit.loadMore();
+    final stale = repository.calls.last;
+    final switchBranch = cubit.selectBranch(2);
+    expect(repository.calls.last.query.branchId, 2);
+    repository.calls.last.result.complete(
+      AdminBookingPage([bookingRow(2, branchId: 2)], 0, 1),
+    );
+    await switchBranch;
+    lateCourts.complete([sampleCourt()]);
+    await oldCourts;
+    stale.result.complete(AdminBookingPage([bookingRow(99)], 1, 41));
+    await oldBookings;
+    expect(cubit.state.query!.branchId, 2);
+    expect(cubit.state.courts.single.id, 10);
+    expect(cubit.state.items.single.id, 2);
+    await cubit.close();
+  });
   testWidgets(
     'search debounces and stale responses cannot replace changed filters',
     (tester) async {
