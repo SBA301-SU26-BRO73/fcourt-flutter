@@ -23,7 +23,7 @@ Future<CourtReview?> showRatingBottomSheet(
       bookingId,
       picker: picker,
       uploader: uploader,
-    )..pick(recover: true),
+        ),
     child: const RatingBottomSheet(),
   ),
 );
