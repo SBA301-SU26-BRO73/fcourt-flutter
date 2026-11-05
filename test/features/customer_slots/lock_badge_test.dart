@@ -20,62 +20,67 @@ void main() {
     'event and service badges differ from bookings and cannot toggle',
     (tester) async {
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
-      var toggles = 0;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SlotGridPicker(
-              slots: [
-                lockedSlot(1, event: true),
-                lockedSlot(2),
-                const CourtSlot(
-                  id: 3,
-                  startMinute: 480,
-                  endMinute: 510,
-                  priceMinor: 7500000,
-                  status: SlotStatus.booked,
-                ),
-              ],
-              selectedIds: const {1, 2},
-              onToggle: (_) {
-                toggles++;
-                return true;
-              },
+      try {
+        var toggles = 0;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SlotGridPicker(
+                slots: [
+                  lockedSlot(1, event: true),
+                  lockedSlot(2),
+                  const CourtSlot(
+                    id: 3,
+                    startMinute: 480,
+                    endMinute: 510,
+                    priceMinor: 7500000,
+                    status: SlotStatus.booked,
+                  ),
+                ],
+                selectedIds: const {1, 2},
+                onToggle: (_) {
+                  toggles++;
+                  return true;
+                },
+              ),
             ),
           ),
-        ),
-      );
-      expect(find.text('Bao sân'), findsOneWidget);
-      expect(find.text('Ngừng phục vụ'), findsOneWidget);
-      expect(find.text('Đã đặt'), findsOneWidget);
-      expect(find.text('Đã chọn'), findsNothing);
-      for (var id = 1; id <= 3; id++) {
-        await tester.tap(find.byKey(ValueKey('slot-$id')));
+        );
+        expect(find.text('Bao sân'), findsOneWidget);
+        expect(find.text('Ngừng phục vụ'), findsOneWidget);
+        expect(find.text('Đã đặt'), findsOneWidget);
+        expect(find.text('Đã chọn'), findsNothing);
+        for (var id = 1; id <= 3; id++) {
+          await tester.tap(find.byKey(ValueKey('slot-$id')));
+        }
+        expect(toggles, 0);
+        expect(
+          tester.getSemantics(
+            find.bySemanticsLabel('07:00–07:30, 75.000 đ, Bao sân'),
+          ),
+          matchesSemantics(
+            isButton: true,
+            hasEnabledState: true,
+            isEnabled: false,
+            hasSelectedState: true,
+            isSelected: false,
+            label: '07:00–07:30, 75.000 đ, Bao sân',
+            hint: 'Khung giờ đã được bao sân cho sự kiện, không nhận đặt lẻ. Giải đấu',
+          ),
+        );
+        await tester.longPress(find.byKey(const ValueKey('slot-1')));
+        await tester.pumpAndSettle();
+        expect(
+          find.text(
+            'Khung giờ đã được bao sân cho sự kiện, không nhận đặt lẻ. Giải đấu',
+          ),
+          findsOneWidget,
+        );
+        expect(toggles, 0);
+        await tester.pumpWidget(const SizedBox());
+      } finally {
+        semantics.dispose();
       }
-      expect(toggles, 0);
-      expect(
-        tester.getSemantics(find.bySemanticsLabel('07:00–07:30, 75.000 đ, Bao sân')),
-        matchesSemantics(
-          isButton: true,
-          hasEnabledState: true,
-          isEnabled: false,
-          hasSelectedState: true,
-          isSelected: false,
-          label: '07:00–07:30, 75.000 đ, Bao sân',
-          hint: 'Khung giờ đã được bao sân cho sự kiện, không nhận đặt lẻ. Giải đấu',
-        ),
-      );
-      await tester.longPress(find.byKey(const ValueKey('slot-1')));
-      await tester.pumpAndSettle();
-      expect(
-        find.text(
-          'Khung giờ đã được bao sân cho sự kiện, không nhận đặt lẻ. Giải đấu',
-        ),
-        findsOneWidget,
-      );
-      expect(toggles, 0);
-      await tester.pumpWidget(const SizedBox());
     },
   );
 }
