@@ -59,7 +59,7 @@ void main() {
     }
   });
   test(
-    'cross-branch invalid data and duplicate identities fail closed',
+    'cross-branch invalid voucher data fails closed',
     () async {
       for (final change in <Map<String, dynamic>>[
         {'branchId': 2},
