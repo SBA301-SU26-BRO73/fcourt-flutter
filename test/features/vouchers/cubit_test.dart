@@ -57,6 +57,27 @@ Future<void> initialize(
 
 void main() {
   testWidgets(
+    'activation prevents duplicate taps and ignores completion for old branch',
+    (tester) async {
+      final (cubit, repository, _) = setup();
+      await initialize(tester, cubit, repository);
+      final change = cubit.setEnabled(voucher(), false);
+      await cubit.setEnabled(voucher(), false);
+      expect(repository.changes.length, 1);
+      expect(cubit.state.busyIds, {1});
+      final switchBranch = cubit.selectBranch(2);
+      repository.calls.last.result.complete(
+        VoucherPage([voucher(id: 2, branchId: 2)], 0, 1),
+      );
+      await switchBranch;
+      repository.changes.single.complete(voucher());
+      await change;
+      expect(cubit.state.items.single.id, 2);
+      expect(cubit.state.busyIds, isEmpty);
+      await cubit.close();
+    },
+  );
+  testWidgets(
     'pagination errors retain rows and retries deduplicate identities',
     (tester) async {
       final (cubit, repository, _) = setup();
