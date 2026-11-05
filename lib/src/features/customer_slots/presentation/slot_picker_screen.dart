@@ -6,6 +6,7 @@ import '../domain/slot_repository.dart';
 import 'slot_picker_cubit.dart';
 import 'widgets/slot_date_selector.dart';
 import 'widgets/slot_grid_picker.dart';
+import 'widgets/slot_lock_contacts.dart';
 
 class SlotPickerScreen extends StatelessWidget {
   const SlotPickerScreen({
@@ -201,6 +202,13 @@ class _SlotViewState extends State<_SlotView> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
+                    if (!state.loading && state.error == null)
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        sliver: SliverToBoxAdapter(
+                          child: SlotLockContacts(slots: state.slots),
+                        ),
+                      ),
                     if (state.loading)
                       const SliverFillRemaining(
                         hasScrollBody: false,
