@@ -182,139 +182,152 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
             symbol: '₫',
             decimalDigits: 0,
           ).format(checkout.amountVnd);
-          return SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: ListView(
-                  padding: const EdgeInsets.all(20),
-                  children: [
-                    Text(
-                      checkout.branchName,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    Text('${checkout.courtName} · ${checkout.date}'),
-                    Text('Mã đơn: ${checkout.bookingCode}'),
-                    const SizedBox(height: 12),
-                    const Text('Thời gian giữ chỗ còn lại'),
-                    CountdownTimerWidget(
-                      expiresAt: checkout.expiresAt,
-                      onExpired: () {
-                        if (mounted) setState(() => _expired = true);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    if (widget.promos != null) ...[
-                      PromoCodeInput(
-                        key: ValueKey(
-                          'promo-${widget.arguments.bookingId}-${widget.arguments.holdToken}',
-                        ),
-                        initialCode:
-                            state.retryCode ?? widget.arguments.promoCode,
-                        applied: state.promo?.applied ?? false,
-                        loading: state.applying,
-                        readOnly: state.retryCode != null,
-                        error: state.promoError,
-                        helperText: state.retryCode != null
-                            ? 'Hãy thử lại cùng mã để xác nhận kết quả.'
-                            : null,
-                        onApply:
-                            state.promo?.canApply(DateTime.now().toUtc()) ==
-                                    true &&
-                                !_saving &&
-                                !state.freeConfirmed
-                            ? _checkout.apply
-                            : null,
-                      ),
-                      if (state.promo != null) PromoTotals(promo: state.promo!),
-                      const SizedBox(height: 16),
-                    ],
-                    if (state.blocked || state.error != null) ...[
+          return PopScope(
+            canPop:
+                !state.applying &&
+                !state.freeConfirming &&
+                state.retryCode == null,
+            child: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: [
                       Text(
-                        state.error ??
-                            'Đang chờ đối soát voucher, chưa thể chuyển khoản.',
+                        checkout.branchName,
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      TextButton(
-                        onPressed: state.applying ? null : _checkout.load,
-                        child: const Text('Tải lại thanh toán'),
+                      Text('${checkout.courtName} · ${checkout.date}'),
+                      Text('Mã đơn: ${checkout.bookingCode}'),
+                      const SizedBox(height: 12),
+                      const Text('Thời gian giữ chỗ còn lại'),
+                      CountdownTimerWidget(
+                        expiresAt: checkout.expiresAt,
+                        onExpired: () {
+                          if (mounted) setState(() => _expired = true);
+                        },
                       ),
-                    ],
-                    if (state.transferAllowed) ...[
-                      Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 320),
-                          child: ColoredBox(
-                            color: Colors.white,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child:
-                                  widget.qrBuilder?.call(checkout.qrUri) ??
-                                  SvgPicture.network(
-                                    checkout.qrUri.toString(),
-                                    fit: BoxFit.contain,
-                                    semanticsLabel: 'Mã VietQR thanh toán',
-                                    errorBuilder: (_, _, _) => const SizedBox(
-                                      height: 240,
-                                      child: Center(
-                                        child: Text(
-                                          'Chưa tải được mã QR. Bạn có thể chuyển khoản theo thông tin bên dưới.',
+                      const SizedBox(height: 16),
+                      if (widget.promos != null) ...[
+                        PromoCodeInput(
+                          key: ValueKey(
+                            'promo-${widget.arguments.bookingId}-${widget.arguments.holdToken}',
+                          ),
+                          initialCode:
+                              state.retryCode ?? widget.arguments.promoCode,
+                          applied: state.promo?.applied ?? false,
+                          loading: state.applying,
+                          readOnly: state.retryCode != null,
+                          error: state.promoError,
+                          helperText: state.retryCode != null
+                              ? 'Hãy thử lại cùng mã để xác nhận kết quả.'
+                              : state.promo?.paymentFrozen == true
+                              ? 'Đơn đã khóa thanh toán, không thể đổi khuyến mãi.'
+                              : null,
+                          onApply:
+                              state.promo?.canApply(DateTime.now().toUtc()) ==
+                                      true &&
+                                  !_saving &&
+                                  !state.freeConfirmed
+                              ? _checkout.apply
+                              : null,
+                        ),
+                        if (state.promo != null)
+                          PromoTotals(promo: state.promo!),
+                        const SizedBox(height: 16),
+                      ],
+                      if (state.blocked || state.error != null) ...[
+                        Text(
+                          state.error ?? 'Đang chờ đối soát voucher, chưa thể chuyển khoản.',
+                        ),
+                        TextButton(
+                          onPressed: state.applying ? null : _checkout.load,
+                          child: const Text('Tải lại thanh toán'),
+                        ),
+                      ],
+                      if (state.transferAllowed) ...[
+                        Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 320),
+                            child: ColoredBox(
+                              color: Colors.white,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child:
+                                    widget.qrBuilder?.call(checkout.qrUri) ??
+                                    SvgPicture.network(
+                                      checkout.qrUri.toString(),
+                                      fit: BoxFit.contain,
+                                      semanticsLabel: 'Mã VietQR thanh toán',
+                                      errorBuilder: (_, _, _) => const SizedBox(
+                                        height: 240,
+                                        child: Center(
+                                          child: Text(
+                                            'Chưa tải được mã QR. Bạn có thể chuyển khoản theo thông tin bên dưới.',
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(checkout.bankName),
-                      _copyRow('Số tài khoản', checkout.accountNumber),
-                      _copyRow('Tên chủ tài khoản', checkout.accountName),
-                      _copyRow(
-                        'Số tiền',
-                        money,
-                        clipboardValue: '${checkout.amountVnd}',
-                      ),
-                      _copyRow(
-                        'Nội dung chuyển khoản',
-                        checkout.transferContent,
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    if (widget.onUploadReceipt != null && state.transferAllowed)
-                      FilledButton(
-                        onPressed: widget.onUploadReceipt,
-                        child: const Text('Tôi đã chuyển khoản · Gửi biên lai'),
-                      ),
-                    if (state.transferAllowed)
-                      FilledButton.icon(
-                        onPressed: _saving ? null : () => _save(checkout),
-                        icon: Icon(
-                          _saving ? Icons.hourglass_top : Icons.download,
+                        const SizedBox(height: 12),
+                        Text(checkout.bankName),
+                        _copyRow('Số tài khoản', checkout.accountNumber),
+                        _copyRow('Tên chủ tài khoản', checkout.accountName),
+                        _copyRow(
+                          'Số tiền',
+                          money,
+                          clipboardValue: '${checkout.amountVnd}',
                         ),
-                        label: Text(
-                          _saving ? 'Đang lưu…' : 'Lưu mã QR vào thư viện ảnh',
+                        _copyRow(
+                          'Nội dung chuyển khoản',
+                          checkout.transferContent,
                         ),
-                      ),
-                    if (checkout.amountVnd == 0 && !state.blocked) ...[
-                      const Text(
-                        'Đơn được giảm còn 0 đồng, không cần chuyển khoản.',
-                      ),
-                      if (state.freeConfirmed)
-                        const Text('Đã xác nhận đơn miễn phí')
-                      else
+                      ],
+                      const SizedBox(height: 16),
+                      if (widget.onUploadReceipt != null &&
+                          state.transferAllowed)
                         FilledButton(
-                          onPressed: state.freeConfirming
-                              ? null
-                              : _checkout.confirmFree,
-                          child: Text(
-                            state.freeConfirming
-                                ? 'Đang xác nhận…'
-                                : 'Xác nhận đơn miễn phí',
+                          onPressed: widget.onUploadReceipt,
+                          child: const Text(
+                            'Tôi đã chuyển khoản · Gửi biên lai',
                           ),
                         ),
+                      if (state.transferAllowed)
+                        FilledButton.icon(
+                          onPressed: _saving ? null : () => _save(checkout),
+                          icon: Icon(
+                            _saving ? Icons.hourglass_top : Icons.download,
+                          ),
+                          label: Text(
+                            _saving
+                                ? 'Đang lưu…'
+                                : 'Lưu mã QR vào thư viện ảnh',
+                          ),
+                        ),
+                      if (checkout.amountVnd == 0 && !state.blocked) ...[
+                        const Text(
+                          'Đơn được giảm còn 0 đồng, không cần chuyển khoản.',
+                        ),
+                        if (state.freeConfirmed)
+                          const Text('Đã xác nhận đơn miễn phí')
+                        else
+                          FilledButton(
+                            onPressed: state.freeConfirming
+                                ? null
+                                : _checkout.confirmFree,
+                            child: Text(
+                              state.freeConfirming
+                                  ? 'Đang xác nhận…'
+                                  : 'Xác nhận đơn miễn phí',
+                            ),
+                          ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
