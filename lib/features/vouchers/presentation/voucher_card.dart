@@ -11,10 +11,12 @@ class VoucherCard extends StatelessWidget {
     required this.busy,
     required this.onEdit,
     required this.onEnabled,
+    this.blocked = false,
   });
   final Voucher voucher;
   final DateTime now;
   final bool busy;
+  final bool blocked;
   final VoidCallback onEdit;
   final ValueChanged<bool> onEnabled;
 
@@ -51,7 +53,7 @@ class VoucherCard extends StatelessWidget {
                   label: 'Kích hoạt ${row.code}',
                   child: Switch(
                     value: row.enabledAt(now),
-                    onChanged: busy || expired ? null : onEnabled,
+                    onChanged: busy || blocked || expired ? null : onEnabled,
                   ),
                 ),
               ],
@@ -84,7 +86,7 @@ class VoucherCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: busy ? null : onEdit,
+                  onPressed: busy || blocked ? null : onEdit,
                 icon: const Icon(Icons.edit_outlined),
                 label: const Text('Chỉnh sửa'),
               ),
