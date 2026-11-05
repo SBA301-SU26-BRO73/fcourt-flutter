@@ -16,8 +16,7 @@ class BranchLocation {
 
   String get coordinates => '$latitude,$longitude';
   bool get supportsTiles => latitude.abs() <= 85.05112878;
-  Uri get androidDirections =>
-      Uri(scheme: 'google.navigation', queryParameters: {'q': coordinates});
+  Uri get androidDirections => Uri.parse('google.navigation:q=$coordinates');
   Uri get googleDirections => Uri.https('www.google.com', '/maps/dir/', {
     'api': '1',
     'destination': coordinates,
