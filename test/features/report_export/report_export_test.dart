@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:fcourt/core/error/failure.dart';
-import 'package:fcourt/features/admin_facility/domain/entities/branch.dart';
 import 'package:fcourt/features/report_export/data/report_file_store.dart';
 import 'package:fcourt/features/report_export/data/revenue_report_remote_data_source.dart';
 import 'package:fcourt/features/report_export/data/revenue_report_repository_impl.dart';
