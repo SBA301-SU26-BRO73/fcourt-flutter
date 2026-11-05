@@ -81,6 +81,28 @@ class PromoPayments implements PaymentRepository {
 }
 
 void main() {
+  test(
+    'booking and payment mismatch blocks QR until a fresh read agrees',
+    () async {
+      final store = PromoStore();
+      final payments = PromoPayments(store)..forcedAmount = 160000;
+      final controller = PromoCheckoutCubit(
+        payments,
+        store,
+        const CheckoutArguments(bookingId: 42),
+      );
+      await controller.load();
+      await controller.apply('SAVE');
+      expect(controller.state.blocked, isTrue);
+      expect(controller.state.transferAllowed, isFalse);
+      expect(controller.state.retryCode, 'SAVE');
+      payments.forcedAmount = null;
+      await controller.load();
+      expect(controller.state.transferAllowed, isTrue);
+      expect(controller.state.checkout!.amountVnd, 120000);
+      await controller.close();
+    },
+  );
   test('unknown outcome stays blocked and retries same code until application is confirmed', () async {
     final store = PromoStore()
       ..failure = const PromoFailure('Mất phản hồi', uncertain: true);
