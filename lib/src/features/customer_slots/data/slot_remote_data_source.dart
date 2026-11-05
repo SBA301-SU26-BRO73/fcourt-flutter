@@ -59,12 +59,14 @@ class SlotRemoteDataSource {
   SlotRestriction? _restriction(dynamic raw, dynamic status) {
     if (status != 'OUT_OF_SERVICE' ||
         raw is! Map ||
-        !{'PRIVATE_EVENT', 'OUT_OF_SERVICE'}.contains(raw['type']))
+        !{'PRIVATE_EVENT', 'OUT_OF_SERVICE'}.contains(raw['type'])) {
       return null;
+    }
     String? publicText(String key, int max) {
       final value = raw[key];
-      if (value is! String || value.trim().isEmpty || value.length > max)
+      if (value is! String || value.trim().isEmpty || value.length > max) {
         return null;
+      }
       return value.trim();
     }
 
