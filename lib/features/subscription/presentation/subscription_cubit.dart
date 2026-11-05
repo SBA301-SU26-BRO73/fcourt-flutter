@@ -50,8 +50,9 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   }
 
   Future<void> refresh() async {
-    if (isClosed || state.busy || state.checking || (state.loading && _started))
+    if (isClosed || state.busy || state.checking || (state.loading && _started)) {
       return;
+    }
     _started = true;
     _timer?.cancel();
     emit(state.copyWith(loading: true));
@@ -76,7 +77,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
         _failure(failure);
         return;
       }
-      error = [if (error != null) error, _message(failure)].join('\n');
+      error = [?error, _message(failure)].join('\n');
     }
     if (isClosed) return;
     emit(state.copyWith(loading: false, error: error));
@@ -90,8 +91,9 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
         state.busy ||
         state.checking ||
         state.loading ||
-        state.payment?.pending == true)
+        state.payment?.pending == true) {
       return;
+    }
     final plan = state.plans.where((plan) => plan.id == planId).firstOrNull;
     if (plan == null || !plan.active || state.cycle.price(plan) == null) return;
     final selectedCycle = state.cycle;
@@ -117,10 +119,11 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     if (fresh.id != old.id ||
         fresh.planId != old.planId ||
         fresh.cycle != old.cycle ||
-        fresh.amount != old.amount)
+        fresh.amount != old.amount) {
       throw const ServerFailure(
         'Dữ liệu giao dịch không khớp. Vui lòng tải lại.',
       );
+    }
     return fresh;
   }
 
@@ -130,8 +133,9 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
         payment == null ||
         state.busy ||
         state.checking ||
-        state.loading)
+        state.loading) {
       return;
+    }
     _timer?.cancel();
     if (!automatic) _polls = 0;
     emit(state.copyWith(checking: true, error: state.error));
@@ -159,8 +163,9 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
         payment == null ||
         !payment.pending ||
         state.paymentError != null ||
-        payment.checkoutUrl == null)
+        payment.checkoutUrl == null) {
       return;
+    }
     _timer?.cancel();
     emit(state.copyWith(busy: true, error: state.error));
     try {
@@ -176,7 +181,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
         ),
       );
     } catch (_) {
-      if (!isClosed)
+      if (!isClosed) {
         emit(
           state.copyWith(
             busy: false,
@@ -185,6 +190,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
                 'Chưa mở được PayOS. Nhấn mở lại để dùng cùng giao dịch.',
           ),
         );
+      }
     }
     _schedule();
   }
@@ -201,8 +207,9 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     if (isClosed ||
         !_foreground ||
         state.payment?.pending != true ||
-        _polls >= maxPolls)
+        _polls >= maxPolls) {
       return;
+    }
     _timer = Timer(pollInterval, () {
       _polls++;
       checkPayment(automatic: true);
