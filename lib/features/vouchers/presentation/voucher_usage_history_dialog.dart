@@ -64,6 +64,7 @@ class _HistoryView extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       TextField(
+                        enabled: false,
                         key: const ValueKey('usage-phone'),
                         keyboardType: TextInputType.phone,
                         maxLength: 100,
@@ -71,7 +72,7 @@ class _HistoryView extends StatelessWidget {
                         decoration: const InputDecoration(
                           labelText: 'Tìm SĐT khách hàng',
                           helperText:
-                              'Tìm kiếm cần API cung cấp SĐT và hỗ trợ lọc.',
+                              'API hiện tại chưa hỗ trợ tìm theo SĐT.',
                           prefixIcon: Icon(Icons.search),
                         ),
                       ),
