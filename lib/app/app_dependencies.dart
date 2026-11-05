@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../features/vouchers/data/voucher_usage_repository_impl.dart';
+import '../features/vouchers/domain/voucher_usage_repository.dart';
 import '../features/vouchers/data/voucher_repository_impl.dart';
 import '../features/vouchers/domain/voucher_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -103,6 +105,7 @@ class AppDependencies {
     this.adminRefunds,
     this.ledgerExporter,
     this.vouchers,
+    this.voucherUsages,
   });
 
   final AppConfig config;
@@ -139,6 +142,7 @@ class AppDependencies {
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
   final VoucherRepository? vouchers;
+  final VoucherUsageRepository? voucherUsages;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -199,6 +203,9 @@ class AppDependencies {
       adminTransactions: AdminTransactionsImpl(dio),
       vouchers: VoucherRepositoryImpl(createDio(config, tokenStorage,
         baseUrl: config.voucherUrl, onSessionExpired: onSessionExpired)),
+      voucherUsages: VoucherUsageRepositoryImpl(createDio(config, tokenStorage,
+        baseUrl: config.voucherUrl, onSessionExpired: onSessionExpired,
+        logRequests: false)),
       ledgerExporter: CsvLedgerExporter(AdminTransactionsImpl(dio)),
       refundRepository: RefundRepositoryImpl(dio),
       adminRefunds: AdminRefundsImpl(dio),
