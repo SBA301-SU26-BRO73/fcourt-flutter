@@ -19,8 +19,9 @@ class SheetRepository implements DiscoveryRepository {
     int page = 0,
   }) async {
     requests.add(filters);
-    if (fail)
+    if (fail) {
       throw const ServerFailure('Không tải được giờ trống', statusCode: 503);
+    }
     return BranchPage(
       branches: const [
         Branch(
