@@ -1,0 +1,77 @@
+import 'dart:async';
+
+import 'package:fcourt/features/payment/domain/entities/payment_checkout.dart';
+import 'package:fcourt/features/payment/presentation/pages/payment_checkout_screen.dart';
+import 'package:fcourt/features/promos/domain/booking_promo.dart';
+import 'package:fcourt/features/promos/presentation/promo_code_input.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../payment/checkout_test.dart' show FakeSaver;
+import 'cubit_test.dart' show PromoStore, PromoPayments;
+
+Widget screen(
+  PromoStore store,
+  PromoPayments payments, {
+  int id = 42,
+  VoidCallback? onFree,
+}) => MaterialApp(
+  home: PaymentCheckoutScreen(
+    repository: payments,
+    promos: store,
+    saver: FakeSaver(),
+    arguments: CheckoutArguments(bookingId: id, promoCode: 'SAVE'),
+    onFreeConfirmed: onFree,
+    onUploadReceipt: () {},
+    qrBuilder: (uri) => SizedBox(
+      height: 180,
+      child: Text('QR:${uri.queryParameters['amount']}'),
+    ),
+  ),
+);
+Future<void> pumpCheckout(
+  WidgetTester tester,
+  PromoStore store,
+  PromoPayments payments,
+) async {
+  tester.view.physicalSize = const Size(412, 915);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(screen(store, payments));
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  testWidgets(
+    'apply removes old QR while pending then displays green discount and final QR',
+    (tester) async {
+      final store = PromoStore()..pending = Completer<PromoApplication>();
+      await pumpCheckout(tester, store, PromoPayments(store));
+      await tester.tap(find.text('Áp dụng'));
+      await tester.pump();
+      expect(find.text('QR:160000'), findsNothing);
+      expect(find.byTooltip('Sao chép Số tiền'), findsNothing);
+      expect(find.text('Tôi đã chuyển khoản · Gửi biên lai'), findsNothing);
+      expect(
+        tester.widget<PromoCodeInput>(find.byType(PromoCodeInput)).loading,
+        isTrue,
+      );
+      store.applied.add(42);
+      store.pending!.complete(store.application(42));
+      await tester.pumpAndSettle();
+      final original = tester.widget<Text>(find.textContaining('Giá gốc:'));
+      expect(original.style!.decoration, TextDecoration.lineThrough);
+      final discount = tester.widget<Text>(find.textContaining('Khuyến mãi:'));
+      expect(discount.style!.color, const Color(0xFF2E7D32));
+      expect(discount.data, contains('40.000'));
+      await tester.scrollUntilVisible(
+        find.text('QR:120000'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('QR:120000'), findsOneWidget);
+      expect(find.text('QR:160000'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+}
