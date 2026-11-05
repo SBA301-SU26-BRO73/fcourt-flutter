@@ -9,6 +9,34 @@ import '../../helpers/fake_adapter.dart';
 
 void main() {
   test(
+    'single price bound and time filter omit unspecified parameters',
+    () async {
+      final adapter = FakeAdapter(
+        (_) => jsonResponse(200, {
+          'content': [],
+          'page': 1,
+          'size': 12,
+          'totalPages': 2,
+          'totalElements': 15,
+        }),
+      );
+      final repository = DiscoveryRepositoryImpl(
+        DiscoveryRemoteDataSource(Dio()..httpClientAdapter = adapter),
+      );
+      final page = await repository.search(
+        page: 1,
+        filters: const DiscoveryFilters(minPrice: '0', timeSlot: '09:00-10:00'),
+      );
+      expect(adapter.requests.single.queryParameters, {
+        'minPrice': '0',
+        'timeSlot': '09:00-10:00',
+        'page': 1,
+        'size': 12,
+      });
+      expect(page.totalElements, 15);
+    },
+  );
+  test(
     'combined filters match SCRUM-57 anonymous query and backend total',
     () async {
       final adapter = FakeAdapter(
