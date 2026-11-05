@@ -249,6 +249,8 @@ GoRouter createRouter(
             repository: repository,
             branchId: id,
             exporter: dependencies.ledgerExporter,
+            revenueReports: dependencies.adminFacility?.revenueReportRepository,
+            fileOpener: dependencies.adminFacility?.reportFileOpener,
           );
         },
       ),

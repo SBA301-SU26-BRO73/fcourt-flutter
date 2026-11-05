@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/error/failure.dart';
+import '../../report_export/domain/report_export.dart';
+import '../../report_export/presentation/revenue_export_button.dart';
 import '../domain/branch_ledger.dart';
 import '../domain/transaction.dart';
 import 'transaction_widgets.dart';
@@ -14,10 +16,16 @@ class AdminTransactionHistoryScreen extends StatefulWidget {
     required this.repository,
     required this.branchId,
     this.exporter,
+    this.revenueReports,
+    this.fileOpener,
   });
   final AdminTransactions repository;
   final int branchId;
   final LedgerReportExporter? exporter;
+
+  /// SCRUM-77: có cả hai thì thanh công cụ có nút xuất báo cáo doanh thu Excel/CSV.
+  final RevenueReportRepository? revenueReports;
+  final ReportFileOpener? fileOpener;
   @override
   State<AdminTransactionHistoryScreen> createState() =>
       _AdminTransactionHistoryScreenState();
@@ -168,6 +176,13 @@ class _AdminTransactionHistoryScreenState
       appBar: AppBar(
         title: const Text('Đối soát tài chính'),
         actions: [
+          if (widget.revenueReports != null && widget.fileOpener != null)
+            RevenueExportButton(
+              repository: widget.revenueReports!,
+              opener: widget.fileOpener!,
+              initialBranchId: widget.branchId,
+              lockBranch: true,
+            ),
           if (widget.exporter != null)
             IconButton(
               tooltip: _exporting ? 'Đang xuất báo cáo' : 'Xuất báo cáo CSV',
