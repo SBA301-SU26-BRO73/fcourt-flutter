@@ -32,6 +32,46 @@ class FilterRepository implements DiscoveryRepository {
 
 void main() {
   testWidgets(
+    'filters survive search, sport, refresh and pagination; reset preserves query',
+    (tester) async {
+      final repository = FilterRepository();
+      final cubit = DiscoveryCubit(repository, query: 'Sân A');
+      const filters = DiscoveryFilters(minPrice: '100000', district: 'Thủ Đức');
+      cubit.updateFilters(filters);
+      await tester.pump(const Duration(milliseconds: 300));
+      repository.calls.last.result.complete(result(0, [1]));
+      await tester.pump();
+      final more = cubit.loadMore();
+      final stalePage = repository.calls.last;
+      expect(stalePage.page, 1);
+      expect(stalePage.filters, same(filters));
+      cubit.filter(DiscoverySport.badminton);
+      expect(repository.calls.last.filters, same(filters));
+      repository.calls.last.result.complete(result(0, [2]));
+      await tester.pump();
+      stalePage.result.complete(result(1, [3]));
+      await more;
+      expect(cubit.state.branches.single.id, 2);
+      final refresh = cubit.refresh();
+      expect(repository.calls.last.filters, same(filters));
+      repository.calls.last.result.complete(result(0, [2]));
+      await refresh;
+      cubit.search('Sân B');
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(repository.calls.last.filters, same(filters));
+      repository.calls.last.result.complete(result(0, [2]));
+      await tester.pump();
+      cubit.resetFilters();
+      expect(repository.calls.last.query, 'Sân B');
+      expect(repository.calls.last.sport, isNull);
+      expect(repository.calls.last.filters.count, 0);
+      expect(repository.calls.last.page, 0);
+      repository.calls.last.result.complete(result(0, [1]));
+      await tester.pump();
+      await cubit.close();
+    },
+  );
+  testWidgets(
     'filters update immediately, debounce calls and ignore old responses',
     (tester) async {
       final repository = FilterRepository();
