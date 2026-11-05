@@ -15,7 +15,7 @@ extension SlotAppearance on SlotStatus {
     SlotStatus.available => 'Trống',
     SlotStatus.booked => 'Đã đặt',
     SlotStatus.hold => 'Đang giữ',
-    SlotStatus.outOfService => 'Bảo trì / Bao sân',
+    SlotStatus.outOfService => 'Ngừng phục vụ',
     SlotStatus.expired => 'Đã qua',
     SlotStatus.unknown => 'Không khả dụng',
   };
@@ -25,6 +25,15 @@ extension SlotAppearance on SlotStatus {
     SlotStatus.hold => const Color(0xFF965000),
     SlotStatus.outOfService => const Color(0xFF705A7B),
     _ => const Color(0xFF646B69),
+  };
+
+  String? get unavailableReason => switch (this) {
+    SlotStatus.available => null,
+    SlotStatus.booked => 'Khung giờ này đã có người đặt.',
+    SlotStatus.hold => 'Khung giờ đang được giữ chỗ, hiện chưa thể chọn.',
+    SlotStatus.outOfService => 'Khung giờ bị khóa và không nhận đặt lẻ.',
+    SlotStatus.expired => 'Khung giờ đã bắt đầu hoặc đã qua, không thể đặt.',
+    SlotStatus.unknown => 'Khung giờ không khả dụng, không thể chọn.',
   };
 }
 
