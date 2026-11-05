@@ -48,4 +48,28 @@ class FacilityRemoteDataSource {
 
   Future<Object?> applyTemplate(int courtId, Map<String, dynamic> body) async =>
       (await _dio.post<Object?>(applyTemplatePath(courtId), data: body)).data;
+
+  // --- Khóa slot / ngừng phục vụ / bao sân (SCRUM-49/111) ---
+  static const lockSlotsPath = '/api/admin/courts/lock-slots';
+  static String lockSlotPath(int id) => '$lockSlotsPath/$id';
+  static const outOfServicePath = '/api/admin/courts/out-of-service';
+  static String outOfServiceGroupPath(String groupId) =>
+      '$outOfServicePath/$groupId';
+
+  Future<Object?> lockCourt(Map<String, dynamic> body) async =>
+      (await _dio.post<Object?>(lockSlotsPath, data: body)).data;
+
+  Future<Object?> lockBranch(Map<String, dynamic> body) async =>
+      (await _dio.post<Object?>(outOfServicePath, data: body)).data;
+
+  Future<Object?> getLocks(Map<String, dynamic> query) async =>
+      (await _dio.get<Object?>(lockSlotsPath, queryParameters: query)).data;
+
+  Future<void> unlock(int id) async {
+    await _dio.delete<Object?>(lockSlotPath(id));
+  }
+
+  Future<void> unlockGroup(String groupId) async {
+    await _dio.delete<Object?>(outOfServiceGroupPath(groupId));
+  }
 }
