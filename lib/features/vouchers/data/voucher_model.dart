@@ -15,12 +15,14 @@ class VoucherModel {
       if (value is! num ||
           !value.isFinite ||
           value < 0 ||
-          value > 9999999999.99)
+          value > 9999999999.99) {
         throw const FormatException();
+      }
       final cents = value * 100;
       if ((cents - cents.round()).abs() > .001 ||
-          (positive && cents.round() <= 0))
+          (positive && cents.round() <= 0)) {
         throw const FormatException();
+      }
       return cents.round();
     }
 
@@ -28,8 +30,9 @@ class VoucherModel {
       final text = raw[key];
       final value = text is String ? DateTime.tryParse(text) : null;
       if (value == null ||
-          !RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(text as String))
+          !RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(text as String)) {
         throw const FormatException();
+      }
       return value.toUtc();
     }
 
@@ -52,8 +55,9 @@ class VoucherModel {
         status == null ||
         !start.isBefore(end) ||
         used > limit ||
-        (type == VoucherDiscountType.percentage && value > 10000))
+        (type == VoucherDiscountType.percentage && value > 10000)) {
       throw const FormatException();
+    }
     return Voucher(
       id: integer('id', 1),
       branchId: branchId,
