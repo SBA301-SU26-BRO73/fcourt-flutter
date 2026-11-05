@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../../features/maps/domain/branch_location.dart';
+import '../../../../../features/maps/presentation/branch_map_card.dart';
 
 import '../../domain/discovery_repository.dart';
 import '../widgets/discovery_widgets.dart';
 
 class BranchDetailScreen extends StatelessWidget {
-  const BranchDetailScreen({super.key, required this.branchId, this.branch});
+  const BranchDetailScreen({super.key, required this.branchId, this.branch, this.maps});
+  final BranchMapPlatform? maps;
   final int branchId;
   final Branch? branch;
 
@@ -62,6 +65,11 @@ class BranchDetailScreen extends StatelessWidget {
                   ].whereType<String>().where((s) => s.isNotEmpty).join(', '),
                 ),
                 const SizedBox(height: 16),
+                if (maps != null) ...[
+                  BranchMapCard(key: ValueKey(branchId), location: data.location,
+                    name: data.name, platform: maps!),
+                  const SizedBox(height: 16),
+                ],
                 Wrap(
                   spacing: 16,
                   runSpacing: 8,
