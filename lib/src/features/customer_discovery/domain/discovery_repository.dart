@@ -1,3 +1,5 @@
+import '../../../../features/maps/domain/branch_location.dart';
+
 class Branch {
   const Branch({
     required this.id,
@@ -9,6 +11,8 @@ class Branch {
     this.minPrice,
     this.maxPrice,
     this.distanceKm,
+    this.latitude,
+    this.longitude,
   });
 
   final int id;
@@ -16,6 +20,8 @@ class Branch {
   final String? district;
   final int courtCount;
   final double? minPrice, maxPrice, distanceKm;
+  final double? latitude, longitude;
+  BranchLocation? get location => BranchLocation.parse(latitude, longitude);
 }
 
 class BranchPage {
