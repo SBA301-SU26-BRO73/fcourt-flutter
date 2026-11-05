@@ -64,7 +64,7 @@ class SlotGridPicker extends StatelessWidget {
               child: _SlotCell(
                 key: ValueKey('slot-${slot.id}'),
                 slot: slot,
-                selected: selectedIds.contains(slot.id),
+                selected: slot.status == SlotStatus.available && selectedIds.contains(slot.id),
                 onTap: () {
                   if (onToggle(slot.id)) HapticFeedback.selectionClick();
                 },
