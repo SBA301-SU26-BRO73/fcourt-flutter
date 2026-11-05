@@ -29,12 +29,13 @@ void main() {
                     repository: repo,
                     bookingId: 10,
                   );
-                  if (context.mounted && result != null)
+                  if (context.mounted && result != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Cảm ơn bạn đã đánh giá sân!'),
                       ),
                     );
+                  }
                 },
                 child: const Text('Open'),
               ),
