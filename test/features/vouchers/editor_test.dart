@@ -65,6 +65,27 @@ Future<void> openEditor(
 Finder field(String label) => find.widgetWithText(TextField, label);
 
 void main() {
+  testWidgets('create form supports fixed VND discount and optional cap', (
+    tester,
+  ) async {
+    final repository = EditorRepository();
+    await openEditor(tester, repository);
+    await tester.enterText(field('Mã voucher'), 'FIXED');
+    await tester.tap(find.byType(DropdownButtonFormField<VoucherDiscountType>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Số tiền cố định (VND)').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(field('Giá trị giảm (VND)'), '100000');
+    await tester.enterText(
+      field('Giảm tối đa (VND, có thể bỏ trống)'),
+      '50000.25',
+    );
+    await tester.tap(find.text('Lưu voucher'));
+    await tester.pumpAndSettle();
+    expect(repository.drafts.single.type, VoucherDiscountType.fixedAmount);
+    expect(repository.drafts.single.value, '100000');
+    expect(repository.drafts.single.cap, '50000.25');
+  });
   testWidgets(
     'changed inclusive date range maps to Vietnam midnight boundaries',
     (tester) async {
