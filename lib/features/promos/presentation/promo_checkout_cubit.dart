@@ -90,7 +90,7 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
         ),
       );
     } catch (error) {
-      if (!isClosed && revision == _revision)
+      if (!isClosed && revision == _revision) {
         emit(
           PromoCheckoutState(
             loading: false,
@@ -100,6 +100,7 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
             expired: _expired(error),
           ),
         );
+      }
     }
   }
 
@@ -111,8 +112,9 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
         before.checkout == null ||
         before.applying ||
         before.loading ||
-        before.freeConfirming)
+        before.freeConfirming) {
       return;
+    }
     final normalized = before.retryCode ?? code.trim().toUpperCase();
     if (!RegExp(r'^[A-Z0-9_-]{1,50}$').hasMatch(normalized)) {
       emit(
@@ -128,8 +130,9 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
       return;
     }
     if (!promo.canApply(DateTime.now().toUtc()) ||
-        !before.checkout!.expiresAt.isAfter(DateTime.now().toUtc()))
+        !before.checkout!.expiresAt.isAfter(DateTime.now().toUtc())) {
       return;
+    }
     final revision = ++_revision;
     emit(
       PromoCheckoutState(
@@ -170,7 +173,7 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
         ),
       );
     } catch (error) {
-      if (!isClosed && revision == _revision)
+      if (!isClosed && revision == _revision) {
         emit(
           PromoCheckoutState(
             checkout: before.checkout,
@@ -185,6 +188,7 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
             error: 'Chưa thể hiển thị mã thanh toán. Hãy tải lại để đối soát.',
           ),
         );
+      }
     }
   }
 
@@ -196,8 +200,9 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
         before.blocked ||
         before.freeConfirming ||
         before.freeConfirmed ||
-        !before.checkout!.expiresAt.isAfter(DateTime.now().toUtc()))
+        !before.checkout!.expiresAt.isAfter(DateTime.now().toUtc())) {
       return;
+    }
     final revision = ++_revision;
     emit(
       PromoCheckoutState(
@@ -209,7 +214,7 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
     );
     try {
       await promos!.confirmFree(arguments.bookingId);
-      if (!isClosed && revision == _revision)
+      if (!isClosed && revision == _revision) {
         emit(
           PromoCheckoutState(
             checkout: before.checkout,
@@ -218,8 +223,9 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
             freeConfirmed: true,
           ),
         );
+      }
     } catch (error) {
-      if (!isClosed && revision == _revision)
+      if (!isClosed && revision == _revision) {
         emit(
           PromoCheckoutState(
             checkout: before.checkout,
@@ -229,6 +235,7 @@ class PromoCheckoutCubit extends Cubit<PromoCheckoutState> {
             expired: _expired(error),
           ),
         );
+      }
     }
   }
 
