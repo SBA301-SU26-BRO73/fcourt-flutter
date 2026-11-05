@@ -27,21 +27,29 @@ class PaymentCheckout {
   final String transferContent;
   final DateTime expiresAt;
 
-  Uri get qrUri => Uri.https(
-    'img.vietqr.io',
-    '/image/$bankBin-$accountNumber-compact2.svg',
-    {
-      'amount': '$amountVnd',
-      'addInfo': transferContent,
-      'accountName': accountName,
-    },
-  );
+  Uri get qrUri {
+    if (amountVnd <= 0) throw StateError('Free checkout has no transfer QR');
+    return Uri.https(
+      'img.vietqr.io',
+      '/image/$bankBin-$accountNumber-compact2.svg',
+      {
+        'amount': '$amountVnd',
+        'addInfo': transferContent,
+        'accountName': accountName,
+      },
+    );
+  }
 }
 
 class CheckoutArguments {
-  const CheckoutArguments({required this.bookingId, this.holdToken});
+  const CheckoutArguments({
+    required this.bookingId,
+    this.holdToken,
+    this.promoCode = '',
+  });
   final int bookingId;
   final String? holdToken;
+  final String promoCode;
 }
 
 class PaymentFailure implements Exception {

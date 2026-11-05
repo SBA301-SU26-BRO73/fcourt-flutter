@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../features/promos/data/promo_repository_impl.dart';
+import '../features/promos/domain/promo_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
@@ -100,6 +102,7 @@ class AppDependencies {
     this.refundRepository,
     this.adminRefunds,
     this.ledgerExporter,
+    this.promos,
   });
 
   final AppConfig config;
@@ -135,6 +138,7 @@ class AppDependencies {
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
+  final PromoRepository? promos;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -188,6 +192,8 @@ class AppDependencies {
         createDio(config, tokenStorage, baseUrl: config.facilityUrl),
       ),
       paymentRepository: PaymentRepositoryImpl(dio),
+      promos: PromoRepositoryImpl(dio, createDio(config, tokenStorage,
+        baseUrl: config.voucherUrl, onSessionExpired: onSessionExpired)),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
       cancellationRepository: CancellationRepositoryImpl(dio),

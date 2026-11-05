@@ -9,6 +9,7 @@ class AppConfig {
     this.discoveryBaseUrl,
     this.facilityBaseUrl,
     this.reportingBaseUrl,
+    this.voucherBaseUrl,
     String? staffBaseUrl,
     String? posBaseUrl,
     String? authBaseUrl,
@@ -21,6 +22,7 @@ class AppConfig {
   final String? discoveryBaseUrl;
   final String? facilityBaseUrl;
   final String? reportingBaseUrl;
+  final String? voucherBaseUrl;
   final String staffBaseUrl;
   final String posBaseUrl;
   String get discoveryUrl => discoveryBaseUrl ?? apiBaseUrl;
@@ -32,6 +34,7 @@ class AppConfig {
 
   String get facilityUrl => _orApi(facilityBaseUrl);
   String get reportingUrl => _orApi(reportingBaseUrl);
+  String get voucherUrl => _orApi(voucherBaseUrl);
 
   String _orApi(String? url) =>
       url == null || url.trim().isEmpty ? apiBaseUrl : url;
@@ -61,6 +64,9 @@ class AppConfig {
           : const String.fromEnvironment('POS_BASE_URL'),
       reportingBaseUrl: const bool.hasEnvironment('REPORTING_BASE_URL')
           ? const String.fromEnvironment('REPORTING_BASE_URL')
+          : null,
+      voucherBaseUrl: const bool.hasEnvironment('VOUCHER_BASE_URL')
+          ? const String.fromEnvironment('VOUCHER_BASE_URL')
           : null,
     );
   }

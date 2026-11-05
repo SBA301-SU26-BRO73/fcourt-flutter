@@ -335,6 +335,8 @@ GoRouter createRouter(
             repository: paymentRepository,
             saver: saver,
             arguments: arguments,
+            promos: dependencies.promos,
+            onFreeConfirmed: () => context.go('/payments/ticket', extra: arguments),
             onUploadReceipt: () =>
                 context.push('/payments/receipt', extra: arguments),
           );
