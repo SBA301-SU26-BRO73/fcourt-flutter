@@ -72,8 +72,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Sắp diễn ra'), findsOneWidget);
     expect(find.text('Thủ Đức · Sân 1'), findsOneWidget);
-    expect(GoRouter.of(tester.element(find.byType(Scaffold).first))
-        .routeInformationProvider.value.uri.path, '/bookings');
+    expect(GoRouterState.of(tester.element(find.text('Thủ Đức · Sân 1')))
+        .uri.path, '/bookings');
     await tester.pumpWidget(const SizedBox());
   });
 
