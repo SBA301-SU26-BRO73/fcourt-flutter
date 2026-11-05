@@ -154,7 +154,9 @@ class ReviewFormCubit extends Cubit<ReviewFormState> {
         emit(
           state.copyWith(
             busy: false,
-            alreadyReviewed: error is ServerFailure && error.statusCode == 409,
+            alreadyReviewed: error is ServerFailure && error.statusCode == 409 &&
+              error.message.toLowerCase().contains('đã') &&
+              error.message.toLowerCase().contains('đánh giá'),
             error: error is Failure
                 ? error.message
                 : 'Chưa gửi được đánh giá. Vui lòng thử lại.',
