@@ -13,10 +13,12 @@ class PromoCheckoutState {
     this.promoError,
     this.freeConfirming = false,
     this.freeConfirmed = false,
+    this.expired = false,
   });
   final PaymentCheckout? checkout;
   final BookingPromo? promo;
   final bool loading, applying, blocked, freeConfirming, freeConfirmed;
+  final bool expired;
   final String? retryCode, error, promoError;
   bool get transferAllowed =>
       checkout != null &&
