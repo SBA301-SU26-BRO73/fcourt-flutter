@@ -81,6 +81,28 @@ class PromoPayments implements PaymentRepository {
 }
 
 void main() {
+  test('free order exposes no QR and confirmation is guarded against duplicate submission', () async {
+    final store = PromoStore()
+      ..finalMinor = 0
+      ..pendingConfirmation = Completer<void>();
+    final controller = PromoCheckoutCubit(
+      PromoPayments(store),
+      store,
+      const CheckoutArguments(bookingId: 42),
+    );
+    await controller.load();
+    await controller.apply('FREE');
+    expect(controller.state.checkout!.amountVnd, 0);
+    expect(controller.state.transferAllowed, isFalse);
+    expect(() => controller.state.checkout!.qrUri, throwsStateError);
+    final confirm = controller.confirmFree();
+    await controller.confirmFree();
+    expect(store.confirms, 1);
+    store.pendingConfirmation!.complete();
+    await confirm;
+    expect(controller.state.freeConfirmed, isTrue);
+    await controller.close();
+  });
   test(
     'booking and payment mismatch blocks QR until a fresh read agrees',
     () async {
