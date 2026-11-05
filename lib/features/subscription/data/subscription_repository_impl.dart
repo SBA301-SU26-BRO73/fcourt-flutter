@@ -53,8 +53,9 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
           data: {'planId': planId, 'billingCycle': cycle.api},
         )).data,
       );
-      if (result.planId != planId || result.cycle != cycle)
+      if (result.planId != planId || result.cycle != cycle) {
         throw const FormatException();
+      }
       return result;
     });
   }
