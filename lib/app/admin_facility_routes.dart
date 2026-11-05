@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/admin_dashboard/domain/usecases/analytics_usecases.dart';
 import '../features/admin_dashboard/domain/usecases/get_dashboard_stats.dart';
+import '../features/admin_dashboard/presentation/bloc/analytics_bloc.dart';
 import '../features/admin_dashboard/presentation/bloc/dashboard_bloc.dart';
+import '../features/admin_dashboard/presentation/pages/analytics_screen.dart';
 import '../features/admin_dashboard/presentation/pages/admin_dashboard_screen.dart';
 import '../features/admin_facility/domain/entities/branch.dart';
 import '../features/admin_facility/domain/entities/court.dart';
@@ -38,7 +41,19 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         )..add(const DashboardStarted()),
         child: AdminDashboardScreen(
           onOpenBranches: () => context.push('/admin/branches'),
+          onOpenAnalytics: () => context.push('/admin/analytics'),
         ),
+      ),
+    ),
+    GoRoute(
+      path: '/admin/analytics',
+      builder: (context, state) => BlocProvider(
+        create: (_) => AnalyticsBloc(
+          getBranches: GetBranches(branches),
+          getRevenueChart: GetRevenueChart(deps.analyticsRepository),
+          getInsights: GetCourtInsights(deps.analyticsRepository),
+        )..add(const AnalyticsStarted()),
+        child: const AnalyticsScreen(),
       ),
     ),
     GoRoute(
