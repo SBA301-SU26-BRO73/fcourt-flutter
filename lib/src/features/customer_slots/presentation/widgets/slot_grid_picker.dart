@@ -213,6 +213,14 @@ class SlotLegend extends StatelessWidget {
     spacing: 16,
     runSpacing: 10,
     children: [
+      const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.celebration_outlined, size: 14, color: Color(0xFF4648D4)),
+          SizedBox(width: 5),
+          Text('Bao sân'),
+        ],
+      ),
       for (final status in SlotStatus.values.where(
         (s) => s != SlotStatus.unknown,
       ))
