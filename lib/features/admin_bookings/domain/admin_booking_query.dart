@@ -13,4 +13,20 @@ class AdminBookingQuery {
   final AdminBookingStatus? status;
   final DateTime? date;
   final String search;
+
+  AdminBookingQuery copyWith({
+    int? courtId,
+    bool clearCourt = false,
+    AdminBookingStatus? status,
+    bool clearStatus = false,
+    DateTime? date,
+    bool clearDate = false,
+    String? search,
+  }) => AdminBookingQuery(
+    branchId: branchId,
+    courtId: clearCourt ? null : courtId ?? this.courtId,
+    status: clearStatus ? null : status ?? this.status,
+    date: clearDate ? null : date ?? this.date,
+    search: search ?? this.search,
+  );
 }
