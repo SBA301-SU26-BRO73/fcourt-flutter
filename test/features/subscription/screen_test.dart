@@ -40,7 +40,9 @@ void main() {
       ];
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(body: PlanComparison(plans: plans)),
+          home: Scaffold(
+            body: SingleChildScrollView(child: PlanComparison(plans: plans)),
+          ),
         ),
       );
       await tester.tap(find.text('So sánh gói dịch vụ'));
@@ -71,11 +73,14 @@ void main() {
         find.byKey(const ValueKey('checkout-1')),
         300,
       );
+      await tester.ensureVisible(find.byKey(const ValueKey('checkout-1')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('checkout-1')));
       await tester.pumpAndSettle();
       expect(billing.calls, contains('checkout:1:MONTHLY'));
       expect(launcher.urls.length, 1);
       await tester.scrollUntilVisible(find.text('Mở lại PayOS'), -300);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Mở lại PayOS'));
       await tester.pumpAndSettle();
       expect(launcher.urls.length, 2);
