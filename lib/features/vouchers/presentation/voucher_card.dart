@@ -12,11 +12,13 @@ class VoucherCard extends StatelessWidget {
     required this.onEdit,
     required this.onEnabled,
     this.blocked = false,
+    this.onUsage,
   });
   final Voucher voucher;
   final DateTime now;
   final bool busy;
   final bool blocked;
+  final VoidCallback? onUsage;
   final VoidCallback onEdit;
   final ValueChanged<bool> onEnabled;
 
@@ -78,7 +80,10 @@ class VoucherCard extends StatelessWidget {
             ),
             if (row.capMinor != null) Text('Tối đa: ${money(row.capMinor!)}'),
             Text('Đơn tối thiểu: ${money(row.minOrderMinor)}'),
-            Text('Đã dùng: ${row.usedCount} / ${row.limit} lượt'),
+            TextButton(
+              onPressed: busy || blocked ? null : onUsage,
+              child: Text('Đã dùng: ${row.usedCount} / ${row.limit} lượt'),
+            ),
             Text(
               'Hạn: ${DateFormat('dd/MM/yyyy HH:mm').format(row.endsAt.toUtc().add(const Duration(hours: 7)))} (giờ Việt Nam)',
             ),
