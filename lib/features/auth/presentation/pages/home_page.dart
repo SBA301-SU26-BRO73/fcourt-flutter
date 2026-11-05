@@ -46,6 +46,14 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(user.role.label),
+              if (user.role == UserRole.admin) ...[
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.push('/admin/bookings'),
+                  icon: const Icon(Icons.event_note),
+                  label: const Text('Quản lý đơn đặt sân'),
+                ),
+              ],
               if (user.role == UserRole.superAdmin) ...[
                 const SizedBox(height: 24),
                 FilledButton.tonalIcon(
