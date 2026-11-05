@@ -9,6 +9,7 @@ class DiscoveryState {
   const DiscoveryState({
     this.query = '',
     this.sport,
+    this.filters = const DiscoveryFilters(),
     this.branches = const [],
     this.loading = true,
     this.loadingMore = false,
@@ -19,6 +20,7 @@ class DiscoveryState {
   });
   final String query;
   final DiscoverySport? sport;
+  final DiscoveryFilters filters;
   final List<Branch> branches;
   final bool loading, loadingMore, hasNext;
   final int page, total;
@@ -35,20 +37,30 @@ class DiscoveryCubit extends Cubit<DiscoveryState> {
   void search(String query) {
     _debounce?.cancel();
     _revision++;
-    emit(DiscoveryState(query: query, sport: state.sport));
+    emit(
+      DiscoveryState(query: query, sport: state.sport, filters: state.filters),
+    );
     _debounce = Timer(const Duration(milliseconds: 300), refresh);
   }
 
   void filter(DiscoverySport? sport) {
     _debounce?.cancel();
-    emit(DiscoveryState(query: state.query, sport: sport));
+    emit(
+      DiscoveryState(query: state.query, sport: sport, filters: state.filters),
+    );
     refresh();
   }
 
   Future<void> refresh() {
     _debounce?.cancel();
     final revision = ++_revision;
-    emit(DiscoveryState(query: state.query, sport: state.sport));
+    emit(
+      DiscoveryState(
+        query: state.query,
+        sport: state.sport,
+        filters: state.filters,
+      ),
+    );
     return _load(revision, 0);
   }
 
@@ -58,6 +70,7 @@ class DiscoveryCubit extends Cubit<DiscoveryState> {
       DiscoveryState(
         query: state.query,
         sport: state.sport,
+        filters: state.filters,
         branches: state.branches,
         page: state.page,
         total: state.total,
@@ -75,6 +88,7 @@ class DiscoveryCubit extends Cubit<DiscoveryState> {
       final result = await repository.search(
         query: previous.query,
         sport: previous.sport,
+        filters: previous.filters,
         page: page,
       );
       if (isClosed || revision != _revision) return;
@@ -87,6 +101,7 @@ class DiscoveryCubit extends Cubit<DiscoveryState> {
         DiscoveryState(
           query: previous.query,
           sport: previous.sport,
+          filters: previous.filters,
           branches: List.unmodifiable(items.values),
           loading: false,
           page: result.page,
@@ -100,6 +115,7 @@ class DiscoveryCubit extends Cubit<DiscoveryState> {
         DiscoveryState(
           query: previous.query,
           sport: previous.sport,
+          filters: previous.filters,
           branches: previous.branches,
           loading: false,
           page: previous.page,
