@@ -23,6 +23,7 @@ class PromoCheckoutState {
   bool get transferAllowed =>
       checkout != null &&
       checkout!.amountVnd > 0 &&
+      checkout!.expiresAt.isAfter(DateTime.now().toUtc()) &&
       !loading &&
       !applying &&
       !blocked &&
