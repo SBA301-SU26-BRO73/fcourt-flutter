@@ -37,6 +37,23 @@ extension SlotAppearance on SlotStatus {
   };
 }
 
+extension RestrictedSlotAppearance on CourtSlot {
+  bool get isPrivateEvent =>
+      status == SlotStatus.outOfService && restriction?.isPrivateEvent == true;
+  String get displayLabel => isPrivateEvent ? 'Bao sân' : status.label;
+  Color get displayColor =>
+      isPrivateEvent ? const Color(0xFF4648D4) : status.color;
+  String? get unavailableReason {
+    final reason = isPrivateEvent
+        ? 'Khung giờ đã được bao sân cho sự kiện, không nhận đặt lẻ.'
+        : status.unavailableReason;
+    final publicReason = status == SlotStatus.outOfService
+        ? restriction?.publicReason
+        : null;
+    return publicReason == null ? reason : '$reason $publicReason';
+  }
+}
+
 /// Touch-sized adaptation of React CourtAvailabilityGrid for one real court.
 class SlotGridPicker extends StatelessWidget {
   const SlotGridPicker({
@@ -92,14 +109,14 @@ class _SlotCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = slot.status == SlotStatus.available;
-    final color = slot.status.color;
-    final label = selected ? 'Đã chọn' : slot.status.label;
+    final color = slot.displayColor;
+    final label = selected ? 'Đã chọn' : slot.displayLabel;
     final time = '${slotTime(slot.startMinute)}–${slotTime(slot.endMinute)}';
     final cell = Semantics(
       button: true,
       enabled: enabled,
       selected: selected,
-      hint: slot.status.unavailableReason,
+      hint: slot.unavailableReason,
       label:
           '$time${slot.endMinute == 1440 ? ', kết thúc ngày tiếp theo' : ''}, '
           '${slotMoney(slot.priceMinor)}, $label',
@@ -150,6 +167,8 @@ class _SlotCell extends StatelessWidget {
                             ? Icons.check_circle
                             : enabled
                             ? Icons.add_circle_outline
+                            : slot.isPrivateEvent
+                            ? Icons.celebration_outlined
                             : slot.status == SlotStatus.outOfService
                             ? Icons.block
                             : Icons.lock_outline,
@@ -180,7 +199,7 @@ class _SlotCell extends StatelessWidget {
         ),
       ),
     );
-    final reason = slot.status.unavailableReason;
+    final reason = slot.unavailableReason;
     return reason == null
         ? cell
         : Tooltip(message: reason, excludeFromSemantics: true, child: cell);
