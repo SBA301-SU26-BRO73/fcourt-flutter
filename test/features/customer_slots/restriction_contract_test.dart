@@ -15,6 +15,40 @@ const publicRestriction = {
 };
 
 void main() {
+  test(
+    'bad optional metadata never unlocks a slot or exposes admin notes',
+    () async {
+      for (final metadata in <Object?>[
+        null,
+        'invalid',
+        {'type': 'UNKNOWN'},
+        {
+          'type': 'PRIVATE_EVENT',
+          'publicReason': 1,
+          'contactName': 'x' * 101,
+          'contactPhone': 'tel:javascript:bad',
+          'notes': 'Internal secret',
+        },
+      ]) {
+        final adapter = FakeAdapter(
+          (_) => jsonResponse(200, [
+            {
+              ...row(1, '07:00', '07:30', status: 'OUT_OF_SERVICE'),
+              'restriction': metadata,
+            },
+          ]),
+        );
+        final slot = (await SlotRemoteDataSource(
+          Dio()..httpClientAdapter = adapter,
+        ).getSlots(1, DateTime(2030))).single;
+        expect(slot.status, SlotStatus.outOfService);
+        expect(slot.restriction?.phoneUri, isNull);
+        expect(slot.restriction?.publicReason, isNull);
+        expect(slot.restriction?.contactName, isNull);
+        expect(slot.unavailableReason, isNot(contains('Internal secret')));
+      }
+    },
+  );
   test('proposed metadata is optional and only describes actual out-of-service slots', () async {
     final adapter = FakeAdapter(
       (_) => jsonResponse(200, [
