@@ -34,6 +34,22 @@ class DiscoveryCubit extends Cubit<DiscoveryState> {
   Timer? _debounce;
   int _revision = 0;
 
+  void updateFilters(DiscoveryFilters filters) {
+    if (filters.errors.isNotEmpty) return;
+    _debounce?.cancel();
+    _revision++;
+    emit(
+      DiscoveryState(query: state.query, sport: state.sport, filters: filters),
+    );
+    _debounce = Timer(const Duration(milliseconds: 300), refresh);
+  }
+
+  void resetFilters() {
+    _debounce?.cancel();
+    emit(DiscoveryState(query: state.query));
+    refresh();
+  }
+
   void search(String query) {
     _debounce?.cancel();
     _revision++;
