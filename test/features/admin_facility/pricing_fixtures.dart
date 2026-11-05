@@ -3,8 +3,7 @@ import 'package:fcourt/features/admin_facility/domain/entities/pricing_rule.dart
 import 'package:fcourt/features/admin_facility/domain/repositories/pricing_rule_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockPricingRuleRepository extends Mock
-    implements PricingRuleRepository {}
+class MockPricingRuleRepository extends Mock implements PricingRuleRepository {}
 
 void registerPricingFallbacks() {
   registerFallbackValue(samplePricingDraft());

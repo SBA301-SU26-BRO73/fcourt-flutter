@@ -12,9 +12,8 @@ class PricingRuleRepositoryImpl implements PricingRuleRepository {
 
   @override
   Future<List<PricingRule>> getRules(int courtId) => facilityCall(
-    () async => PricingRuleModel.listFromJson(
-      await _remote.getPricingRules(courtId),
-    ),
+    () async =>
+        PricingRuleModel.listFromJson(await _remote.getPricingRules(courtId)),
   );
 
   @override

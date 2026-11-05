@@ -64,9 +64,7 @@ void main() {
 
   test('lưu quy tắc mới → gọi API rồi nạp lại danh sách', () async {
     final saved = samplePricingRule(id: 7);
-    when(
-      () => pricing.createRule(5, any()),
-    ).thenAnswer((_) async => saved);
+    when(() => pricing.createRule(5, any())).thenAnswer((_) async => saved);
     final bloc = await ready([]);
     when(() => pricing.getRules(5)).thenAnswer((_) async => [saved]);
 
@@ -83,9 +81,8 @@ void main() {
 
   test('sửa quy tắc có sẵn không bị coi là chồng lấn với chính nó', () async {
     final existing = samplePricingRule(id: 7);
-    when(
-      () => pricing.updateRule(5, 7, any()),
-    ).thenAnswer((_) async => existing);
+    when(() => pricing.updateRule(5, 7, any()))
+        .thenAnswer((_) async => existing);
     final bloc = await ready([existing]);
 
     bloc.add(PricingRuleSaved(samplePricingDraft(price: 160000), ruleId: 7));
@@ -138,9 +135,8 @@ void main() {
   });
 
   test('máy chủ từ chối (409) → giữ nguyên danh sách, hiện lỗi', () async {
-    when(() => pricing.createRule(5, any())).thenThrow(
-      const ServerFailure('Khung giờ trùng', statusCode: 409),
-    );
+    when(() => pricing.createRule(5, any()))
+        .thenThrow(const ServerFailure('Khung giờ trùng', statusCode: 409));
     final existing = samplePricingRule(id: 1, days: weekendDays);
     final bloc = await ready([existing]);
 
@@ -170,13 +166,11 @@ void main() {
 
   test('sao chép sang cuối tuần gửi hệ số giá rồi nạp lại', () async {
     final weekend = samplePricingRule(id: 8, days: weekendDays, price: 180000);
-    when(
-      () => pricing.copyWeekdayToWeekend(5, multiplier: 1.2),
-    ).thenAnswer((_) async => [weekend]);
+    when(() => pricing.copyWeekdayToWeekend(5, multiplier: 1.2))
+        .thenAnswer((_) async => [weekend]);
     final bloc = await ready([samplePricingRule()]);
-    when(
-      () => pricing.getRules(5),
-    ).thenAnswer((_) async => [samplePricingRule(), weekend]);
+    when(() => pricing.getRules(5))
+        .thenAnswer((_) async => [samplePricingRule(), weekend]);
 
     bloc.add(const PricingRuleCopyToWeekendRequested(multiplier: 1.2));
     final state = await bloc.stream.firstWhere(

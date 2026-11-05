@@ -73,11 +73,7 @@ class PricingRuleBloc extends Bloc<PricingRuleEvent, PricingRuleState> {
       emit(state.copyWith(notice: PricingNotice(issue.message, isError: true)));
       return;
     }
-    if (findPricingConflict(
-          state.rules,
-          event.draft,
-          exceptId: event.ruleId,
-        ) !=
+    if (findPricingConflict(state.rules, event.draft, exceptId: event.ruleId) !=
         null) {
       emit(
         state.copyWith(
