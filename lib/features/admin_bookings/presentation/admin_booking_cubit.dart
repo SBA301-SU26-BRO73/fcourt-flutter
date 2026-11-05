@@ -116,8 +116,9 @@ class AdminBookingCubit extends Cubit<AdminBookingState> {
   void setCourt(int? id) {
     final query = state.query;
     if (query == null ||
-        (id != null && !state.courts.any((court) => court.id == id)))
+        (id != null && !state.courts.any((court) => court.id == id))) {
       return;
+    }
     emit(
       state.copyWith(
         query: query.copyWith(courtId: id, clearCourt: id == null),
