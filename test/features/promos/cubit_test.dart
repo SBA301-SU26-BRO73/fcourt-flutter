@@ -67,10 +67,11 @@ class PromoPayments implements PaymentRepository {
   PromoPayments(this.store);
   final PromoStore store;
   int? forcedAmount;
+  DateTime? expiry;
   @override
   Future<PaymentCheckout> checkout(CheckoutArguments arguments) async =>
       CheckoutModel.fromJson({
-        ...jsonCheckout(expiresAt: DateTime.utc(2099)),
+        ...jsonCheckout(expiresAt: expiry ?? DateTime.utc(2099)),
         'bookingId': arguments.bookingId,
         'amount':
             forcedAmount ??
@@ -81,6 +82,25 @@ class PromoPayments implements PaymentRepository {
 }
 
 void main() {
+  test('frozen or expired checkouts cannot apply vouchers or expose expired transfers', () async {
+    final store = PromoStore()..frozen = true;
+    final payments = PromoPayments(store);
+    final controller = PromoCheckoutCubit(
+      payments,
+      store,
+      const CheckoutArguments(bookingId: 42),
+    );
+    await controller.load();
+    await controller.apply('SAVE');
+    expect(store.codes, isEmpty);
+    store.frozen = false;
+    payments.expiry = DateTime.utc(2020);
+    await controller.load();
+    await controller.apply('SAVE');
+    expect(store.codes, isEmpty);
+    expect(controller.state.transferAllowed, isFalse);
+    await controller.close();
+  });
   test('free order exposes no QR and confirmation is guarded against duplicate submission', () async {
     final store = PromoStore()
       ..finalMinor = 0
