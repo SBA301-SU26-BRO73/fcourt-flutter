@@ -66,6 +66,39 @@ Finder field(String label) => find.widgetWithText(TextField, label);
 
 void main() {
   testWidgets(
+    'edit keeps stored instants when range is unchanged and enforces used count',
+    (tester) async {
+      final repository = EditorRepository();
+      await openEditor(tester, repository, id: 1);
+      expect(
+        tester.widget<TextField>(field('Mã voucher')).controller!.text,
+        'SAVE1',
+      );
+      await tester.enterText(field('Tổng lượt sử dụng'), '1');
+      await tester.tap(find.text('Lưu voucher'));
+      await tester.pumpAndSettle();
+      expect(repository.drafts, isEmpty);
+      expect(find.textContaining('Số lượt phải từ 2'), findsOneWidget);
+      await tester.enterText(field('Tổng lượt sử dụng'), '10');
+      await tester.ensureVisible(find.byIcon(Icons.date_range));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.date_range));
+      await tester.pumpAndSettle();
+      final dialog = find.byType(DateRangePickerDialog);
+      final range = tester
+          .widget<DateRangePickerDialog>(dialog)
+          .initialDateRange!;
+      expect(range.start, DateTime(2099, 11, 5));
+      expect(range.end, DateTime(2099, 11, 10));
+      Navigator.of(tester.element(dialog)).pop(range);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lưu voucher'));
+      await tester.pumpAndSettle();
+      expect(repository.drafts.single.startsAt, voucher().startsAt);
+      expect(repository.drafts.single.endsAt, voucher().endsAt);
+    },
+  );
+  testWidgets(
     'negative amounts block submit and duplicate errors retain form; saving blocks repeated taps',
     (tester) async {
       final repository = EditorRepository();
