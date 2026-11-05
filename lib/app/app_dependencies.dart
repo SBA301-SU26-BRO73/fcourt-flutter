@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../features/admin_bookings/data/admin_booking_repository_impl.dart';
+import '../features/admin_bookings/domain/admin_booking_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
@@ -100,6 +102,7 @@ class AppDependencies {
     this.refundRepository,
     this.adminRefunds,
     this.ledgerExporter,
+    this.adminBookings,
   });
 
   final AppConfig config;
@@ -135,6 +138,7 @@ class AppDependencies {
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
+  final AdminBookingRepository? adminBookings;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -193,6 +197,7 @@ class AppDependencies {
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
+      adminBookings: AdminBookingRepositoryImpl(dio),
       ledgerExporter: CsvLedgerExporter(AdminTransactionsImpl(dio)),
       refundRepository: RefundRepositoryImpl(dio),
       adminRefunds: AdminRefundsImpl(dio),

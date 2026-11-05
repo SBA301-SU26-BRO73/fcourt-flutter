@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../features/admin_bookings/presentation/admin_booking_cubit.dart';
+import '../features/admin_bookings/presentation/admin_booking_management_screen.dart';
 import '../features/refunds/presentation/admin_refund_approval_screen.dart';
 import '../features/refunds/presentation/customer_refund_screen.dart';
 import '../features/transactions/presentation/admin_transaction_history_screen.dart';
@@ -384,6 +386,20 @@ GoRouter createRouter(
             arguments: args,
             onConfirmed: () => context.go('/payments/ticket', extra: args),
             onSupport: () => context.go('/bookings/${args.bookingId}'),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/admin/bookings',
+        builder: (context, state) {
+          final repository = dependencies.adminBookings;
+          final facility = dependencies.adminFacility;
+          if (repository == null || facility == null) {
+            return const Scaffold(body: Center(child: Text('Quản lý đơn đặt sân chưa khả dụng')));
+          }
+          return BlocProvider(
+            create: (_) => AdminBookingCubit(repository, facility.branchRepository, facility.courtRepository)..initialize(),
+            child: const AdminBookingManagementScreen(),
           );
         },
       ),
