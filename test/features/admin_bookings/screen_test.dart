@@ -11,6 +11,40 @@ import 'package:flutter_test/flutter_test.dart';
 import 'cubit_test.dart' show setup, initialize, bookingRow;
 
 void main() {
+  testWidgets('list retries failure and pull refresh preserves filters', (
+    tester,
+  ) async {
+    final (cubit, repository, _, _) = setup();
+    addTearDown(cubit.close);
+    await initialize(tester, cubit, repository);
+    await tester.pumpWidget(
+      BlocProvider.value(
+        value: cubit,
+        child: const MaterialApp(home: AdminBookingManagementScreen()),
+      ),
+    );
+    cubit.setStatus(AdminBookingStatus.confirmed);
+    repository.calls.last.result.completeError(const NetworkFailure());
+    await tester.pumpAndSettle();
+    expect(find.text('Không kết nối được máy chủ'), findsOneWidget);
+    await tester.tap(find.text('Thử lại'));
+    await tester.pump();
+    repository.calls.last.result.complete(
+      AdminBookingPage([bookingRow(1)], 0, 1),
+    );
+    await tester.pumpAndSettle();
+    final before = repository.calls.length;
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, 500));
+    await tester.pump(const Duration(seconds: 1));
+    expect(repository.calls.length, before + 1);
+    expect(repository.calls.last.query.status, AdminBookingStatus.confirmed);
+    repository.calls.last.result.complete(
+      AdminBookingPage([bookingRow(2)], 0, 1),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('BK2 ·'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
   testWidgets(
     'detail modal uses admin snapshot without a customer API lookup',
     (tester) async {
