@@ -82,6 +82,22 @@ class PromoPayments implements PaymentRepository {
 }
 
 void main() {
+  test(
+    'fractional final value is never rounded into a transferable QR amount',
+    () async {
+      final store = PromoStore()..finalMinor = 12000025;
+      final controller = PromoCheckoutCubit(
+        PromoPayments(store),
+        store,
+        const CheckoutArguments(bookingId: 42),
+      );
+      await controller.load();
+      await controller.apply('SAVE');
+      expect(controller.state.blocked, isTrue);
+      expect(controller.state.transferAllowed, isFalse);
+      await controller.close();
+    },
+  );
   test('frozen or expired checkouts cannot apply vouchers or expose expired transfers', () async {
     final store = PromoStore()..frozen = true;
     final payments = PromoPayments(store);
