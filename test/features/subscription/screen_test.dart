@@ -10,6 +10,34 @@ import 'fixtures.dart';
 
 void main() {
   testWidgets(
+    'comparison remains scrollable on narrow Android screen with large text and long plan names',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final plans = [
+        SubscriptionModels.plan({
+          ...planJson(popular: true),
+          'name': 'Gói dịch vụ dành cho chi nhánh thể thao với nhiều quyền lợi và báo cáo chuyên sâu',
+        }),
+      ];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
+            child: Scaffold(
+              body: SingleChildScrollView(child: PlanComparison(plans: plans)),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('So sánh gói dịch vụ'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Phổ biến'), findsOneWidget);
+    },
+  );
+  testWidgets(
     'current plan shows backend snapshot limits and inclusive calendar dates',
     (tester) async {
       final cubit = SubscriptionCubit(Billing(), CheckoutLauncher());
