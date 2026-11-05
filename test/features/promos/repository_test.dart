@@ -27,6 +27,26 @@ Map<String, dynamic> applyJson() => {
 };
 
 void main() {
+  test('free confirmation requires matching confirmed zero payment', () async {
+    var confirmed = true;
+    final adapter = FakeAdapter(
+      (_) => jsonResponse(200, {
+        'id': 1,
+        'bookingId': 42,
+        'status': confirmed ? 'CONFIRMED' : 'PENDING',
+        'amount': 0,
+      }),
+    );
+    final repository = PromoRepositoryImpl(
+      Dio()..httpClientAdapter = adapter,
+      Dio(),
+    );
+    await repository.confirmFree(42);
+    expect(adapter.requests.single.path, '/api/payments/42/confirm-free');
+    expect(adapter.requests.single.method, 'POST');
+    confirmed = false;
+    await expectLater(repository.confirmFree(42), throwsA(isA<PromoFailure>()));
+  });
   test('business errors preserve Vietnamese detail and service failures are uncertain', () async {
     var status = 400;
     final adapter = FakeAdapter(
