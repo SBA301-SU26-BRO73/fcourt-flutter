@@ -9,8 +9,9 @@ class BranchLocation {
         latitude < -90 ||
         latitude > 90 ||
         longitude < -180 ||
-        longitude > 180)
+        longitude > 180) {
       return null;
+    }
     return BranchLocation._(latitude.toDouble(), longitude.toDouble());
   }
 
