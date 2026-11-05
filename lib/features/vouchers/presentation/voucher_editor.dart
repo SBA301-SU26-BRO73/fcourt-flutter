@@ -68,11 +68,12 @@ class _VoucherEditorState extends State<VoucherEditor> {
         _loading = false;
       });
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _loading = false;
           _error = error is Failure ? error.message : 'Chưa tải được voucher';
         });
+      }
     }
   }
 
@@ -99,8 +100,9 @@ class _VoucherEditorState extends State<VoucherEditor> {
     );
     if (!mounted ||
         picked == null ||
-        (picked.start == current.start && picked.end == current.end))
+        (picked.start == current.start && picked.end == current.end)) {
       return;
+    }
     setState(() {
       _start = DateTime.utc(
         picked.start.year,
@@ -145,12 +147,13 @@ class _VoucherEditorState extends State<VoucherEditor> {
       );
       if (mounted) Navigator.pop(context, saved);
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _saving = false;
           _error = error is Failure ? error.message : 'Chưa xác nhận được kết quả lưu. Vui lòng kiểm tra lại danh sách.';
           if (error is ServerFailure) _errors = error.fieldErrors;
         });
+      }
     }
   }
 
@@ -243,8 +246,9 @@ class _VoucherEditorState extends State<VoucherEditor> {
                         onChanged: _saving
                             ? null
                             : (value) {
-                                if (value != null)
+                                if (value != null) {
                                   setState(() => _type = value);
+                                }
                               },
                       ),
                       const SizedBox(height: 12),
