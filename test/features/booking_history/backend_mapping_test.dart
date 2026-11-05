@@ -8,6 +8,35 @@ import '../../helpers/fake_adapter.dart';
 import 'booking_history_test.dart' show raw;
 
 void main() {
+  test('ticket access matches backend states and requires a valid code', () {
+    for (final status in [
+      'PENDING_PAYMENT',
+      'AWAITING_CONFIRMATION',
+      'CONFIRMED',
+      'CHECKED_IN',
+      'COMPLETED',
+      'CANCELLED',
+    ]) {
+      final expected = {
+        'CONFIRMED',
+        'CHECKED_IN',
+        'COMPLETED',
+      }.contains(status);
+      expect(
+        BookingRepositoryImpl.parse({...raw(), 'status': status}).hasTicket,
+        expected,
+        reason: status,
+      );
+      expect(
+        BookingRepositoryImpl.parse({
+          ...raw(),
+          'status': status,
+          'checkInCode': 'invalid',
+        }).hasTicket,
+        isFalse,
+      );
+    }
+  });
   testWidgets(
     'backend completed booking retains midnight schedule and QR action',
     (tester) async {
