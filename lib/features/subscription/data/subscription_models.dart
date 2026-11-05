@@ -8,8 +8,9 @@ class SubscriptionModels {
   }
 
   static int integer(dynamic value, {int min = 1}) {
-    if (value is! int || value < min || value > 9007199254740991)
+    if (value is! int || value < min || value > 9007199254740991) {
       throw const FormatException();
+    }
     return value;
   }
 
@@ -24,17 +25,20 @@ class SubscriptionModels {
   }
 
   static DateTime date(dynamic value) {
-    if (value is! String || !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value))
+    if (value is! String || !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
       throw const FormatException();
+    }
     final result = DateTime.tryParse('${value}T00:00:00Z');
-    if (result == null || result.toIso8601String().substring(0, 10) != value)
+    if (result == null || result.toIso8601String().substring(0, 10) != value) {
       throw const FormatException();
+    }
     return result;
   }
 
   static DateTime instant(dynamic value) {
-    if (value is! String || !RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(value))
+    if (value is! String || !RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(value)) {
       throw const FormatException();
+    }
     final result = DateTime.tryParse(value);
     if (result == null) throw const FormatException();
     return result.toUtc();
@@ -45,8 +49,9 @@ class SubscriptionModels {
     if (features is! List ||
         features.any((e) => e is! String) ||
         (raw['tagline'] != null && raw['tagline'] is! String) ||
-        (raw['color'] != null && raw['color'] is! String))
+        (raw['color'] != null && raw['color'] is! String)) {
       throw const FormatException();
+    }
     return SubscriptionPlan(
       id: integer(raw['id']),
       name: text(raw['name']),
@@ -89,8 +94,9 @@ class SubscriptionModels {
     var end = current.endDate;
     final ids = <int>{current.id};
     for (final next in periods) {
-      if (!ids.add(next.id) || !next.startDate.isAfter(end))
+      if (!ids.add(next.id) || !next.startDate.isAfter(end)) {
         throw const FormatException();
+      }
       end = next.endDate;
     }
     return OwnerSubscription(
@@ -127,8 +133,9 @@ class SubscriptionModels {
             (status == SubscriptionPaymentStatus.paid) ||
         (status == SubscriptionPaymentStatus.pending &&
             (url == null || !validPayosCheckout(url))) ||
-        (status == SubscriptionPaymentStatus.paid && paidAt == null))
+        (status == SubscriptionPaymentStatus.paid && paidAt == null)) {
       throw const FormatException();
+    }
     return SubscriptionPayment(
       id: integer(raw['id']),
       orderCode: integer(raw['orderCode']),
