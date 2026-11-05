@@ -124,9 +124,7 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
                         TextButton(
                           onPressed: state.branchId == null
                               ? cubit.initialize
-                              : state.items.isEmpty
-                              ? cubit.refresh
-                              : cubit.loadMore,
+                        : cubit.refresh,
                           child: const Text('Thử lại'),
                         ),
                       ],
