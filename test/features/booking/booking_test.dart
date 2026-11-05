@@ -222,7 +222,11 @@ void main() {
       expect(find.textContaining('160.000'), findsOneWidget);
       expect(find.text('Minh'), findsOneWidget);
       final button = find.text('Tiến hành giữ chỗ & thanh toán');
-      await tester.scrollUntilVisible(button, 150);
+      await tester.scrollUntilVisible(
+        button,
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(button);
       await tester.pumpAndSettle();
@@ -249,6 +253,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Tiến hành giữ chỗ & thanh toán'),
       150,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tiến hành giữ chỗ & thanh toán'));
@@ -279,6 +284,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Tiến hành giữ chỗ & thanh toán'),
       150,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tiến hành giữ chỗ & thanh toán'));
@@ -289,6 +295,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Tiến hành giữ chỗ & thanh toán'),
       150,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tiến hành giữ chỗ & thanh toán'));
