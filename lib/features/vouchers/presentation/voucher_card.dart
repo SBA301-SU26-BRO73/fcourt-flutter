@@ -47,10 +47,12 @@ class VoucherCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
-                Switch(
-                  value: row.enabledAt(now),
-                  onChanged: busy || expired ? null : onEnabled,
-                  semanticLabel: 'Kích hoạt ${row.code}',
+                Semantics(
+                  label: 'Kích hoạt ${row.code}',
+                  child: Switch(
+                    value: row.enabledAt(now),
+                    onChanged: busy || expired ? null : onEnabled,
+                  ),
                 ),
               ],
             ),
