@@ -150,7 +150,14 @@ void main() {
         isNull,
       );
       expect(
-        tester.widget<IconButton>(find.byTooltip('Đóng form')).onPressed,
+        tester
+            .widget<IconButton>(
+              find.byWidgetPredicate(
+                (widget) =>
+                    widget is IconButton && widget.tooltip == 'Đóng form',
+              ),
+            )
+            .onPressed,
         isNull,
       );
       repository.pending!.complete(voucher());
