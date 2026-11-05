@@ -34,8 +34,8 @@ class AdminBookingRepositoryImpl implements AdminBookingRepository {
           if (query.courtId != null) 'courtId': query.courtId,
           if (query.status != null) 'status': query.status!.code,
           if (query.search.trim().isNotEmpty) 'search': query.search.trim(),
-          if (dateKey != null) 'fromDate': dateKey,
-          if (dateKey != null) 'toDate': dateKey,
+          'fromDate': ?dateKey,
+          'toDate': ?dateKey,
           'page': page,
           'size': AdminBookingPage.size,
           'sortBy': 'date',
@@ -87,8 +87,9 @@ class AdminBookingRepositoryImpl implements AdminBookingRepository {
     String? optional(String key) {
       final value = raw[key];
       if (value == null) return null;
-      if (value is! String || value.length > 2000)
+      if (value is! String || value.length > 2000) {
         throw const FormatException();
+      }
       return value.trim().isEmpty ? null : value;
     }
 
