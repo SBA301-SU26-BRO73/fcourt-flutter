@@ -46,6 +46,14 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(user.role.label),
+              if (user.role == UserRole.admin) ...[
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.push('/admin/subscription'),
+                  icon: const Icon(Icons.workspace_premium_outlined),
+                  label: const Text('Gói dịch vụ'),
+                ),
+              ],
               if (user.role == UserRole.superAdmin) ...[
                 const SizedBox(height: 24),
                 FilledButton.tonalIcon(
