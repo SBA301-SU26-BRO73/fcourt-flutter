@@ -60,13 +60,18 @@ class _OpenStreetBranchMapState extends State<OpenStreetBranchMap> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: Text(
-                            widget.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Text(
+                                widget.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ),
                         ),
                       ),
