@@ -1,4 +1,7 @@
 import 'dart:async';
+import '../features/subscription/domain/subscription.dart';
+import '../features/subscription/data/subscription_repository_impl.dart';
+import '../features/subscription/data/device_subscription_checkout_launcher.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
@@ -100,6 +103,8 @@ class AppDependencies {
     this.refundRepository,
     this.adminRefunds,
     this.ledgerExporter,
+    this.subscriptions,
+    this.subscriptionCheckoutLauncher = const DeviceSubscriptionCheckoutLauncher(),
   });
 
   final AppConfig config;
@@ -135,6 +140,8 @@ class AppDependencies {
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
+  final SubscriptionRepository? subscriptions;
+  final SubscriptionCheckoutLauncher subscriptionCheckoutLauncher;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -190,6 +197,8 @@ class AppDependencies {
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
+      subscriptions: SubscriptionRepositoryImpl(createDio(config, tokenStorage,
+        baseUrl: config.subscriptionUrl, onSessionExpired: onSessionExpired)),
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
