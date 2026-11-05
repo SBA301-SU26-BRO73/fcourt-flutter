@@ -51,8 +51,9 @@ class _BranchMapCardState extends State<BranchMapCard> {
     super.didUpdateWidget(old);
     if (old.location?.coordinates != widget.location?.coordinates ||
         old.platform != widget.platform ||
-        old.name != widget.name)
+        old.name != widget.name) {
       _probe();
+    }
   }
 
   Future<void> _probe() async {
@@ -67,11 +68,12 @@ class _BranchMapCardState extends State<BranchMapCard> {
     });
     if (widget.location == null || !widget.location!.supportsTiles) return;
     _timer = Timer(const Duration(seconds: 5), () {
-      if (mounted && revision == _revision)
+      if (mounted && revision == _revision) {
         setState(() {
           _availability = BranchMapAvailability.unavailable;
           _fallback = true;
         });
+      }
     });
     BranchMapAvailability availability;
     try {
