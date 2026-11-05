@@ -56,6 +56,28 @@ Future<void> initialize(
 }
 
 void main() {
+  testWidgets(
+    'pagination errors retain rows and retries deduplicate identities',
+    (tester) async {
+      final (cubit, repository, _) = setup();
+      await initialize(tester, cubit, repository);
+      final more = cubit.loadMore();
+      await cubit.loadMore();
+      expect(repository.calls.length, 2);
+      repository.calls.last.result.completeError(const NetworkFailure());
+      await more;
+      expect(cubit.state.items.single.id, 1);
+      expect(cubit.state.error, isNotNull);
+      final retry = cubit.loadMore();
+      repository.calls.last.result.complete(
+        VoucherPage([voucher(), voucher(id: 2)], 1, 22),
+      );
+      await retry;
+      expect(cubit.state.items.map((row) => row.id), [1, 2]);
+      expect(cubit.state.hasMore, isFalse);
+      await cubit.close();
+    },
+  );
   testWidgets('old page cannot replace vouchers after switching owned branch', (
     tester,
   ) async {
