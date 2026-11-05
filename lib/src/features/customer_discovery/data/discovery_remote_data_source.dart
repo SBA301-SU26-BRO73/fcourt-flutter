@@ -10,6 +10,7 @@ class DiscoveryRemoteDataSource {
   Future<BranchPage> search({
     required String query,
     DiscoverySport? sport,
+    DiscoveryFilters filters = const DiscoveryFilters(),
     required int page,
   }) async {
     final response = await dio.get<Map<String, dynamic>>(
@@ -17,6 +18,16 @@ class DiscoveryRemoteDataSource {
       queryParameters: {
         if (query.trim().isNotEmpty) 'query': query.trim(),
         if (sport != null) 'courtTypeId': sport.typeId,
+        if (filters.city.trim().isNotEmpty) 'city': filters.city.trim(),
+        if (filters.district.trim().isNotEmpty)
+          'district': filters.district.trim(),
+        if (filters.minPrice.trim().isNotEmpty)
+          'minPrice': filters.minPrice.trim(),
+        if (filters.maxPrice.trim().isNotEmpty)
+          'maxPrice': filters.maxPrice.trim(),
+        if (filters.hasAvailableSlotsToday) 'hasAvailableSlotsToday': true,
+        if (filters.timeSlot.trim().isNotEmpty)
+          'timeSlot': filters.timeSlot.trim(),
         'page': page,
         'size': 12,
       },
