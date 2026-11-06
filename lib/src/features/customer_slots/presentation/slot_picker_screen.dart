@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../domain/court_slot.dart';
 import '../domain/slot_repository.dart';
+import '../domain/slot_invalidations.dart';
 import 'slot_picker_cubit.dart';
 import 'widgets/slot_date_selector.dart';
 import 'widgets/slot_grid_picker.dart';
@@ -16,8 +17,10 @@ class SlotPickerScreen extends StatelessWidget {
     this.branchName,
     this.date,
     this.onContinue,
+    this.invalidations,
   });
   final SlotRepository repository;
+  final SlotInvalidations? invalidations;
   final int courtId;
   final String? courtName, branchName;
   final DateTime? date;
@@ -25,8 +28,12 @@ class SlotPickerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => BlocProvider(
-    create: (_) =>
-        SlotPickerCubit(repository, courtId: courtId, date: date)..refresh(),
+    create: (_) => SlotPickerCubit(
+      repository,
+      courtId: courtId,
+      date: date,
+      invalidations: invalidations,
+    )..refresh(),
     child: _SlotView(
       courtName: courtName ?? 'Sân #$courtId',
       branchName: branchName,
