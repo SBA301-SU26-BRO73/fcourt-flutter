@@ -48,15 +48,22 @@ class StompSlotInvalidations implements SlotInvalidations {
   Stream<String?> get changes => _events.stream;
 
   static String? parseDate(String? payload, int courtId) {
-    if (payload == null || payload.length > 1024) return null;
+    if (payload == null || payload.length > 1024) {
+      return null;
+    }
     try {
       final event = jsonDecode(payload) as Map<String, dynamic>;
-      if (event['courtId'] != courtId) return null;
-      final date = event['date'] as String;
-      if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date)) return null;
-      final parsed = DateTime.tryParse(date);
-      if (parsed == null || parsed.toIso8601String().substring(0, 10) != date)
+      if (event['courtId'] != courtId) {
         return null;
+      }
+      final date = event['date'] as String;
+      if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date)) {
+        return null;
+      }
+      final parsed = DateTime.tryParse(date);
+      if (parsed == null || parsed.toIso8601String().substring(0, 10) != date) {
+        return null;
+      }
       return date;
     } catch (_) {
       return null;

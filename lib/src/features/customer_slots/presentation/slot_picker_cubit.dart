@@ -91,9 +91,12 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
       final slots = response
           .map((s) => s.isPast(nextDate, _now()) ? s.expired : s)
           .toList();
+      final selectedBefore = silent ? state.selectedIds : previous;
       final ids = slots
           .where(
-            (s) => s.status == SlotStatus.available && previous.contains(s.id),
+            (s) =>
+                s.status == SlotStatus.available &&
+                selectedBefore.contains(s.id),
           )
           .map((s) => s.id)
           .toSet();
@@ -103,7 +106,7 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
           slots: List.unmodifiable(slots),
           selectedIds: Set.unmodifiable(ids),
           loading: false,
-          notice: ids.length < previous.length
+          notice: ids.length < selectedBefore.length
               ? 'Một số khung giờ đã thay đổi. Vui lòng chọn lại.'
               : null,
         ),
