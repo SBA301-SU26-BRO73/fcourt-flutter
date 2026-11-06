@@ -1,4 +1,7 @@
+import '../src/features/customer_slots/data/stomp_slot_invalidations.dart';
+
 import 'dart:async';
+
 import '../features/refunds/presentation/admin_refund_approval_screen.dart';
 import '../features/refunds/presentation/customer_refund_screen.dart';
 import '../features/transactions/presentation/admin_transaction_history_screen.dart';
@@ -95,8 +98,11 @@ GoRouter createRouter(
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refreshListenable,
-    redirect: (context, state) =>
-        authRedirect(authBloc.state.status, state.matchedLocation, role: authBloc.state.role),
+    redirect: (context, state) => authRedirect(
+      authBloc.state.status,
+      state.matchedLocation,
+      role: authBloc.state.role,
+    ),
     routes: [
       if (dependencies.pos != null)
         GoRoute(
@@ -160,7 +166,9 @@ GoRouter createRouter(
         path: AppRoutes.resetPassword,
         builder: (context, state) => BlocProvider(
           create: (_) => ResetPasswordBloc(ResetPassword(repository)),
-          child: ResetPasswordPage(initialToken: state.uri.queryParameters['token']),
+          child: ResetPasswordPage(
+            initialToken: state.uri.queryParameters['token'],
+          ),
         ),
       ),
       GoRoute(
@@ -168,7 +176,8 @@ GoRouter createRouter(
         builder: (context, state) {
           final arguments = state.extra;
           final bookingRepository = dependencies.bookingRepository;
-          if (arguments is! BookingSummaryArguments || bookingRepository == null) {
+          if (arguments is! BookingSummaryArguments ||
+              bookingRepository == null) {
             return Scaffold(
               appBar: AppBar(title: const Text('Đặt sân')),
               body: const Center(
@@ -423,7 +432,9 @@ GoRouter createRouter(
         builder: (context, state) => MultiBlocProvider(
           providers: [
             BlocProvider(create: (_) => ProfileBloc(UpdateProfile(repository))),
-            BlocProvider(create: (_) => ChangePasswordBloc(ChangePassword(repository))),
+            BlocProvider(
+              create: (_) => ChangePasswordBloc(ChangePassword(repository)),
+            ),
           ],
           child: const ProfilePage(),
         ),
@@ -444,7 +455,11 @@ GoRouter createRouter(
           }
           final dateText = state.uri.queryParameters['date'];
           final parsed = dateText == null ? null : DateTime.tryParse(dateText);
+          const slotSocket = String.fromEnvironment('SLOT_WEBSOCKET_URL');
           return SlotPickerScreen(
+            invalidations: slotSocket.isEmpty
+                ? null
+                : StompSlotInvalidations(slotSocket, courtId),
             repository: repository,
             courtId: courtId,
             courtName: state.uri.queryParameters['courtName'],
