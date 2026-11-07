@@ -54,6 +54,9 @@ import 'auth_redirect.dart';
 import '../features/staff/presentation/staff_page.dart';
 import '../features/pos/presentation/pos_page.dart';
 import '../features/operations/presentation/schedule_page.dart';
+import '../features/offline/data/offline_operations.dart';
+import '../features/offline/presentation/offline_check_in_page.dart';
+import '../features/offline/presentation/offline_panel.dart';
 import '../src/features/customer_discovery/domain/discovery_repository.dart';
 import '../src/features/customer_discovery/presentation/discovery_cubit.dart';
 import '../src/features/customer_discovery/presentation/screens/customer_home_screen.dart';
@@ -102,6 +105,18 @@ GoRouter createRouter(
       role: authBloc.state.role,
     ),
     routes: [
+      if (dependencies.offline != null)
+        GoRoute(
+          path: AppRoutes.offlineCheckIn,
+          builder: (_, _) => OfflineCheckInPage(
+            repository: OfflineOperations.cached(
+              dependencies.offline!.coordinator,
+            ),
+            syncPanel: OfflinePanel(runtime: dependencies.offline!),
+            onReconnect: () => authBloc.add(const AuthStarted()),
+            onLogin: () => authBloc.add(const AuthSessionExpired()),
+          ),
+        ),
       if (dependencies.pos != null)
         GoRoute(
           path: '/staff/pos',
