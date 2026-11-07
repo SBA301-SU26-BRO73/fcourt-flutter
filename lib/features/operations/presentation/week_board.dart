@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../domain/schedule.dart';
+import '../domain/schedule_cells.dart';
 import 'schedule_page.dart';
 
 class WeekBoard extends StatefulWidget {
@@ -21,12 +22,7 @@ class _WeekBoardState extends State<WeekBoard> {
     final court =
         widget.data.courts.where((c) => c.id == _court).firstOrNull ??
         widget.data.courts.first;
-    final byTime = <String, List<CourtSession>>{};
-    for (final session in court.sessions) {
-      byTime
-          .putIfAbsent('${session.date}:${session.start}', () => [])
-          .add(session);
-    }
+    final byTime = scheduleCells(court.sessions);
     final colors = Theme.of(context).colorScheme;
     final days = List.generate(7, (i) => widget.start.add(Duration(days: i)));
     return Column(
