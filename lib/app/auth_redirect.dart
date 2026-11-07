@@ -16,6 +16,7 @@ class AppRoutes {
   static const discover = '/discover';
   static const health = '/health';
   static const staff = '/admin/staff';
+  static const offlineCheckIn = '/staff/offline';
 }
 
 /// Các màn hình không cần đăng nhập.
@@ -41,9 +42,15 @@ String? authRedirect(AuthStatus status, String location, {UserRole? role}) {
       return location == AppRoutes.splash ? null : AppRoutes.splash;
     case AuthStatus.unauthenticated:
       return publicRoutes.contains(location) ? null : AppRoutes.login;
+    case AuthStatus.offlineStaff:
+      return location == AppRoutes.offlineCheckIn
+          ? null
+          : AppRoutes.offlineCheckIn;
     case AuthStatus.authenticated:
       final isEntryScreen =
-          publicRoutes.contains(location) || location == AppRoutes.splash || location == '/';
+          publicRoutes.contains(location) ||
+          location == AppRoutes.splash ||
+          location == '/';
       if (isEntryScreen) return AppRoutes.home;
       return _isForbidden(location, role) ? AppRoutes.home : null;
   }
@@ -51,11 +58,10 @@ String? authRedirect(AuthStatus status, String location, {UserRole? role}) {
 
 /// Màn hình chỉ dành cho một vai trò. BE vẫn là nơi chặn cuối cùng (403), đây chỉ để không
 /// cho người không có quyền thấy màn hình rồi nhận lỗi.
-bool _isForbidden(String location, UserRole? role) =>
-    switch (location) {
-      AppRoutes.catalog => role != UserRole.superAdmin,
-      _ when location.startsWith('/super-admin') => role != UserRole.superAdmin,
-      _ when location.startsWith('/admin') => role != UserRole.admin,
-      _ when location.startsWith('/staff') => role != UserRole.staff,
-      _ => false,
-    };
+bool _isForbidden(String location, UserRole? role) => switch (location) {
+  AppRoutes.catalog => role != UserRole.superAdmin,
+  _ when location.startsWith('/super-admin') => role != UserRole.superAdmin,
+  _ when location.startsWith('/admin') => role != UserRole.admin,
+  _ when location.startsWith('/staff') => role != UserRole.staff,
+  _ => false,
+};
