@@ -48,7 +48,7 @@ class AuthSessionExpired extends AuthEvent {
   const AuthSessionExpired();
 }
 
-enum AuthStatus { unknown, authenticated, unauthenticated }
+enum AuthStatus { unknown, authenticated, unauthenticated, offlineStaff }
 
 class AuthState extends Equatable {
   const AuthState._(this.status, this.user);
@@ -56,9 +56,11 @@ class AuthState extends Equatable {
   const AuthState.unknown() : this._(AuthStatus.unknown, null);
 
   const AuthState.authenticated(AuthUser user)
-      : this._(AuthStatus.authenticated, user);
+    : this._(AuthStatus.authenticated, user);
 
   const AuthState.unauthenticated() : this._(AuthStatus.unauthenticated, null);
+  const AuthState.offlineStaff(AuthUser user)
+    : this._(AuthStatus.offlineStaff, user);
 
   final AuthStatus status;
   final AuthUser? user;
@@ -71,30 +73,56 @@ class AuthState extends Equatable {
 
 /// Giữ phiên đăng nhập và vai trò hiện tại cho toàn app; router dựa vào đây để điều hướng.
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  AuthBloc(this._restoreSession, this._logout) : super(const AuthState.unknown()) {
+  AuthBloc(this._restoreSession, this._logout, {this.restoreOfflineStaff})
+    : super(const AuthState.unknown()) {
     on<AuthStarted>(_onStarted);
-    on<AuthSignedIn>((event, emit) => emit(AuthState.authenticated(event.user)));
+    on<AuthSignedIn>((event, emit) {
+      _sessionVersion++;
+      emit(AuthState.authenticated(event.user));
+    });
     on<AuthUserUpdated>(_onUserUpdated);
     on<AuthLogoutRequested>(_onLogoutRequested);
-    on<AuthSessionExpired>((event, emit) => emit(const AuthState.unauthenticated()));
+    on<AuthSessionExpired>((event, emit) {
+      _sessionVersion++;
+      emit(const AuthState.unauthenticated());
+    });
   }
 
   final RestoreSession _restoreSession;
   final Logout _logout;
+  final Future<AuthUser?> Function()? restoreOfflineStaff;
+  int _sessionVersion = 0;
 
   Future<void> _onStarted(AuthStarted event, Emitter<AuthState> emit) async {
+    final version = ++_sessionVersion;
+    if (state.status != AuthStatus.unknown) emit(const AuthState.unknown());
     try {
       final user = await _restoreSession();
-      emit(user == null
-          ? const AuthState.unauthenticated()
-          : AuthState.authenticated(user));
-    } on Failure {
-      // Không hỏi được BE (mất mạng): vào màn đăng nhập, token vẫn được giữ.
+      if (version != _sessionVersion) return;
+      emit(
+        user == null
+            ? const AuthState.unauthenticated()
+            : AuthState.authenticated(user),
+      );
+    } on Failure catch (failure) {
+      AuthUser? cached;
+      if (failure is NetworkFailure) {
+        try {
+          cached = await restoreOfflineStaff?.call();
+        } catch (_) {
+          /* Fail closed. */
+        }
+      }
+      if (version != _sessionVersion) return;
+      if (cached?.role == UserRole.staff && cached?.status == 'ACTIVE') {
+        emit(AuthState.offlineStaff(cached!));
+        return;
+      }
       emit(const AuthState.unauthenticated());
     } catch (_) {
       // Lỗi bất ngờ (ví dụ Keystore không đọc được token): vẫn phải rời màn chờ,
       // nếu không app kẹt ở splash mãi.
-      emit(const AuthState.unauthenticated());
+      if (version == _sessionVersion) emit(const AuthState.unauthenticated());
     }
   }
 
@@ -108,7 +136,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    await _logout();
-    emit(const AuthState.unauthenticated());
+    final version = ++_sessionVersion;
+    try {
+      await _logout();
+    } on Failure {
+      /* Local tokens are cleared by the repository even offline. */
+    }
+    if (version == _sessionVersion) emit(const AuthState.unauthenticated());
   }
 }

@@ -318,6 +318,7 @@ class _ScheduleBoardState extends State<ScheduleBoard>
                                 '${court.id}-$_availabilityGeneration',
                               ),
                               repository: widget.counter!,
+                              refreshVersion: state.refreshVersion,
                               courtId: court.id,
                               sessions: court.sessions,
                               date: businessToday(),
