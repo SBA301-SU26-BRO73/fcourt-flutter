@@ -10,12 +10,14 @@ class ScheduleState {
     this.error,
     this.weekly = false,
     this.anchor,
+    this.refreshVersion = 0,
   });
   final BranchSchedule? data;
   final bool loading;
   final String? error;
   final bool weekly;
   final DateTime? anchor;
+  final int refreshVersion;
 }
 
 class ScheduleCubit extends Cubit<ScheduleState> {
@@ -28,9 +30,7 @@ class ScheduleCubit extends Cubit<ScheduleState> {
     final version = ++_version;
     final sameWeek = state.weekly && state.anchor == start;
     final kept = sameWeek ? state.data : null;
-    emit(
-      ScheduleState(data: kept, loading: true, weekly: true, anchor: start),
-    );
+    emit(ScheduleState(data: kept, loading: true, weekly: true, anchor: start));
     try {
       final data = await repository.week(
         calendarDate(start),
@@ -55,13 +55,27 @@ class ScheduleCubit extends Cubit<ScheduleState> {
 
   Future<void> load() async {
     final version = ++_version;
-    emit(ScheduleState(data: state.weekly ? null : state.data, loading: true));
+    emit(
+      ScheduleState(
+        data: state.weekly ? null : state.data,
+        loading: true,
+        refreshVersion: version,
+      ),
+    );
     try {
       final data = await repository.today();
-      if (!isClosed && version == _version) emit(ScheduleState(data: data));
+      if (!isClosed && version == _version) {
+        emit(ScheduleState(data: data, refreshVersion: version));
+      }
     } on Failure catch (e) {
       if (!isClosed && version == _version) {
-        emit(ScheduleState(data: state.data, error: e.message));
+        emit(
+          ScheduleState(
+            data: state.data,
+            error: e.message,
+            refreshVersion: version,
+          ),
+        );
       }
     }
   }
