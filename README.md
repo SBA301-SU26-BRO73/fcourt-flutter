@@ -38,6 +38,7 @@ Cấu hình đọc lúc build qua `--dart-define-from-file`, không hard-code tr
 - Chạy trên điện thoại thật: sửa `API_BASE_URL` thành IP LAN của máy chạy backend, ví dụ `http://192.168.1.10:8080`. Đừng commit thay đổi này.
 - Bản debug cho phép `http` (cleartext). Bản release chỉ cho `https`.
 - Không đưa secret vào `env/*.json`, vì file này được commit.
+- Đăng nhập Google cần tạo OAuth Web client ID và Android client (package `com.bro73.fcourt`, SHA-1/SHA-256 của signing key) trong Google Cloud Console. Truyền Web client ID bằng `--dart-define=GOOGLE_WEB_CLIENT_ID=...` hoặc thêm khóa này vào file `--dart-define-from-file`. Cùng Web client ID phải được đặt vào `AUTH_GOOGLE_CLIENT_ID` của auth-service. Đây là client ID công khai, không phải client secret.
 
 ## Cấu trúc
 

@@ -33,8 +33,8 @@ class _LoginPageState extends State<LoginPage> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     context.read<LoginBloc>().add(
-          LoginSubmitted(email: _email.text, password: _password.text),
-        );
+      LoginSubmitted(email: _email.text, password: _password.text),
+    );
   }
 
   @override
@@ -63,7 +63,9 @@ class _LoginPageState extends State<LoginPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (state.status == SubmissionStatus.failure) ...[
-                          ErrorBanner(AuthMessages.localize(state.message ?? '')),
+                          ErrorBanner(
+                            AuthMessages.localize(state.message ?? ''),
+                          ),
                           const SizedBox(height: 16),
                         ],
                         AuthTextField(
@@ -92,21 +94,35 @@ class _LoginPageState extends State<LoginPage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Text('Đăng nhập'),
                         ),
+                        const SizedBox(height: 12),
+                        OutlinedButton(
+                          onPressed: state.isSubmitting
+                              ? null
+                              : () => context.read<LoginBloc>().add(
+                                  const GoogleLoginSubmitted(),
+                                ),
+                          child: const Text('Tiếp tục với Google'),
+                        ),
                         const SizedBox(height: 8),
                         TextButton(
-                          onPressed: () => context.push(AppRoutes.forgotPassword),
+                          onPressed: () =>
+                              context.push(AppRoutes.forgotPassword),
                           child: const Text('Quên mật khẩu?'),
                         ),
                         TextButton(
-                          onPressed: () => context.push(AppRoutes.registerCustomer),
+                          onPressed: () =>
+                              context.push(AppRoutes.registerCustomer),
                           child: const Text('Chưa có tài khoản? Đăng ký'),
                         ),
                         TextButton(
-                          onPressed: () => context.push(AppRoutes.registerOwner),
+                          onPressed: () =>
+                              context.push(AppRoutes.registerOwner),
                           child: const Text('Đăng ký làm chủ sân'),
                         ),
                       ],
