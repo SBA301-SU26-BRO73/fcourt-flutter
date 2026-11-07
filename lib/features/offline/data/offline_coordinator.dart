@@ -17,10 +17,15 @@ abstract class OfflineIdentity {
 }
 
 class SecureOfflineIdentity implements OfflineIdentity {
-  SecureOfflineIdentity(this.tokens, {FlutterSecureStorage? storage})
-    : storage = storage ?? const FlutterSecureStorage();
+  SecureOfflineIdentity(
+    this.tokens, {
+    FlutterSecureStorage? storage,
+    DateTime Function()? clock,
+  }) : storage = storage ?? const FlutterSecureStorage(),
+       clock = clock ?? DateTime.now;
   final TokenStorage tokens;
   final FlutterSecureStorage storage;
+  final DateTime Function() clock;
   @override
   Future<OfflineScope?> read() async {
     final session = await tokens.read();
@@ -34,6 +39,15 @@ class SecureOfflineIdentity implements OfflineIdentity {
           ),
         ),
       ) as Map;
+      final now = clock().toUtc().millisecondsSinceEpoch ~/ 1000;
+      if (claims['exp'] is! int ||
+          claims['exp'] <= now ||
+          (claims['nbf'] != null &&
+              (claims['nbf'] is! int || claims['nbf'] > now)) ||
+          claims['roles'] is! List ||
+          !(claims['roles'] as List).contains('STAFF')) {
+        return null;
+      }
       final raw = await storage.read(key: 'staff_offline_scope');
       if (raw == null) return null;
       final scope = jsonDecode(raw) as Map;
@@ -96,8 +110,18 @@ class OfflineCoordinator extends ChangeNotifier {
     return value;
   }
 
-  Future<void> shiftSync() async {
-    if (busy) return;
+  Future<OfflineScope?> cachedScope() async {
+    try {
+      final value = await scope();
+      await (await store()).validateSnapshot(value, clock().toUtc());
+      return value;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> shiftSync() async {
+    if (busy) return false;
     busy = true;
     _changed();
     try {
@@ -117,11 +141,14 @@ class OfflineCoordinator extends ChangeNotifier {
       message =
           'Đã lưu ${snapshot.tickets.length} vé đầu ca. Nhận sân offline chờ đối soát máy chủ.';
       await flush();
+      return true;
     } on Failure catch (e) {
       message = e.message;
+      return false;
     } catch (_) {
       message =
           'Không đồng bộ được dữ liệu đầu ca. Giữ nguyên các lượt đang chờ.';
+      return false;
     } finally {
       busy = false;
       _changed();
@@ -164,7 +191,20 @@ class OfflineCoordinator extends ChangeNotifier {
       final context = await identity.read();
       if (context == null) return;
       final db = await store();
+      final previousPending = pendingCount;
       pendingCount = await db.countPending(context);
+      if (pendingCount == 0) {
+        conflictCount = await db.conflicts(context);
+        issues = await db.issues(context);
+        authRequired = false;
+        if (conflictCount > 0) {
+          message =
+              'Có $conflictCount lượt cần đối soát; không tự ghi đè trạng thái vé.';
+        } else if (previousPending > 0) {
+          message = 'Đã đồng bộ các lượt nhận sân.';
+        }
+        return;
+      }
       if (await remote.activeUser() != context.userId) {
         throw const UnauthorizedFailure();
       }
