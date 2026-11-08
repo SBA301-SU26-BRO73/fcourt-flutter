@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../features/subscription/presentation/subscription_cubit.dart';
+import '../features/subscription/presentation/subscription_screen.dart';
 import '../features/admin_bookings/presentation/admin_booking_cubit.dart';
 import '../features/admin_bookings/presentation/admin_booking_management_screen.dart';
 import '../features/vouchers/presentation/voucher_cubit.dart';
@@ -109,6 +111,24 @@ GoRouter createRouter(
       role: authBloc.state.role,
     ),
     routes: [
+      GoRoute(
+        path: '/admin/subscription',
+        builder: (context, state) {
+          final repository = dependencies.subscriptions;
+          if (repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Gói dịch vụ chưa khả dụng')),
+            );
+          }
+          return BlocProvider(
+            create: (_) => SubscriptionCubit(
+              repository,
+              dependencies.subscriptionCheckoutLauncher,
+            )..refresh(),
+            child: const SubscriptionScreen(),
+          );
+        },
+      ),
       if (dependencies.offline != null)
         GoRoute(
           path: AppRoutes.offlineCheckIn,
