@@ -27,6 +27,9 @@ Failure facilityFailure(ServerFailure failure) {
       'Khung giờ trùng với mẫu khung giờ đang có',
     409 when detail.startsWith('Time range overlaps pricing rule') =>
       'Khung giờ trùng với một quy tắc giá khác trong cùng nhóm ngày',
+    409 when detail.startsWith('Template cannot be applied') =>
+      'Có sân không áp dụng được mẫu (${_conflictCount(detail) ?? 'một số'} '
+          'sân); không có thay đổi nào được lưu. Hãy xem trước lại',
     409 => 'Dữ liệu bị trùng với bản ghi đã có',
     503 => 'Dịch vụ gói tạm thời không phản hồi, vui lòng thử lại sau',
     400 when detail.startsWith('Court name already exists') =>
@@ -61,3 +64,6 @@ String _tail(String detail, String prefix) {
 /// [remoteCall] kèm thông báo lỗi tiếng Việt của facility-service.
 Future<T> facilityCall<T>(Future<T> Function() call) =>
     remoteCall(call, localize: facilityFailure);
+
+String? _conflictCount(String detail) =>
+    RegExp(r'to (\d+) court').firstMatch(detail)?.group(1);
