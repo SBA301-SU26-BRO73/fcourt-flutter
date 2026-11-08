@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../features/admin_bookings/data/admin_booking_repository_impl.dart';
+import '../features/admin_bookings/domain/admin_booking_repository.dart';
 import '../features/vouchers/data/voucher_repository_impl.dart';
 import '../features/vouchers/domain/voucher_repository.dart';
 import '../features/maps/domain/branch_location.dart';
@@ -109,6 +111,7 @@ class AppDependencies {
     this.refundRepository,
     this.adminRefunds,
     this.ledgerExporter,
+    this.adminBookings,
     this.vouchers,
     this.branchMaps,
   });
@@ -147,6 +150,7 @@ class AppDependencies {
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
+  final AdminBookingRepository? adminBookings;
   final VoucherRepository? vouchers;
   final BranchMapPlatform? branchMaps;
 
@@ -211,6 +215,7 @@ class AppDependencies {
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
+      adminBookings: AdminBookingRepositoryImpl(dio),
       vouchers: VoucherRepositoryImpl(
         createDio(
           config,
