@@ -6,15 +6,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../operations/domain/counter.dart';
 import '../domain/pos.dart';
+import '../domain/pending_sale.dart';
 import 'pos_cubit.dart';
 import 'order_dialog.dart';
 
 class PosPage extends StatelessWidget {
-  const PosPage({super.key, required this.repository});
+  const PosPage({super.key, required this.repository, this.journal});
   final PosRepository repository;
+  final PosSaleStore? journal;
   @override
   Widget build(BuildContext context) => BlocProvider(
-    create: (_) => PosCubit(repository)..load(),
+    create: (_) => PosCubit(repository, journal: journal)..load(),
     child: const _PosView(),
   );
 }
@@ -326,11 +328,20 @@ class _PosCartState extends State<PosCart> {
   Widget build(BuildContext context) => BlocBuilder<PosCubit, PosState>(
     builder: (context, state) {
       final cubit = context.read<PosCubit>();
-      final locked = state.selling || state.uncertain;
+      final locked = state.selling || state.uncertain || state.restoring;
+      final method = state.uncertain ? cubit.pendingMethod ?? _method : _method;
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text('Giỏ hàng', style: Theme.of(context).textTheme.headlineSmall),
+          if (state.restoring)
+            const Text(
+              'Đang kiểm tra lệnh bán đã lưu. Chưa được tạo giao dịch mới.',
+            ),
+          if (state.uncertain)
+            const Text(
+              'Có lệnh bán chưa rõ kết quả. Đối soát lệnh cũ trước khi bán tiếp; không thu tiền lần nữa.',
+            ),
           if (state.cart.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
@@ -375,12 +386,14 @@ class _PosCartState extends State<PosCart> {
               ButtonSegment(value: 'CASH', label: Text('Tiền mặt')),
               ButtonSegment(value: 'BOOKING', label: Text('Gộp booking')),
             ],
-            selected: {_method},
+            selected: {method},
             onSelectionChanged: locked
                 ? null
                 : (value) => setState(() => _method = value.single),
           ),
-          if (_method == 'BOOKING')
+          if (state.uncertain && method == 'BOOKING')
+            Text('ID đơn đặt sân: ${cubit.pendingBooking}'),
+          if (!state.uncertain && method == 'BOOKING')
             TextField(
               controller: _booking,
               enabled: !locked,
@@ -405,7 +418,7 @@ class _PosCartState extends State<PosCart> {
             ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: state.selling || state.cart.isEmpty
+            onPressed: state.selling || state.restoring || state.cart.isEmpty
                 ? null
                 : () => cubit.sell(_method, int.tryParse(_booking.text)),
             child: Text(

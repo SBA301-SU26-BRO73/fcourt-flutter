@@ -24,6 +24,15 @@ class AuthRemoteDataSource {
     return AuthSessionModel.fromJson(response.data ?? const {});
   }
 
+  Future<AuthSessionModel> loginWithGoogle(String idToken) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '$_base/google',
+      data: {'idToken': idToken},
+      options: _public,
+    );
+    return AuthSessionModel.fromJson(response.data ?? const {});
+  }
+
   Future<AuthSessionModel> registerCustomer({
     required String fullName,
     required String email,

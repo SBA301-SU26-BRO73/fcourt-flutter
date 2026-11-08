@@ -11,6 +11,7 @@ import '../../../core/storage/token_storage.dart';
 import 'offline_coordinator.dart';
 import 'offline_remote.dart';
 import 'offline_store.dart';
+import 'offline_recovery.dart';
 
 bool get supportsOffline =>
     !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -29,7 +30,7 @@ Future<void> queueOfflineWorker() async {
   }
 }
 
-class OfflineRuntime {
+class OfflineRuntime with WidgetsBindingObserver {
   OfflineRuntime(
     AppConfig config,
     TokenStorage tokens, {
@@ -52,20 +53,47 @@ class OfflineRuntime {
   Future<OfflineStore>? _store;
   late final OfflineCoordinator coordinator;
   StreamSubscription<List<ConnectivityResult>>? _network;
+  late final _recovery = OfflineRecovery(
+    flush: coordinator.flush,
+    shiftSync: coordinator.shiftSync,
+  );
+  bool _started = false;
+  bool _enabled = false;
   Future<OfflineStore> store() => _store ??= OfflineStore.open();
   void start() {
+    _enabled = true;
+    if (!_started) {
+      _started = true;
+      WidgetsBinding.instance.addObserver(this);
+    }
     _network ??= Connectivity().onConnectivityChanged.listen((values) {
       if (values.any((v) => v != ConnectivityResult.none)) {
-        unawaited(coordinator.flush());
+        unawaited(_recovery.recover());
       }
     });
-    unawaited(coordinator.shiftSync());
+    _recovery.resume();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _enabled) {
+      _recovery.resume();
+    } else {
+      _recovery.pause();
+    }
   }
 
   Future<void> close() async {
+    _recovery.dispose();
+    if (_started) WidgetsBinding.instance.removeObserver(this);
     await _network?.cancel();
     coordinator.dispose();
     if (_store != null) await (await _store!).close();
+  }
+
+  void pause() {
+    _enabled = false;
+    _recovery.pause();
   }
 }
 

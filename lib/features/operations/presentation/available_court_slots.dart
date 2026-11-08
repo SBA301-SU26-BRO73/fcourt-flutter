@@ -12,12 +12,14 @@ class AvailableCourtSlots extends StatefulWidget {
     required this.date,
     required this.onSelected,
     this.sessions = const [],
+    this.refreshVersion = 0,
   });
   final CounterRepository repository;
   final int courtId;
   final String date;
   final void Function(AvailableSlot) onSelected;
   final List<CourtSession> sessions;
+  final int refreshVersion;
   @override
   State<AvailableCourtSlots> createState() => _AvailableCourtSlotsState();
 }
@@ -27,6 +29,17 @@ class _AvailableCourtSlotsState extends State<AvailableCourtSlots> {
     widget.courtId,
     widget.date,
   );
+  @override
+  void didUpdateWidget(covariant AvailableCourtSlots oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.repository != oldWidget.repository ||
+        widget.courtId != oldWidget.courtId ||
+        widget.date != oldWidget.date ||
+        widget.refreshVersion != oldWidget.refreshVersion) {
+      _slots = widget.repository.slots(widget.courtId, widget.date);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => FutureBuilder<List<AvailableSlot>>(
     future: _slots,

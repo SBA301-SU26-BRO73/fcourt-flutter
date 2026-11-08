@@ -17,8 +17,10 @@ void main() {
 
   blocTest<LoginBloc, SubmissionState>(
     'đăng nhập đúng thì submitting rồi success kèm người dùng',
-    setUp: () => when(() => repository.login(email: 'customer@demo.com', password: 'S3cret-pass'))
-        .thenAnswer((_) async => customerUser),
+    setUp: () => when(
+      () =>
+          repository.login(email: 'customer@demo.com', password: 'S3cret-pass'),
+    ).thenAnswer((_) async => customerUser),
     build: build,
     act: (bloc) => bloc.add(
       const LoginSubmitted(email: 'customer@demo.com', password: 'S3cret-pass'),
@@ -31,10 +33,15 @@ void main() {
 
   blocTest<LoginBloc, SubmissionState>(
     'sai mật khẩu thì failure kèm lý do của BE',
-    setUp: () => when(() => repository.login(email: any(named: 'email'), password: any(named: 'password')))
-        .thenThrow(const UnauthorizedFailure('Invalid email or password')),
+    setUp: () => when(
+      () => repository.login(
+        email: any(named: 'email'),
+        password: any(named: 'password'),
+      ),
+    ).thenThrow(const UnauthorizedFailure('Invalid email or password')),
     build: build,
-    act: (bloc) => bloc.add(const LoginSubmitted(email: 'a@demo.com', password: 'x')),
+    act: (bloc) =>
+        bloc.add(const LoginSubmitted(email: 'a@demo.com', password: 'x')),
     expect: () => [
       const SubmissionState.submitting(),
       const SubmissionState.failure('Invalid email or password'),
@@ -43,14 +50,19 @@ void main() {
 
   blocTest<LoginBloc, SubmissionState>(
     'giữ lỗi validation theo field mà BE trả về',
-    setUp: () => when(() => repository.login(email: any(named: 'email'), password: any(named: 'password')))
-        .thenThrow(
-      const ServerFailure(
-        'Invalid request fields',
-        statusCode: 400,
-        fieldErrors: {'email': 'email is invalid'},
-      ),
-    ),
+    setUp: () =>
+        when(
+          () => repository.login(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          ),
+        ).thenThrow(
+          const ServerFailure(
+            'Invalid request fields',
+            statusCode: 400,
+            fieldErrors: {'email': 'email is invalid'},
+          ),
+        ),
     build: build,
     act: (bloc) => bloc.add(const LoginSubmitted(email: 'bad', password: 'x')),
     expect: () => [
@@ -64,10 +76,15 @@ void main() {
 
   blocTest<LoginBloc, SubmissionState>(
     'mất mạng thì failure với thông báo mạng',
-    setUp: () => when(() => repository.login(email: any(named: 'email'), password: any(named: 'password')))
-        .thenThrow(const NetworkFailure()),
+    setUp: () => when(
+      () => repository.login(
+        email: any(named: 'email'),
+        password: any(named: 'password'),
+      ),
+    ).thenThrow(const NetworkFailure()),
     build: build,
-    act: (bloc) => bloc.add(const LoginSubmitted(email: 'a@demo.com', password: 'x')),
+    act: (bloc) =>
+        bloc.add(const LoginSubmitted(email: 'a@demo.com', password: 'x')),
     expect: () => [
       const SubmissionState.submitting(),
       const SubmissionState.failure('Không kết nối được máy chủ'),
@@ -76,11 +93,16 @@ void main() {
 
   blocTest<LoginBloc, SubmissionState>(
     'bấm đăng nhập lần nữa khi đang gửi thì bỏ qua, chỉ gọi BE một lần',
-    setUp: () => when(() => repository.login(email: any(named: 'email'), password: any(named: 'password')))
-        .thenAnswer((_) async {
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      return customerUser;
-    }),
+    setUp: () =>
+        when(
+          () => repository.login(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          ),
+        ).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return customerUser;
+        }),
     build: build,
     act: (bloc) {
       bloc.add(const LoginSubmitted(email: 'a@demo.com', password: 'x'));
@@ -88,7 +110,32 @@ void main() {
     },
     wait: const Duration(milliseconds: 50),
     verify: (_) => verify(
-      () => repository.login(email: any(named: 'email'), password: any(named: 'password')),
+      () => repository.login(
+        email: any(named: 'email'),
+        password: any(named: 'password'),
+      ),
     ).called(1),
+  );
+
+  blocTest<LoginBloc, SubmissionState>(
+    'đăng nhập Google thành công mở phiên',
+    setUp: () =>
+        when(() => repository.loginWithGoogle())
+            .thenAnswer((_) async => customerUser),
+    build: build,
+    act: (bloc) => bloc.add(const GoogleLoginSubmitted()),
+    expect: () => [
+      const SubmissionState.submitting(),
+      const SubmissionState.success(customerUser),
+    ],
+  );
+
+  blocTest<LoginBloc, SubmissionState>(
+    'đóng hộp thoại Google trở lại form đăng nhập',
+    setUp: () =>
+        when(() => repository.loginWithGoogle()).thenAnswer((_) async => null),
+    build: build,
+    act: (bloc) => bloc.add(const GoogleLoginSubmitted()),
+    expect: () => [const SubmissionState.submitting(), const SubmissionState()],
   );
 }
