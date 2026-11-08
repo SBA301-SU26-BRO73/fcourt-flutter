@@ -22,6 +22,7 @@ Map<String, dynamic> usagePage(List<dynamic> items) => {
   'totalDiscountAmount': 500000,
 };
 void main() {
+  phoneSearchTests();
   test(
     'legacy API preserves global aggregate and absent customer snapshots',
     () async {
@@ -58,7 +59,7 @@ void main() {
       final repo = VoucherUsageRepositoryImpl(
         Dio()
           ..httpClientAdapter = FakeAdapter((r) {
-            expect(r.queryParameters['search'], '090123');
+            expect(r.queryParameters['phone'], '090123');
             return jsonResponse(
               200,
               usagePage([
@@ -127,4 +128,61 @@ void main() {
       );
     }
   });
+}
+
+void phoneSearchTests() {
+  test(
+    'country-code phone is normalized like the server and matched by prefix',
+    () async {
+      final repo = VoucherUsageRepositoryImpl(
+        Dio()
+          ..httpClientAdapter = FakeAdapter((r) {
+            expect(r.queryParameters['phone'], '0912345');
+            return jsonResponse(
+              200,
+              usagePage([
+                {
+                  ...usageJson(),
+                  'customerName': 'An',
+                  'customerPhone': '+84 912 345 678',
+                },
+              ]),
+            );
+          }),
+      );
+      final page = await repo.list(1, search: '+84 912 345');
+      expect(page.items.single.customerPhone, '+84 912 345 678');
+    },
+  );
+  test('phone shorter than 3 digits or longer than 15 is rejected before any request', () async {
+    final repo = VoucherUsageRepositoryImpl(
+      Dio()..httpClientAdapter = FakeAdapter((_) => fail('must not call API')),
+    );
+    for (final bad in ['09', 'abc', '1' * 16]) {
+      await expectLater(
+        repo.list(1, search: bad),
+        throwsA(isA<ServerFailure>()),
+      );
+    }
+  });
+  test(
+    'server rows that do not match the searched prefix are rejected',
+    () async {
+      final repo = VoucherUsageRepositoryImpl(
+        Dio()
+          ..httpClientAdapter = FakeAdapter(
+            (_) => jsonResponse(
+              200,
+              usagePage([
+                {...usageJson(), 'customerPhone': '0987654321'},
+              ]),
+            ),
+          ),
+      );
+      await expectLater(
+        repo.list(1, search: '0912'),
+        throwsA(isA<ServerFailure>()),
+      );
+    },
+  );
 }
