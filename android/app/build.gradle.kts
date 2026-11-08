@@ -7,6 +7,12 @@ plugins {
 }
 
 val releaseSigningFile = file(System.getenv("FCOURT_SIGNING_PROPERTIES_FILE") ?: "${rootProject.projectDir}/key.properties")
+val mapsProperties = Properties().apply {
+    val localFile = rootProject.file("local.properties")
+    if (localFile.isFile) localFile.reader(Charsets.UTF_8).use { load(it) }
+}
+val mapsAndroidKey = System.getenv("FCOURT_GOOGLE_MAPS_ANDROID_API_KEY")?.trim()?.takeIf { it.isNotEmpty() }
+    ?: mapsProperties.getProperty("googleMapsAndroidApiKey", "").trim()
 val releaseSigningProperties = Properties().apply {
     if (releaseSigningFile.exists()) releaseSigningFile.reader(Charsets.UTF_8).use { load(it) }
 }
@@ -35,6 +41,7 @@ android {
     }
 
     defaultConfig {
+        manifestPlaceholders["googleMapsAndroidApiKey"] = mapsAndroidKey
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.bro73.fcourt"
         // You can update the following values to match your application needs.
@@ -73,4 +80,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation("com.google.android.gms:play-services-base:18.11.1")
 }

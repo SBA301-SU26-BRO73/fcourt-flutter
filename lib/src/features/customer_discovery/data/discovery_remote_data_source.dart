@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../../../features/maps/domain/branch_location.dart';
 
 import '../../../../core/network/auth_interceptor.dart';
 import '../domain/discovery_repository.dart';
@@ -38,6 +39,7 @@ class DiscoveryRemoteDataSource {
       branches: List.unmodifiable(
         (json['content'] as List).map((item) {
           final row = item as Map<String, dynamic>;
+          final location = BranchLocation.parse(row['latitude'], row['longitude']);
           return Branch(
             id: (row['id'] as num).toInt(),
             name: row['name'] as String,
@@ -48,6 +50,8 @@ class DiscoveryRemoteDataSource {
             minPrice: (row['minPrice'] as num?)?.toDouble(),
             maxPrice: (row['maxPrice'] as num?)?.toDouble(),
             distanceKm: (row['distanceKm'] as num?)?.toDouble(),
+            latitude: location?.latitude,
+            longitude: location?.longitude,
           );
         }),
       ),

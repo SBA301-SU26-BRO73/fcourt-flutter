@@ -506,6 +506,7 @@ GoRouter createRouter(
       GoRoute(
         path: '/branches/:id',
         builder: (context, state) => BranchDetailScreen(
+          maps: dependencies.branchMaps,
           branchId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
           branch: state.extra is Branch ? state.extra as Branch : null,
           galleryRepository: dependencies.adminFacility?.branchImageRepository,
