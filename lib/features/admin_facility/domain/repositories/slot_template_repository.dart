@@ -6,4 +6,10 @@ abstract class SlotTemplateRepository {
     int courtId,
     SlotTemplateRequest request,
   );
+
+  /// Xem trước (không ghi dữ liệu) mẫu áp dụng cho nhiều sân.
+  Future<BulkPreview> previewBulk(BulkSlotTemplateRequest request);
+
+  /// Áp dụng mẫu cho nhiều sân trong một transaction: lỗi thì không sân nào đổi.
+  Future<BulkApplied> applyBulk(BulkSlotTemplateRequest request);
 }

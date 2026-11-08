@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../discovery_cubit.dart';
 import '../widgets/discovery_widgets.dart';
+import '../widgets/discovery_filter_sheet.dart';
 
 class BranchListScreen extends StatefulWidget {
   const BranchListScreen({super.key});
@@ -23,7 +24,28 @@ class _BranchListScreenState extends State<BranchListScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Khám phá sân')),
+    appBar: AppBar(
+      title: const Text('Khám phá sân'),
+      actions: [
+        BlocBuilder<DiscoveryCubit, DiscoveryState>(
+          builder: (context, state) => TextButton.icon(
+            icon: const Icon(Icons.tune),
+            label: Text(
+              'Bộ lọc (${state.filters.count + (state.sport == null ? 0 : 1)})',
+            ),
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              useSafeArea: true,
+              builder: (_) => BlocProvider.value(
+                value: context.read<DiscoveryCubit>(),
+                child: const DiscoveryFilterSheet(),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(

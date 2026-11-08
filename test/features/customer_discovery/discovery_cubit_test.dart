@@ -19,6 +19,7 @@ class PendingRepository implements DiscoveryRepository {
   Future<BranchPage> search({
     String query = '',
     DiscoverySport? sport,
+    DiscoveryFilters filters = const DiscoveryFilters(),
     int page = 0,
   }) {
     final call = PendingSearch(query, sport, page);

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../features/maps/domain/branch_location.dart';
+import '../../../../../features/maps/presentation/branch_map_card.dart';
 import '../../../../../features/reviews/domain/review.dart';
 import '../../../../../features/reviews/presentation/review_list_widget.dart';
 
+import '../../../branch_gallery/domain/branch_image.dart';
+import '../../../branch_gallery/presentation/branch_gallery_section.dart';
 import '../../domain/discovery_repository.dart';
 import '../widgets/discovery_widgets.dart';
 
@@ -12,11 +16,17 @@ class BranchDetailScreen extends StatelessWidget {
     super.key,
     required this.branchId,
     this.branch,
+    this.maps,
+    this.galleryRepository,
     this.reviews,
   });
+  final BranchMapPlatform? maps;
   final ReviewRepository? reviews;
   final int branchId;
   final Branch? branch;
+
+  /// Nguồn ảnh chi nhánh (SCRUM-48); null thì giữ ảnh minh họa mặc định.
+  final BranchImageRepository? galleryRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +50,7 @@ class BranchDetailScreen extends StatelessWidget {
         ),
       );
     }
+    const artwork = CourtArtwork(height: 210, label: 'Ảnh sân chưa cập nhật');
     return Scaffold(
       appBar: AppBar(title: const Text('Chi tiết chi nhánh')),
       body: DefaultTabController(
@@ -64,10 +75,13 @@ class BranchDetailScreen extends StatelessWidget {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(24),
-                              child: const CourtArtwork(
-                                height: 210,
-                                label: 'Ảnh sân chưa cập nhật',
-                              ),
+                              child: galleryRepository == null
+                                  ? artwork
+                                  : BranchGallerySection(
+                                      repository: galleryRepository!,
+                                      branchId: branchId,
+                                      placeholder: artwork,
+                                    ),
                             ),
                             const SizedBox(height: 20),
                             Text(
@@ -83,6 +97,15 @@ class BranchDetailScreen extends StatelessWidget {
                                   .join(', '),
                             ),
                             const SizedBox(height: 16),
+                            if (maps != null) ...[
+                              BranchMapCard(
+                                key: ValueKey(branchId),
+                                location: data.location,
+                                name: data.name,
+                                platform: maps!,
+                              ),
+                              const SizedBox(height: 16),
+                            ],
                             Wrap(
                               spacing: 16,
                               runSpacing: 8,

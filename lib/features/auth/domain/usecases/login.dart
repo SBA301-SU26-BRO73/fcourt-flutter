@@ -8,4 +8,6 @@ class Login {
 
   Future<AuthUser> call({required String email, required String password}) =>
       _repository.login(email: email.trim(), password: password);
+
+  Future<AuthUser?> withGoogle() => _repository.loginWithGoogle();
 }

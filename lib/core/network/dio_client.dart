@@ -13,6 +13,7 @@ Dio createDio(
   String? baseUrl,
   void Function()? onSessionExpired,
   bool allowRefresh = true,
+  bool logRequests = true,
 }) {
   final options = BaseOptions(
     baseUrl: baseUrl ?? config.apiBaseUrl,
@@ -34,7 +35,7 @@ Dio createDio(
     ),
   );
 
-  if (config.isDev) {
+  if (config.isDev && logRequests) {
     // Không log header để tránh lộ token.
     dio.interceptors.add(
       LogInterceptor(

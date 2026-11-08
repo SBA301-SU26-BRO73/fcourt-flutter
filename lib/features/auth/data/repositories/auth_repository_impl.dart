@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../core/error/failure.dart';
 import '../../../../core/storage/token_storage.dart';
@@ -9,16 +10,19 @@ import '../datasources/auth_remote_data_source.dart';
 import '../models/auth_session_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  const AuthRepositoryImpl(this._remote, this._tokens);
+  AuthRepositoryImpl(this._remote, this._tokens);
 
   final AuthRemoteDataSource _remote;
   final TokenStorage _tokens;
+  Future<void>? _googleInitialization;
 
   @override
   Future<AuthUser?> restoreSession() async {
     if (await _tokens.read() == null) return null;
     try {
-      return await _guard(() async => (await _remote.fetchProfile()).toEntity());
+      return await _guard(
+        () async => (await _remote.fetchProfile()).toEntity(),
+      );
     } on Failure catch (failure) {
       if (_isDeadSession(failure)) {
         await _tokens.clear();
@@ -33,20 +37,42 @@ class AuthRepositoryImpl implements AuthRepository {
       _openSession(() => _remote.login(email, password));
 
   @override
+  Future<AuthUser?> loginWithGoogle() async {
+    const clientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+    if (clientId.isEmpty) {
+      throw const UnknownFailure('Thiếu cấu hình Google Web Client ID');
+    }
+    try {
+      final google = GoogleSignIn.instance;
+      await (_googleInitialization ??= google.initialize(
+        serverClientId: clientId,
+      ));
+      final account = await google.authenticate();
+      final token = account.authentication.idToken;
+      if (token == null || token.isEmpty) {
+        throw const UnknownFailure('Google không trả về ID token');
+      }
+      return await _openSession(() => _remote.loginWithGoogle(token));
+    } on GoogleSignInException catch (error) {
+      if (error.code == GoogleSignInExceptionCode.canceled) return null;
+      throw const UnknownFailure('Đăng nhập Google thất bại, vui lòng thử lại');
+    }
+  }
+
+  @override
   Future<AuthUser> registerCustomer({
     required String fullName,
     required String email,
     required String phone,
     required String password,
-  }) =>
-      _openSession(
-        () => _remote.registerCustomer(
-          fullName: fullName,
-          email: email,
-          phone: phone,
-          password: password,
-        ),
-      );
+  }) => _openSession(
+    () => _remote.registerCustomer(
+      fullName: fullName,
+      email: email,
+      phone: phone,
+      password: password,
+    ),
+  );
 
   @override
   Future<void> registerCourtOwner({
@@ -56,24 +82,24 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required List<UploadDocument> legalDocuments,
     List<UploadDocument> courtImages = const [],
-  }) =>
-      _guard(
-        () => _remote.registerCourtOwner(
-          fullName: fullName,
-          email: email,
-          phone: phone,
-          password: password,
-          legalDocuments: legalDocuments,
-          courtImages: courtImages,
-        ),
-      );
+  }) => _guard(
+    () => _remote.registerCourtOwner(
+      fullName: fullName,
+      email: email,
+      phone: phone,
+      password: password,
+      legalDocuments: legalDocuments,
+      courtImages: courtImages,
+    ),
+  );
 
   @override
   Future<AuthUser> updateProfile({
     required String fullName,
     required String phone,
-  }) =>
-      _guard(() async => (await _remote.updateProfile(fullName, phone)).toEntity());
+  }) => _guard(
+    () async => (await _remote.updateProfile(fullName, phone)).toEntity(),
+  );
 
   @override
   Future<void> requestPasswordReset(String email) =>
@@ -83,8 +109,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> resetPassword({
     required String token,
     required String newPassword,
-  }) =>
-      _guard(() => _remote.resetPassword(token, newPassword));
+  }) => _guard(() => _remote.resetPassword(token, newPassword));
 
   @override
   Future<AuthUser> changePassword({
