@@ -24,4 +24,28 @@ class SlotTemplateRepositoryImpl implements SlotTemplateRepository {
       ),
     ),
   );
+
+  @override
+  Future<BulkPreview> previewBulk(BulkSlotTemplateRequest request) =>
+      facilityCall(
+        () async => SlotTemplateModel.bulkPreviewFromJson(
+          readJsonObject(
+            await _remote.previewBulkTemplate(
+              SlotTemplateModel.bulkRequestToJson(request),
+            ),
+          ),
+        ),
+      );
+
+  @override
+  Future<BulkApplied> applyBulk(BulkSlotTemplateRequest request) =>
+      facilityCall(
+        () async => SlotTemplateModel.bulkAppliedFromJson(
+          readJsonObject(
+            await _remote.applyBulkTemplate(
+              SlotTemplateModel.bulkRequestToJson(request),
+            ),
+          ),
+        ),
+      );
 }

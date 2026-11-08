@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../data/offline_runtime.dart';
@@ -11,26 +9,11 @@ class OfflinePanel extends StatefulWidget {
   State<OfflinePanel> createState() => _OfflinePanelState();
 }
 
-class _OfflinePanelState extends State<OfflinePanel>
-    with WidgetsBindingObserver {
+class _OfflinePanelState extends State<OfflinePanel> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     widget.runtime.start();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      unawaited(widget.runtime.coordinator.flush());
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
   }
 
   @override

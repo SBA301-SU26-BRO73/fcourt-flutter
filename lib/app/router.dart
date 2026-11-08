@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import '../features/refunds/presentation/admin_refund_approval_screen.dart';
 import '../features/refunds/presentation/customer_refund_screen.dart';
 import '../features/transactions/presentation/admin_transaction_history_screen.dart';
@@ -53,6 +54,9 @@ import 'auth_redirect.dart';
 import '../features/staff/presentation/staff_page.dart';
 import '../features/pos/presentation/pos_page.dart';
 import '../features/operations/presentation/schedule_page.dart';
+import '../features/offline/data/offline_operations.dart';
+import '../features/offline/presentation/offline_check_in_page.dart';
+import '../features/offline/presentation/offline_panel.dart';
 import '../src/features/customer_discovery/domain/discovery_repository.dart';
 import '../src/features/customer_discovery/presentation/discovery_cubit.dart';
 import '../src/features/customer_discovery/presentation/screens/customer_home_screen.dart';
@@ -95,13 +99,31 @@ GoRouter createRouter(
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refreshListenable,
-    redirect: (context, state) =>
-        authRedirect(authBloc.state.status, state.matchedLocation, role: authBloc.state.role),
+    redirect: (context, state) => authRedirect(
+      authBloc.state.status,
+      state.matchedLocation,
+      role: authBloc.state.role,
+    ),
     routes: [
+      if (dependencies.offline != null)
+        GoRoute(
+          path: AppRoutes.offlineCheckIn,
+          builder: (_, _) => OfflineCheckInPage(
+            repository: OfflineOperations.cached(
+              dependencies.offline!.coordinator,
+            ),
+            syncPanel: OfflinePanel(runtime: dependencies.offline!),
+            onReconnect: () => authBloc.add(const AuthStarted()),
+            onLogin: () => authBloc.add(const AuthSessionExpired()),
+          ),
+        ),
       if (dependencies.pos != null)
         GoRoute(
           path: '/staff/pos',
-          builder: (_, _) => PosPage(repository: dependencies.pos!),
+          builder: (_, _) => PosPage(
+            repository: dependencies.pos!,
+            journal: dependencies.posSaleStore?.call(),
+          ),
         ),
       if (dependencies.operations != null)
         GoRoute(
@@ -160,7 +182,9 @@ GoRouter createRouter(
         path: AppRoutes.resetPassword,
         builder: (context, state) => BlocProvider(
           create: (_) => ResetPasswordBloc(ResetPassword(repository)),
-          child: ResetPasswordPage(initialToken: state.uri.queryParameters['token']),
+          child: ResetPasswordPage(
+            initialToken: state.uri.queryParameters['token'],
+          ),
         ),
       ),
       GoRoute(
@@ -168,7 +192,8 @@ GoRouter createRouter(
         builder: (context, state) {
           final arguments = state.extra;
           final bookingRepository = dependencies.bookingRepository;
-          if (arguments is! BookingSummaryArguments || bookingRepository == null) {
+          if (arguments is! BookingSummaryArguments ||
+              bookingRepository == null) {
             return Scaffold(
               appBar: AppBar(title: const Text('Đặt sân')),
               body: const Center(
@@ -425,7 +450,9 @@ GoRouter createRouter(
         builder: (context, state) => MultiBlocProvider(
           providers: [
             BlocProvider(create: (_) => ProfileBloc(UpdateProfile(repository))),
-            BlocProvider(create: (_) => ChangePasswordBloc(ChangePassword(repository))),
+            BlocProvider(
+              create: (_) => ChangePasswordBloc(ChangePassword(repository)),
+            ),
           ],
           child: const ProfilePage(),
         ),
@@ -483,6 +510,7 @@ GoRouter createRouter(
         builder: (context, state) => BranchDetailScreen(
           branchId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
           branch: state.extra is Branch ? state.extra as Branch : null,
+          galleryRepository: dependencies.adminFacility?.branchImageRepository,
         ),
       ),
       // Màn kiểm tra kết nối BE, dùng khi phát triển.
