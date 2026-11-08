@@ -129,17 +129,19 @@ void main() {
     ).thenAnswer((_) async => [_lock()]);
   });
 
-  CourtCalendarBloc calendarBloc({DateTime Function()? now}) =>
-      CourtCalendarBloc(
-        courtId: 5,
-        getCourt: GetCourt(courts),
-        getDays: GetCalendarDays(calendar),
-        getLocks: GetCourtLocks(locks),
-        lockCourt: LockCourt(locks),
-        unlockCourt: UnlockCourt(locks),
-        today: () => DateTime(2030, 1, 9, 15),
-        now: now ?? () => DateTime(2030, 1, 7, 7),
-      );
+  CourtCalendarBloc calendarBloc({
+    DateTime Function()? now,
+  }) => CourtCalendarBloc(
+    courtId: 5,
+    getCourt: GetCourt(courts),
+    getDays: GetCalendarDays(calendar),
+    getLocks: GetCourtLocks(locks),
+    lockCourt: LockCourt(locks),
+    unlockCourt: UnlockCourt(locks),
+    today: () => DateTime(2030, 1, 9, 15),
+    // Return an instant representing 07:00 in Vietnam. CI runners may use UTC.
+    now: now ?? () => DateTime.utc(2030, 1, 7, 0),
+  );
 
   OutOfServiceBloc oosBloc() => OutOfServiceBloc(
     branchId: 1,
@@ -235,7 +237,8 @@ void main() {
     test(
       'khung đã bắt đầu khi xác nhận bị loại và không gửi lệnh khóa',
       () async {
-        var now = DateTime(2030, 1, 7, 7, 59);
+        // 07:59 in Vietnam, independent of the machine's local timezone.
+        var now = DateTime.utc(2030, 1, 7, 0, 59);
         final bloc = calendarBloc(now: () => now)..add(const CalendarStarted());
         await bloc.stream.firstWhere((s) => s.status == CalendarStatus.ready);
         bloc.add(CalendarCellToggled(CellKey(_monday, 480)));
@@ -243,7 +246,7 @@ void main() {
           (state) => state.selected.contains(CellKey(_monday, 480)),
         );
 
-        now = DateTime(2030, 1, 7, 8, 1);
+        now = DateTime.utc(2030, 1, 7, 1, 1);
         bloc.add(const CalendarLockSubmitted(_details));
         await bloc.stream.firstWhere((state) => state.notice?.isError == true);
 
