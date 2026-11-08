@@ -7,6 +7,13 @@ import '../domain/court_slot.dart';
 import '../domain/slot_repository.dart';
 import '../domain/slot_invalidations.dart';
 
+/// Transient notice (SnackBar) about a schedule change seen by a background
+/// resync. Compared by identity so the same text can be shown twice.
+class SlotAlert {
+  const SlotAlert(this.message);
+  final String message;
+}
+
 class SlotPickerState {
   const SlotPickerState({
     required this.date,
@@ -15,12 +22,14 @@ class SlotPickerState {
     this.loading = true,
     this.error,
     this.notice,
+    this.alert,
   });
   final DateTime date;
   final List<CourtSlot> slots;
   final Set<int> selectedIds;
   final bool loading;
   final String? error, notice;
+  final SlotAlert? alert;
   List<CourtSlot> get selected =>
       slots.where((s) => selectedIds.contains(s.id)).toList();
   int get totalMinor =>
@@ -34,13 +43,26 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
     DateTime? date,
     DateTime Function()? now,
     SlotInvalidations? invalidations,
+    this.pollInterval = const Duration(seconds: 15),
+    this.healthyPollFactor = 4,
   }) : _invalidations = invalidations,
        _now = now ?? DateTime.now,
        super(SlotPickerState(date: date ?? venueToday(now?.call()))) {
-    _subscription = invalidations?.changes.listen((date) {
-      if (date == null || date == slotDateKey(state.date)) _resync();
+    _subscription = invalidations?.changes.listen((change) {
+      if (change == null || change.date == slotDateKey(state.date)) {
+        _resync();
+      }
     });
-    _poll = Timer.periodic(const Duration(seconds: 15), (_) => _resync());
+    // Safety resync: Redis Pub/Sub is not durable, so even a healthy socket is
+    // reconciled, just less often (pollInterval * healthyPollFactor).
+    _poll = Timer.periodic(pollInterval, (_) {
+      if (_invalidations?.connected == true &&
+          ++_quietTicks < healthyPollFactor) {
+        return;
+      }
+      _quietTicks = 0;
+      _resync();
+    });
     _expiry = Timer.periodic(
       const Duration(seconds: 15),
       (_) => expirePastSlots(),
@@ -48,11 +70,14 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
   }
   final SlotRepository repository;
   final int courtId;
+  final Duration pollInterval;
+  final int healthyPollFactor;
+  int _quietTicks = 0;
   final DateTime Function() _now;
   late final Timer _expiry;
   int _revision = 0;
   final SlotInvalidations? _invalidations;
-  StreamSubscription<String?>? _subscription;
+  StreamSubscription<SlotChange?>? _subscription;
   late final Timer _poll;
   bool _resyncBusy = false, _resyncAgain = false;
 
@@ -92,6 +117,9 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
           .map((s) => s.isPast(nextDate, _now()) ? s.expired : s)
           .toList();
       final selectedBefore = silent ? state.selectedIds : previous;
+      final alert = silent && !state.loading && state.error == null
+          ? slotChangeAlert(state.slots, slots)
+          : null;
       final ids = slots
           .where(
             (s) =>
@@ -109,6 +137,7 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
           notice: ids.length < selectedBefore.length
               ? 'Một số khung giờ đã thay đổi. Vui lòng chọn lại.'
               : null,
+          alert: alert == null ? null : SlotAlert(alert),
         ),
       );
     } catch (error) {
@@ -123,6 +152,47 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
         ),
       );
     }
+  }
+
+  /// Describes the first slot whose status changed between two schedule reads,
+  /// e.g. "Khung giờ 18:00 vừa có người giữ chỗ". Null when nothing changed.
+  static String? slotChangeAlert(
+    List<CourtSlot> before,
+    List<CourtSlot> after,
+  ) {
+    final previous = {for (final s in before) s.id: s.status};
+    final changed = <CourtSlot>[];
+    for (final slot in after) {
+      final was = previous[slot.id];
+      if (was == null || was == slot.status) continue;
+      if ({
+        was,
+        slot.status,
+      }.any((v) => v == SlotStatus.expired || v == SlotStatus.unknown)) {
+        continue;
+      }
+      changed.add(slot);
+    }
+    if (changed.isEmpty) return null;
+    final first = changed.first;
+    final time =
+        '${((first.startMinute ~/ 60) % 24).toString().padLeft(2, '0')}:'
+        '${(first.startMinute % 60).toString().padLeft(2, '0')}';
+    final privateEvent =
+        first.status == SlotStatus.outOfService &&
+        first.restriction?.isPrivateEvent == true;
+    final what = privateEvent
+        ? 'vừa được chủ sân Bao sân'
+        : switch (first.status) {
+            SlotStatus.hold => 'vừa có người giữ chỗ',
+            SlotStatus.booked => 'vừa được đặt',
+            SlotStatus.outOfService => 'vừa tạm ngừng phục vụ (bảo trì)',
+            _ => 'vừa trống lại',
+          };
+    final more = changed.length > 1
+        ? ' (và ${changed.length - 1} khung giờ khác)'
+        : '';
+    return 'Khung giờ $time $what$more';
   }
 
   /// Returns true only when an available slot was actually toggled.

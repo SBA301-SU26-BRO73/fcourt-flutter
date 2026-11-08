@@ -125,7 +125,19 @@ class _SlotViewState extends State<_SlotView> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(
+  Widget build(BuildContext context) =>
+      BlocListener<SlotPickerCubit, SlotPickerState>(
+        listenWhen: (before, now) =>
+            now.alert != null && !identical(before.alert, now.alert),
+        listener: (context, state) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.alert!.message)));
+        },
+        child: _buildScaffold(context),
+      );
+
+  Widget _buildScaffold(
     BuildContext context,
   ) => BlocBuilder<SlotPickerCubit, SlotPickerState>(
     builder: (context, state) {
