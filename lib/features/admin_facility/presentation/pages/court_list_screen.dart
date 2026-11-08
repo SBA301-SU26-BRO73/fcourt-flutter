@@ -16,6 +16,8 @@ class CourtListScreen extends StatelessWidget {
     required this.onOpenSlotTemplate,
     required this.onOpenPricing,
     this.onBulkApply,
+    this.onOpenCalendar,
+    this.onOpenOutOfService,
   });
 
   /// Mở form tạo sân cho chi nhánh, trả về sân đã tạo hoặc `null` khi hủy.
@@ -28,6 +30,11 @@ class CourtListScreen extends StatelessWidget {
   /// thông báo thành công hoặc `null` khi hủy. `null` = ẩn nút.
   final Future<String?> Function(Branch branch, List<Court> courts)?
   onBulkApply;
+
+  /// Lịch ngày/tuần của sân (SCRUM-50) và màn bao sân của chi nhánh (SCRUM-112);
+  /// ẩn khi app chưa cấu hình các repository tương ứng.
+  final void Function(Court court)? onOpenCalendar;
+  final void Function(int branchId)? onOpenOutOfService;
 
   Future<void> _openForm(
     BuildContext context,
@@ -86,6 +93,18 @@ class CourtListScreen extends StatelessWidget {
                           state.courts.isNotEmpty
                       ? () => _bulkApply(context, state)
                       : null,
+                ),
+              ),
+            if (onOpenOutOfService != null)
+              BlocSelector<CourtListBloc, CourtListState, int?>(
+                selector: (state) => state.selectedBranchId,
+                builder: (context, branchId) => IconButton(
+                  key: const Key('open-out-of-service'),
+                  tooltip: 'Bao sân / Ngừng phục vụ',
+                  icon: const Icon(Icons.event_busy),
+                  onPressed: branchId == null
+                      ? null
+                      : () => onOpenOutOfService!(branchId),
                 ),
               ),
           ],
@@ -151,6 +170,9 @@ class CourtListScreen extends StatelessWidget {
               updating: state.updatingIds.contains(court.id),
               onTap: () => _openForm(context, () => onEditCourt(court)),
               onSlotTemplate: () => onOpenSlotTemplate(court),
+              onCalendar: onOpenCalendar == null
+                  ? null
+                  : () => onOpenCalendar!(court),
               onPricing: () => onOpenPricing(court),
               onMaintenanceChanged: (value) => bloc.add(
                 CourtMaintenanceToggled(court.id, maintenance: value),
@@ -204,6 +226,7 @@ class CourtCard extends StatelessWidget {
     required this.updating,
     required this.onTap,
     required this.onSlotTemplate,
+    this.onCalendar,
     required this.onPricing,
     required this.onMaintenanceChanged,
   });
@@ -213,6 +236,7 @@ class CourtCard extends StatelessWidget {
   final bool updating;
   final VoidCallback onTap;
   final VoidCallback onSlotTemplate;
+  final VoidCallback? onCalendar;
   final VoidCallback onPricing;
   final ValueChanged<bool> onMaintenanceChanged;
 
@@ -232,6 +256,14 @@ class CourtCard extends StatelessWidget {
                 children: [
                   CourtStatusBadge(court.status),
                   const Spacer(),
+                  if (onCalendar != null)
+                    IconButton(
+                      key: Key('court-calendar-${court.id}'),
+                      tooltip: 'Lịch sân',
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.calendar_month_outlined),
+                      onPressed: onCalendar,
+                    ),
                   IconButton(
                     key: Key('court-pricing-${court.id}'),
                     tooltip: 'Cấu hình giá',

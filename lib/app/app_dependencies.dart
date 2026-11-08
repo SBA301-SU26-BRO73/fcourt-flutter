@@ -204,6 +204,7 @@ class AppDependencies {
         config,
         tokenStorage,
         catalogRepository,
+        slotRepository: SlotRepositoryImpl(SlotRemoteDataSource(publicDio)),
         onSessionExpired: onSessionExpired,
       ),
       authRepository: AuthRepositoryImpl(
