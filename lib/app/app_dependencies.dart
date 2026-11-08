@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import '../features/subscription/domain/subscription.dart';
+import '../features/subscription/data/subscription_repository_impl.dart';
+import '../features/subscription/data/device_subscription_checkout_launcher.dart';
 import '../features/admin_bookings/data/admin_booking_repository_impl.dart';
 import '../features/admin_bookings/domain/admin_booking_repository.dart';
 import '../features/vouchers/data/voucher_repository_impl.dart';
@@ -111,6 +114,9 @@ class AppDependencies {
     this.refundRepository,
     this.adminRefunds,
     this.ledgerExporter,
+    this.subscriptions,
+    this.subscriptionCheckoutLauncher =
+        const DeviceSubscriptionCheckoutLauncher(),
     this.adminBookings,
     this.vouchers,
     this.branchMaps,
@@ -150,6 +156,8 @@ class AppDependencies {
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
+  final SubscriptionRepository? subscriptions;
+  final SubscriptionCheckoutLauncher subscriptionCheckoutLauncher;
   final AdminBookingRepository? adminBookings;
   final VoucherRepository? vouchers;
   final BranchMapPlatform? branchMaps;
@@ -211,6 +219,14 @@ class AppDependencies {
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
+      subscriptions: SubscriptionRepositoryImpl(
+        createDio(
+          config,
+          tokenStorage,
+          baseUrl: config.subscriptionUrl,
+          onSessionExpired: onSessionExpired,
+        ),
+      ),
       branchMaps: DeviceBranchMapPlatform(),
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
