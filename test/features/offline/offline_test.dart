@@ -9,6 +9,7 @@ import 'package:fcourt/features/offline/data/offline_store.dart';
 import 'package:fcourt/features/offline/data/offline_remote.dart';
 import 'package:fcourt/features/offline/data/offline_coordinator.dart';
 import 'package:fcourt/features/offline/data/offline_operations.dart';
+import 'package:fcourt/features/offline/data/offline_access.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fcourt/core/storage/token_storage.dart';
@@ -123,7 +124,17 @@ void main() {
   test('secure identity follows active subject and logout', () async {
     FlutterSecureStorage.setMockInitialValues({});
     final payload = base64Url
-        .encode(utf8.encode(jsonEncode({'sub': '100'})))
+        .encode(
+          utf8.encode(
+            jsonEncode({
+              'sub': '100',
+              'roles': ['STAFF'],
+              'exp':
+                  now.add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+                  1000,
+            }),
+          ),
+        )
         .replaceAll('=', '');
     final tokens = InMemoryTokenStorage(
       AuthTokens(
@@ -131,7 +142,7 @@ void main() {
         refreshToken: 'fixture-refresh',
       ),
     );
-    final identity = SecureOfflineIdentity(tokens);
+    final identity = SecureOfflineIdentity(tokens, clock: () => now);
     await identity.save(scope);
     expect((await identity.read())!.userId, 100);
     await tokens.clear();
@@ -317,5 +328,93 @@ void main() {
       throwsA(isA<UnauthorizedFailure>()),
     );
     coordinator.dispose();
+  });
+
+  test(
+    'cold access requires current day and fresh persisted snapshot',
+    () async {
+      final identity = Identity();
+      final coordinator = OfflineCoordinator(
+        store: () async => store,
+        remote: Remote(),
+        identity: identity,
+        clock: () => now,
+      );
+      expect((await OfflineAccess(coordinator).restore())!.id, 100);
+      await store.close();
+      store = await OfflineStore.open(factory: databaseFactoryFfi, path: path);
+      expect((await OfflineAccess(coordinator).restore())!.id, 100);
+      identity.value = const OfflineScope(100, 7, '2026-11-02');
+      expect(await OfflineAccess(coordinator).restore(), isNull);
+      identity.value = scope;
+      await store.replace(
+        OfflineSnapshot(
+          scope,
+          now.subtract(const Duration(hours: 13)),
+          makeSnapshot().tickets,
+        ),
+      );
+      expect(await OfflineAccess(coordinator).restore(), isNull);
+      coordinator.dispose();
+    },
+  );
+
+  test(
+    'cached-only repository admits without contacting online APIs',
+    () async {
+      final remote = Remote();
+      final coordinator = OfflineCoordinator(
+        store: () async => store,
+        remote: remote,
+        identity: Identity(),
+        clock: () => now,
+      );
+      final operations = OfflineOperations.cached(coordinator);
+      expect((await operations.preview('ticket')).offline, isTrue);
+      expect(await operations.checkIn('ticket', 'local-key'), 42);
+      expect(remote.keys, isEmpty);
+      expect(await store.countPending(scope), 1);
+      await expectLater(
+        operations.preview('ticket'),
+        throwsA(isA<ServerFailure>()),
+      );
+      coordinator.dispose();
+    },
+  );
+
+  test('secure offline scope rejects expired, premature and non-staff tokens', () async {
+    final tokens = InMemoryTokenStorage();
+    final identity = SecureOfflineIdentity(tokens, clock: () => now);
+    await identity.save(scope);
+    final epoch = now.millisecondsSinceEpoch ~/ 1000;
+    Future<void> setClaims(Map<String, Object?> claims) => tokens.save(
+      AuthTokens(
+        accessToken:
+            'header.${base64Url.encode(utf8.encode(jsonEncode(claims)))}.signature',
+        refreshToken: 'fixture',
+      ),
+    );
+    final valid = <String, Object?>{
+      'sub': '100',
+      'exp': epoch + 3600,
+      'roles': ['STAFF'],
+    };
+    await setClaims(valid);
+    expect((await identity.read())!.userId, 100);
+    for (final change in [
+      {'exp': epoch},
+      {'nbf': epoch + 1},
+      {'exp': 'invalid'},
+      {
+        'roles': ['ADMIN'],
+      },
+      {'roles': 'STAFF'},
+      {'sub': '200'},
+    ]) {
+      await setClaims({...valid, ...change});
+      expect(await identity.read(), isNull, reason: '$change');
+    }
+    await tokens.clear();
+    expect(await identity.read(), isNull);
   });
 }
