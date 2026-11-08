@@ -16,7 +16,7 @@ class StompSlotInvalidations implements SlotInvalidations {
         courtId <= 0) {
       throw ArgumentError('Invalid public slot WebSocket URL');
     }
-    _events = StreamController<String?>(onListen: () => _client.activate());
+    _events = StreamController<SlotChange?>(onListen: () => _client.activate());
     _client = StompClient(
       config: StompConfig(
         url: url,
@@ -26,28 +26,47 @@ class StompSlotInvalidations implements SlotInvalidations {
         heartbeatOutgoing: const Duration(seconds: 10),
         onConnect: (_) {
           if (_closed) return;
+          _connected = true;
           _client.subscribe(
             destination: '/topic/court-slots/$courtId',
             callback: (frame) {
-              final date = parseDate(frame.body, courtId);
-              if (!_closed && date != null) _events.add(date);
+              final change = parseChange(frame.body, courtId);
+              if (!_closed && change != null) _events.add(change);
             },
           );
           _events.add(null);
         },
-        onWebSocketError: (_) {},
+        onDisconnect: (_) => _connected = false,
+        onWebSocketDone: () => _connected = false,
+        onWebSocketError: (_) => _connected = false,
         onStompError: (_) {},
       ),
     );
   }
   final int courtId;
   late final StompClient _client;
-  late final StreamController<String?> _events;
-  bool _closed = false;
+  late final StreamController<SlotChange?> _events;
+  bool _closed = false, _connected = false;
   @override
-  Stream<String?> get changes => _events.stream;
+  Stream<SlotChange?> get changes => _events.stream;
+  @override
+  bool get connected => _connected && !_closed;
 
-  static String? parseDate(String? payload, int courtId) {
+  static String? parseDate(String? payload, int courtId) =>
+      parseChange(payload, courtId)?.date;
+
+  static const _types = {
+    'SLOT_CHANGED',
+    'HOLD_CREATED',
+    'HOLD_RELEASED',
+    'HOLD_EXPIRED',
+    'LOCK_CREATED',
+    'LOCK_REMOVED',
+  };
+  static const _lockTypes = {'OUT_OF_SERVICE', 'PRIVATE_EVENT'};
+
+  /// Unknown or missing `type` degrades to SLOT_CHANGED (older backends).
+  static SlotChange? parseChange(String? payload, int courtId) {
     if (payload == null || payload.length > 1024) {
       return null;
     }
@@ -64,7 +83,21 @@ class StompSlotInvalidations implements SlotInvalidations {
       if (parsed == null || parsed.toIso8601String().substring(0, 10) != date) {
         return null;
       }
-      return date;
+      final type = event['type'];
+      final lockType = event['lockType'];
+      final safeType = type is String && _types.contains(type)
+          ? type
+          : 'SLOT_CHANGED';
+      return SlotChange(
+        date,
+        type: safeType,
+        lockType:
+            safeType.startsWith('LOCK_') &&
+                lockType is String &&
+                _lockTypes.contains(lockType)
+            ? lockType
+            : null,
+      );
     } catch (_) {
       return null;
     }
@@ -74,6 +107,7 @@ class StompSlotInvalidations implements SlotInvalidations {
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
+    _connected = false;
     _client.deactivate();
     await _events.close();
   }
