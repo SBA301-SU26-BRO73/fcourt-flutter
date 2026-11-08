@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../report_export/domain/report_export.dart';
 import '../../../report_export/presentation/revenue_export_button.dart';
@@ -42,6 +43,8 @@ class AdminDashboardScreen extends StatelessWidget {
                 initialBranchId: state.selectedBranchId,
               ),
             ),
+          IconButton(tooltip: 'Gói dịch vụ', icon: const Icon(Icons.workspace_premium_outlined),
+            onPressed: () => context.push('/admin/subscription')),
           if (onOpenBranches != null)
             IconButton(
               tooltip: 'Chi nhánh',

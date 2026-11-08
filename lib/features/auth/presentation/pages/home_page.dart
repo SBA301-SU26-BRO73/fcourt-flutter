@@ -12,11 +12,11 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   static String titleFor(UserRole role) => switch (role) {
-        UserRole.customer => 'Đặt sân',
-        UserRole.staff => 'Vận hành chi nhánh',
-        UserRole.admin => 'Quản lý cụm sân',
-        UserRole.superAdmin => 'Quản trị hệ thống',
-      };
+    UserRole.customer => 'Đặt sân',
+    UserRole.staff => 'Vận hành chi nhánh',
+    UserRole.admin => 'Quản lý cụm sân',
+    UserRole.superAdmin => 'Quản trị hệ thống',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +46,26 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(user.role.label),
+              if (user.role == UserRole.admin) ...[
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.push('/admin/subscription'),
+                  icon: const Icon(Icons.workspace_premium_outlined),
+                  label: const Text('Gói dịch vụ'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: () => context.push('/admin/bookings'),
+                  icon: const Icon(Icons.event_note),
+                  label: const Text('Quản lý đơn đặt sân'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: () => context.push('/admin/vouchers'),
+                  icon: const Icon(Icons.local_offer_outlined),
+                  label: const Text('Quản lý voucher'),
+                ),
+              ],
               if (user.role == UserRole.superAdmin) ...[
                 const SizedBox(height: 24),
                 FilledButton.tonalIcon(
@@ -67,6 +87,12 @@ class HomePage extends StatelessWidget {
                   onPressed: () => context.push(AppRoutes.discover),
                   icon: const Icon(Icons.search),
                   label: const Text('Tìm sân'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/bookings'),
+                  icon: const Icon(Icons.history),
+                  label: const Text('Lịch sử đặt sân'),
                 ),
               ],
             ],
