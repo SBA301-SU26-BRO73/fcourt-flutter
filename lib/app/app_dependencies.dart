@@ -2,6 +2,8 @@ import 'dart:async';
 
 import '../features/promos/data/promo_repository_impl.dart';
 import '../features/promos/domain/promo_repository.dart';
+import '../features/vouchers/data/voucher_repository_impl.dart';
+import '../features/vouchers/domain/voucher_repository.dart';
 import '../features/maps/domain/branch_location.dart';
 import '../features/maps/data/device_branch_map_platform.dart';
 
@@ -110,6 +112,7 @@ class AppDependencies {
     this.adminRefunds,
     this.ledgerExporter,
     this.promos,
+    this.vouchers,
     this.branchMaps,
   });
 
@@ -148,6 +151,7 @@ class AppDependencies {
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
   final PromoRepository? promos;
+  final VoucherRepository? vouchers;
   final BranchMapPlatform? branchMaps;
 
   factory AppDependencies.create(AppConfig config) {
@@ -220,6 +224,14 @@ class AppDependencies {
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
+      vouchers: VoucherRepositoryImpl(
+        createDio(
+          config,
+          tokenStorage,
+          baseUrl: config.voucherUrl,
+          onSessionExpired: onSessionExpired,
+        ),
+      ),
       ledgerExporter: CsvLedgerExporter(AdminTransactionsImpl(dio)),
       refundRepository: RefundRepositoryImpl(dio),
       adminRefunds: AdminRefundsImpl(dio),

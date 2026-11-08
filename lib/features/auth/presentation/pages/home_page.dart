@@ -46,6 +46,14 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(user.role.label),
+              if (user.role == UserRole.admin) ...[
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.push('/admin/vouchers'),
+                  icon: const Icon(Icons.local_offer_outlined),
+                  label: const Text('Quản lý voucher'),
+                ),
+              ],
               if (user.role == UserRole.superAdmin) ...[
                 const SizedBox(height: 24),
                 FilledButton.tonalIcon(
