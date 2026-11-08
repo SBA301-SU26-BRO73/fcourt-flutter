@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../features/promos/data/promo_repository_impl.dart';
+import '../features/promos/domain/promo_repository.dart';
 import '../features/subscription/domain/subscription.dart';
 import '../features/subscription/data/subscription_repository_impl.dart';
 import '../features/subscription/data/device_subscription_checkout_launcher.dart';
@@ -117,6 +119,7 @@ class AppDependencies {
     this.refundRepository,
     this.adminRefunds,
     this.ledgerExporter,
+    this.promos,
     this.platformOverview,
     this.subscriptions,
     this.subscriptionCheckoutLauncher =
@@ -160,6 +163,7 @@ class AppDependencies {
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
+  final PromoRepository? promos;
   final SubscriptionRepository? subscriptions;
   final SubscriptionCheckoutLauncher subscriptionCheckoutLauncher;
   final AdminBookingRepository? adminBookings;
@@ -225,6 +229,15 @@ class AppDependencies {
         createDio(config, tokenStorage, baseUrl: config.facilityUrl),
       ),
       paymentRepository: PaymentRepositoryImpl(dio),
+      promos: PromoRepositoryImpl(
+        dio,
+        createDio(
+          config,
+          tokenStorage,
+          baseUrl: config.voucherUrl,
+          onSessionExpired: onSessionExpired,
+        ),
+      ),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
       subscriptions: SubscriptionRepositoryImpl(
