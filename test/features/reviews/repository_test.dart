@@ -9,7 +9,8 @@ Map<String, dynamic> jsonReview() => {
   'id': 1,
   'branchId': 7,
   'courtId': 2,
-  'userId': 3,
+  'reviewerName': 'An N.',
+  'reviewerAvatarUrl': null,
   'rating': 5,
   'comment': 'Sân đẹp',
   'imageUrls': <String>[],
@@ -214,5 +215,49 @@ void main() {
         ),
       );
     }
+  });
+  test('identity fields are optional: old rows without name/avatar still map', () async {
+    final row = jsonReview()
+      ..remove('reviewerName')
+      ..remove('reviewerAvatarUrl');
+    final repo = ReviewRepositoryImpl(
+      Dio()
+        ..httpClientAdapter = FakeAdapter(
+          (_) => jsonResponse(200, jsonPage()..['content'] = [row]),
+        ),
+    );
+    final review = (await repo.list(7)).items.single;
+    expect(review.reviewerName, isNull);
+    expect(review.reviewerAvatarUrl, isNull);
+  });
+  test('name and https avatar are kept; unsafe avatar or odd name degrade to null and userId is ignored', () async {
+    Future<dynamic> read(Map<String, dynamic> extra) async {
+      final repo = ReviewRepositoryImpl(
+        Dio()
+          ..httpClientAdapter = FakeAdapter(
+            (_) => jsonResponse(
+              200,
+              jsonPage()..['content'] = [jsonReview()..addAll(extra)],
+            ),
+          ),
+      );
+      return (await repo.list(7)).items.single;
+    }
+
+    final ok = await read({
+      'reviewerAvatarUrl': 'https://lh3.googleusercontent.com/a.jpg',
+      'userId': 99,
+    });
+    expect(ok.reviewerName, 'An N.');
+    expect(ok.reviewerAvatarUrl, 'https://lh3.googleusercontent.com/a.jpg');
+    final bad = await read({
+      'reviewerName': '   ',
+      'reviewerAvatarUrl': 'http://insecure.test/a.jpg',
+    });
+    expect(bad.reviewerName, isNull);
+    expect(bad.reviewerAvatarUrl, isNull);
+    final nonString = await read({'reviewerName': 5, 'reviewerAvatarUrl': 7});
+    expect(nonString.reviewerName, isNull);
+    expect(nonString.reviewerAvatarUrl, isNull);
   });
 }

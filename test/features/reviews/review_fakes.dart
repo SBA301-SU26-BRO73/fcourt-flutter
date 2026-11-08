@@ -9,7 +9,7 @@ CourtReview review({int id = 1, int rating = 5, int branchId = 7}) =>
       id: id,
       branchId: branchId,
       courtId: 2,
-      userId: 3,
+      reviewerName: 'An N.',
       rating: rating,
       comment: 'Sân đẹp',
       adminReply: 'Cảm ơn bạn',
