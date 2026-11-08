@@ -3,6 +3,7 @@ import '../features/reviews/domain/review.dart';
 import '../features/reviews/domain/review_photo.dart';
 import '../features/reviews/data/review_repository_impl.dart';
 import '../features/reviews/data/device_review_photo_picker.dart';
+import '../features/reviews/data/review_photo_uploader_impl.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
@@ -160,6 +161,12 @@ class AppDependencies {
       tokenStorage,
       onSessionExpired: onSessionExpired,
     );
+    final reviewDio = createDio(
+      config,
+      tokenStorage,
+      baseUrl: config.discoveryUrl,
+      onSessionExpired: onSessionExpired,
+    );
     final publicDio = Dio(
       BaseOptions(
         baseUrl: config.discoveryUrl,
@@ -200,9 +207,9 @@ class AppDependencies {
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
-      reviews: ReviewRepositoryImpl(createDio(config, tokenStorage,
-        baseUrl: config.discoveryUrl, onSessionExpired: onSessionExpired)),
+      reviews: ReviewRepositoryImpl(reviewDio),
       reviewPhotoPicker: DeviceReviewPhotoPicker(),
+      reviewPhotoUploader: ReviewPhotoUploaderImpl(reviewDio),
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),

@@ -3,16 +3,19 @@ class CourtReview {
     required this.id,
     required this.branchId,
     required this.courtId,
-    required this.userId,
+    this.reviewerName,
+    this.reviewerAvatarUrl,
     required this.rating,
     required this.createdAt,
     this.comment,
     this.imageUrls = const [],
     this.adminReply,
   });
-  final int id, branchId, courtId, userId, rating;
+  final int id, branchId, courtId, rating;
   final DateTime createdAt;
   final String? comment, adminReply;
+  /// Masked display name and avatar snapshot from the server; both may be null (older reviews).
+  final String? reviewerName, reviewerAvatarUrl;
   final List<String> imageUrls;
 }
 

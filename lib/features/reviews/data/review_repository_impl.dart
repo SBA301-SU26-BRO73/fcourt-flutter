@@ -13,9 +13,20 @@ class ReviewRepositoryImpl implements ReviewRepository {
   @override
   Stream<int> get changes => _changes.stream;
 
+  // Identity fields are cosmetic: a missing or odd value falls back to the generic label/avatar instead of failing the page.
+  static String? _name(dynamic value) {
+    if (value is! String) return null;
+    final name = value.trim();
+    return name.isEmpty || name.length > 80 ? null : name;
+  }
+
+  static String? _avatar(dynamic value) =>
+      value is String && validReviewImageUrl(value) ? value : null;
+
   CourtReview _review(dynamic raw, {int? branchId}) {
     if (raw is! Map<String, dynamic>) throw const FormatException();
-    for (final field in ['id', 'branchId', 'courtId', 'userId']) {
+    // The server no longer sends userId; never read or display one.
+    for (final field in ['id', 'branchId', 'courtId']) {
       if (raw[field] is! int || raw[field] <= 0) throw const FormatException();
     }
     final rating = raw['rating'],
@@ -44,7 +55,8 @@ class ReviewRepositoryImpl implements ReviewRepository {
       id: raw['id'],
       branchId: raw['branchId'],
       courtId: raw['courtId'],
-      userId: raw['userId'],
+      reviewerName: _name(raw['reviewerName']),
+      reviewerAvatarUrl: _avatar(raw['reviewerAvatarUrl']),
       rating: rating,
       createdAt: time.toUtc(),
       imageUrls: List<String>.unmodifiable(images),

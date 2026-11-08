@@ -111,12 +111,10 @@ class _ReviewList extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              const CircleAvatar(
-                                child: Icon(Icons.person_outline),
-                              ),
+                              _ReviewerAvatar(url: row.reviewerAvatarUrl),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Text('Khách hàng #${row.userId}'),
+                                child: Text(row.reviewerName ?? 'Khách hàng'),
                               ),
                             ],
                           ),
@@ -179,4 +177,28 @@ class _ReviewList extends StatelessWidget {
       );
     },
   );
+}
+
+/// Reviewer photo with a generic icon when there is no avatar or it fails to load.
+class _ReviewerAvatar extends StatelessWidget {
+  const _ReviewerAvatar({required this.url});
+  final String? url;
+  @override
+  Widget build(BuildContext context) {
+    const fallback = Icon(Icons.person_outline);
+    final avatar = url;
+    if (avatar == null) return const CircleAvatar(child: fallback);
+    return CircleAvatar(
+      child: ClipOval(
+        child: Image.network(
+          avatar,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          semanticLabel: 'Ảnh đại diện người đánh giá',
+          errorBuilder: (_, _, _) => fallback,
+        ),
+      ),
+    );
+  }
 }
