@@ -13,18 +13,23 @@ import '../features/admin_facility/domain/entities/court.dart';
 import '../features/admin_facility/domain/usecases/apply_slot_template.dart';
 import '../features/admin_facility/domain/usecases/branch_usecases.dart';
 import '../features/admin_facility/domain/usecases/court_usecases.dart';
+import '../features/admin_facility/domain/usecases/lock_usecases.dart';
 import '../features/admin_facility/domain/usecases/pricing_usecases.dart';
 import '../features/admin_facility/presentation/bloc/branch_form_bloc.dart';
 import '../features/admin_facility/presentation/bloc/branch_list_bloc.dart';
 import '../features/admin_facility/presentation/bloc/bulk_apply_template_bloc.dart';
+import '../features/admin_facility/presentation/bloc/court_calendar_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_form_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_list_bloc.dart';
+import '../features/admin_facility/presentation/bloc/out_of_service_bloc.dart';
 import '../features/admin_facility/presentation/bloc/pricing_rule_bloc.dart';
 import '../features/admin_facility/presentation/bloc/slot_template_bloc.dart';
 import '../features/admin_facility/presentation/pages/branch_form_screen.dart';
 import '../features/admin_facility/presentation/pages/branch_list_screen.dart';
+import '../features/admin_facility/presentation/pages/court_calendar_screen.dart';
 import '../features/admin_facility/presentation/pages/court_form_screen.dart';
 import '../features/admin_facility/presentation/pages/court_list_screen.dart';
+import '../features/admin_facility/presentation/pages/out_of_service_management_screen.dart';
 import '../features/admin_facility/presentation/pages/pricing_rule_config_screen.dart';
 import '../features/admin_facility/presentation/pages/time_slot_template_screen.dart';
 import '../features/admin_facility/presentation/widgets/bulk_apply_template_dialog.dart';
@@ -159,6 +164,13 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
                 applyBulk: ApplyBulkSlotTemplate(deps.slotTemplateRepository),
               ),
             ),
+            onOpenCalendar: deps.courtCalendarRepository == null
+                ? null
+                : (court) => context.push('/admin/courts/${court.id}/calendar'),
+            onOpenOutOfService: deps.courtLockRepository == null
+                ? null
+                : (branchId) =>
+                      context.push('/admin/branches/$branchId/out-of-service'),
           ),
         ),
       ),
@@ -225,6 +237,47 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         ),
       ),
     ),
+    if (deps.courtLockRepository != null &&
+        deps.courtCalendarRepository != null)
+      GoRoute(
+        path: '/admin/courts/:courtId/calendar',
+        builder: (context, state) => _withId(
+          state.pathParameters['courtId'],
+          (courtId) => BlocProvider(
+            create: (_) => CourtCalendarBloc(
+              courtId: courtId,
+              getCourt: GetCourt(courts),
+              getDays: GetCalendarDays(deps.courtCalendarRepository!),
+              getLocks: GetCourtLocks(deps.courtLockRepository!),
+              lockCourt: LockCourt(deps.courtLockRepository!),
+              unlockCourt: UnlockCourt(deps.courtLockRepository!),
+            )..add(const CalendarStarted()),
+            child: CourtCalendarScreen(
+              onOpenOutOfService: (branchId) =>
+                  context.push('/admin/branches/$branchId/out-of-service'),
+            ),
+          ),
+        ),
+      ),
+    if (deps.courtLockRepository != null)
+      GoRoute(
+        path: '/admin/branches/:branchId/out-of-service',
+        builder: (context, state) => _withId(
+          state.pathParameters['branchId'],
+          (branchId) => BlocProvider(
+            create: (_) => OutOfServiceBloc(
+              branchId: branchId,
+              getBranch: GetBranch(branches),
+              getCourts: GetCourts(courts),
+              getLocks: GetCourtLocks(deps.courtLockRepository!),
+              lockBranch: LockBranch(deps.courtLockRepository!),
+              unlockCourt: UnlockCourt(deps.courtLockRepository!),
+              unlockGroup: UnlockGroup(deps.courtLockRepository!),
+            )..add(const OutOfServiceStarted()),
+            child: const OutOfServiceManagementScreen(),
+          ),
+        ),
+      ),
   ];
 }
 
