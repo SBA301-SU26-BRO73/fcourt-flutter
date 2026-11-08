@@ -63,3 +63,19 @@ class FacilityErrorView extends StatelessWidget {
     ),
   );
 }
+
+/// Lý do (tiếng Anh) backend báo cho một sân không áp dụng được mẫu → tiếng Việt.
+String bulkConflictText(String reason) {
+  const hours = 'Slots must be within branch hours';
+  if (reason.startsWith(hours)) {
+    final rest = reason.substring(hours.length).trim();
+    return 'Ngoài giờ mở cửa của chi nhánh${rest.isEmpty ? '' : ' ($rest)'}';
+  }
+  if (reason.startsWith('price is required')) {
+    return 'Sân chưa có giá giờ: hãy nhập giá mỗi slot';
+  }
+  if (reason.contains('not divisible')) {
+    return 'Khung giờ không chia hết cho bước 30 phút';
+  }
+  return reason;
+}

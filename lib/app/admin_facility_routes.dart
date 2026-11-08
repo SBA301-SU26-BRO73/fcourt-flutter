@@ -12,6 +12,7 @@ import '../features/admin_facility/domain/usecases/branch_usecases.dart';
 import '../features/admin_facility/domain/usecases/court_usecases.dart';
 import '../features/admin_facility/presentation/bloc/branch_form_bloc.dart';
 import '../features/admin_facility/presentation/bloc/branch_list_bloc.dart';
+import '../features/admin_facility/presentation/bloc/bulk_apply_template_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_form_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_list_bloc.dart';
 import '../features/admin_facility/presentation/bloc/slot_template_bloc.dart';
@@ -20,6 +21,7 @@ import '../features/admin_facility/presentation/pages/branch_list_screen.dart';
 import '../features/admin_facility/presentation/pages/court_form_screen.dart';
 import '../features/admin_facility/presentation/pages/court_list_screen.dart';
 import '../features/admin_facility/presentation/pages/time_slot_template_screen.dart';
+import '../features/admin_facility/presentation/widgets/bulk_apply_template_dialog.dart';
 import '../src/features/branch_gallery/presentation/admin_branch_images_cubit.dart';
 import '../src/features/branch_gallery/presentation/admin_branch_images_screen.dart';
 import 'admin_facility_dependencies.dart';
@@ -121,6 +123,20 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
                 context.push<Court>('/admin/courts/${court.id}/edit'),
             onOpenSlotTemplate: (court) =>
                 context.push('/admin/courts/${court.id}/slot-template'),
+            onBulkApply: (branch, branchCourts) => showBulkApplyTemplateDialog(
+              context,
+              createBloc: () => BulkApplyTemplateBloc(
+                courts: branchCourts,
+                start: branch.openTime,
+                end: branch.closeTime,
+                branchOpen: branch.openTime,
+                branchClose: branch.closeTime,
+                previewBulk: PreviewBulkSlotTemplate(
+                  deps.slotTemplateRepository,
+                ),
+                applyBulk: ApplyBulkSlotTemplate(deps.slotTemplateRepository),
+              ),
+            ),
           ),
         ),
       ),
