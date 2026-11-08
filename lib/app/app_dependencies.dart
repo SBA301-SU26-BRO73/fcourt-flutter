@@ -1,7 +1,13 @@
 import 'dart:async';
+
 import '../features/subscription/domain/subscription.dart';
 import '../features/subscription/data/subscription_repository_impl.dart';
 import '../features/subscription/data/device_subscription_checkout_launcher.dart';
+import '../features/vouchers/data/voucher_repository_impl.dart';
+import '../features/vouchers/domain/voucher_repository.dart';
+import '../features/maps/domain/branch_location.dart';
+import '../features/maps/data/device_branch_map_platform.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
@@ -107,7 +113,10 @@ class AppDependencies {
     this.adminRefunds,
     this.ledgerExporter,
     this.subscriptions,
-    this.subscriptionCheckoutLauncher = const DeviceSubscriptionCheckoutLauncher(),
+    this.subscriptionCheckoutLauncher =
+        const DeviceSubscriptionCheckoutLauncher(),
+    this.vouchers,
+    this.branchMaps,
   });
 
   final AppConfig config;
@@ -146,6 +155,8 @@ class AppDependencies {
   final LedgerReportExporter? ledgerExporter;
   final SubscriptionRepository? subscriptions;
   final SubscriptionCheckoutLauncher subscriptionCheckoutLauncher;
+  final VoucherRepository? vouchers;
+  final BranchMapPlatform? branchMaps;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -204,11 +215,26 @@ class AppDependencies {
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
-      subscriptions: SubscriptionRepositoryImpl(createDio(config, tokenStorage,
-        baseUrl: config.subscriptionUrl, onSessionExpired: onSessionExpired)),
+      subscriptions: SubscriptionRepositoryImpl(
+        createDio(
+          config,
+          tokenStorage,
+          baseUrl: config.subscriptionUrl,
+          onSessionExpired: onSessionExpired,
+        ),
+      ),
+      branchMaps: DeviceBranchMapPlatform(),
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
+      vouchers: VoucherRepositoryImpl(
+        createDio(
+          config,
+          tokenStorage,
+          baseUrl: config.voucherUrl,
+          onSessionExpired: onSessionExpired,
+        ),
+      ),
       ledgerExporter: CsvLedgerExporter(AdminTransactionsImpl(dio)),
       refundRepository: RefundRepositoryImpl(dio),
       adminRefunds: AdminRefundsImpl(dio),
