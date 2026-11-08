@@ -12,10 +12,22 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   Future<BranchPage> search({
     String query = '',
     DiscoverySport? sport,
+    DiscoveryFilters filters = const DiscoveryFilters(),
     int page = 0,
   }) async {
+    if (filters.errors.isNotEmpty) {
+      throw ServerFailure(
+        'Vui lòng kiểm tra bộ lọc',
+        fieldErrors: filters.errors,
+      );
+    }
     try {
-      return await source.search(query: query, sport: sport, page: page);
+      return await source.search(
+        query: query,
+        sport: sport,
+        filters: filters,
+        page: page,
+      );
     } on DioException catch (error) {
       throw failureFromDio(error);
     } on Object {
