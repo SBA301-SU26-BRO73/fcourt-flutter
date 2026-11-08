@@ -9,6 +9,9 @@ abstract class AuthRepository {
   /// Ném `Failure` khi sai thông tin hoặc tài khoản chưa được phép đăng nhập.
   Future<AuthUser> login({required String email, required String password});
 
+  /// Trả null khi người dùng đóng hộp thoại chọn tài khoản Google.
+  Future<AuthUser?> loginWithGoogle();
+
   /// Đăng ký khách hàng, đăng nhập luôn.
   Future<AuthUser> registerCustomer({
     required String fullName,
@@ -37,7 +40,10 @@ abstract class AuthRepository {
 
   /// Đặt mật khẩu mới bằng token trong email. Ném `Failure` khi token sai, đã dùng hoặc hết hạn.
   /// Mọi phiên đăng nhập của tài khoản bị BE thu hồi.
-  Future<void> resetPassword({required String token, required String newPassword});
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  });
 
   /// Đổi mật khẩu khi đang đăng nhập. BE thu hồi mọi phiên và trả cặp token mới; repository lưu
   /// cặp này để thiết bị hiện tại vẫn đăng nhập, các thiết bị khác phải đăng nhập lại.

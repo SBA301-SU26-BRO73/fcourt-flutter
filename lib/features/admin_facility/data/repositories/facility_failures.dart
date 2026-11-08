@@ -24,13 +24,16 @@ Failure facilityFailure(ServerFailure failure) {
     403 when detail.startsWith('No active subscription') =>
       'Bạn chưa có gói dịch vụ đang hoạt động',
     403 => 'Bạn không có quyền thực hiện thao tác này',
-    409 when detail.startsWith('The window overlaps') =>
-      'Khung giờ trùng với một lịch khóa đang có trên sân, hãy hủy lịch đó trước',
+    409 when detail.startsWith('The window overlaps') => 'Khung giờ trùng với một lịch khóa đang có trên sân, hãy hủy lịch đó trước',
     409 when detail.startsWith('Slot overlaps') =>
       'Khung giờ trùng với mẫu khung giờ đang có',
+    409 when detail.startsWith('Time range overlaps pricing rule') =>
+      'Khung giờ trùng với một quy tắc giá khác trong cùng nhóm ngày',
+    409 when detail.startsWith('Template cannot be applied') =>
+      'Có sân không áp dụng được mẫu (${_conflictCount(detail) ?? 'một số'} '
+          'sân); không có thay đổi nào được lưu. Hãy xem trước lại',
     409 => 'Dữ liệu bị trùng với bản ghi đã có',
-    503 when detail.startsWith('Cannot verify') =>
-      'Chưa kiểm tra được các lượt đặt/giữ chỗ hiện có nên chưa khóa. Vui lòng thử lại sau',
+    503 when detail.startsWith('Cannot verify') => 'Chưa kiểm tra được các lượt đặt/giữ chỗ hiện có nên chưa khóa. Vui lòng thử lại sau',
     503 => 'Dịch vụ gói tạm thời không phản hồi, vui lòng thử lại sau',
     400 when detail.startsWith('Court name already exists') =>
       'Tên sân đã tồn tại trong chi nhánh',
@@ -47,6 +50,12 @@ Failure facilityFailure(ServerFailure failure) {
       'Mỗi lịch khóa tối đa 31 ngày',
     400 when detail.startsWith('The branch has no courts') =>
       'Chi nhánh chưa có sân nào để khóa',
+    400 when detail == 'endTime must be after startTime' =>
+      'Giờ kết thúc phải sau giờ bắt đầu',
+    400 when detail.startsWith('Times must be aligned') =>
+      'Giờ bắt đầu và kết thúc phải là bội số của 30 phút',
+    400 when detail.startsWith('There are no weekday pricing rules') =>
+      'Chưa có quy tắc giá ngày thường để sao chép',
     400 when failure.errors.isNotEmpty =>
       'Dữ liệu chưa hợp lệ: ${failure.errors.join('; ')}',
     400 => 'Dữ liệu chưa hợp lệ: $detail',
@@ -69,13 +78,14 @@ String _tail(String detail, String prefix) {
 Future<T> facilityCall<T>(Future<T> Function() call) =>
     remoteCall(call, localize: facilityFailure);
 
+String? _conflictCount(String detail) =>
+    RegExp(r'to (\d+) court').firstMatch(detail)?.group(1);
+
 /// 409 `BOOKING_CONFLICT`: khóa bị từ chối vì có slot đã đặt hoặc đang giữ chỗ.
 /// Không có gì được tạo ở server; [conflicts] để chủ sân biết cần liên hệ ai.
 class LockConflictFailure extends ServerFailure {
-  const LockConflictFailure(
-    super.message, {
-    required this.conflicts,
-  }) : super(statusCode: 409);
+  const LockConflictFailure(super.message, {required this.conflicts})
+    : super(statusCode: 409);
 
   factory LockConflictFailure.fromConflicts(List<LockConflict> conflicts) {
     final booked = conflicts.where((c) => c.isBooked).length;

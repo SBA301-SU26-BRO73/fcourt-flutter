@@ -64,7 +64,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Liên hệ sự kiện'));
       await tester.pumpAndSettle();
-      expect(find.text('Gọi chủ sân'), findsOneWidget);
+      expect(find.text('Gọi liên hệ sự kiện'), findsOneWidget);
       expect(cubit.state.selectedIds, {2});
       expect(
         cubit.state.slots

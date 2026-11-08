@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/error/failure.dart';
+import '../../../core/validation/booking_slot_times.dart';
 import '../domain/booking.dart';
 
 class BookingRepositoryImpl implements BookingRepository {
@@ -91,21 +92,7 @@ class BookingRepositoryImpl implements BookingRepository {
     }.contains(status)) {
       throw const FormatException();
     }
-    final slots = raw['slots'];
-    if (slots is! List || slots.length > 48) throw const FormatException();
-    final times = slots.map((s) {
-      if (s is! Map) throw const FormatException();
-      final start = s['startTime'], end = s['endTime'];
-      final pattern = RegExp(r'^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$');
-      if (start is! String ||
-          end is! String ||
-          !pattern.hasMatch(start) ||
-          !pattern.hasMatch(end) ||
-          start.compareTo(end) >= 0) {
-        throw const FormatException();
-      }
-      return '${start.substring(0, 5)}–${end.substring(0, 5)}';
-    }).toList()..sort();
+    final times = bookingSlotTimes(raw['slots']);
     final code = optional('checkInCode');
     return Booking(
       id: raw['id'] as int,

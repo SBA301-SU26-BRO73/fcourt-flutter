@@ -11,12 +11,15 @@ import '../features/admin_facility/domain/usecases/apply_slot_template.dart';
 import '../features/admin_facility/domain/usecases/branch_usecases.dart';
 import '../features/admin_facility/domain/usecases/court_usecases.dart';
 import '../features/admin_facility/domain/usecases/lock_usecases.dart';
+import '../features/admin_facility/domain/usecases/pricing_usecases.dart';
 import '../features/admin_facility/presentation/bloc/branch_form_bloc.dart';
 import '../features/admin_facility/presentation/bloc/branch_list_bloc.dart';
+import '../features/admin_facility/presentation/bloc/bulk_apply_template_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_calendar_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_form_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_list_bloc.dart';
 import '../features/admin_facility/presentation/bloc/out_of_service_bloc.dart';
+import '../features/admin_facility/presentation/bloc/pricing_rule_bloc.dart';
 import '../features/admin_facility/presentation/bloc/slot_template_bloc.dart';
 import '../features/admin_facility/presentation/pages/branch_form_screen.dart';
 import '../features/admin_facility/presentation/pages/branch_list_screen.dart';
@@ -24,7 +27,11 @@ import '../features/admin_facility/presentation/pages/court_calendar_screen.dart
 import '../features/admin_facility/presentation/pages/court_form_screen.dart';
 import '../features/admin_facility/presentation/pages/court_list_screen.dart';
 import '../features/admin_facility/presentation/pages/out_of_service_management_screen.dart';
+import '../features/admin_facility/presentation/pages/pricing_rule_config_screen.dart';
 import '../features/admin_facility/presentation/pages/time_slot_template_screen.dart';
+import '../features/admin_facility/presentation/widgets/bulk_apply_template_dialog.dart';
+import '../src/features/branch_gallery/presentation/admin_branch_images_cubit.dart';
+import '../src/features/branch_gallery/presentation/admin_branch_images_screen.dart';
 import 'admin_facility_dependencies.dart';
 
 /// Route của chủ sân (SCRUM-13/15/17/19). Trả về danh sách rỗng khi app chưa
@@ -33,7 +40,24 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
   if (deps == null) return const [];
   final branches = deps.branchRepository;
   final courts = deps.courtRepository;
+  final images = deps.branchImageRepository;
+  final imagePicker = deps.branchImagePicker;
   return [
+    if (images != null && imagePicker != null)
+      GoRoute(
+        path: '/admin/branches/:branchId/images',
+        builder: (context, state) => _withId(
+          state.pathParameters['branchId'],
+          (id) => BlocProvider(
+            create: (_) => AdminBranchImagesCubit(
+              repository: images,
+              picker: imagePicker,
+              branchId: id,
+            )..load(),
+            child: const AdminBranchImagesScreen(),
+          ),
+        ),
+      ),
     GoRoute(
       path: '/admin/dashboard',
       builder: (context, state) => BlocProvider(
@@ -59,6 +83,9 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
           onOpenCourts: (branch) =>
               context.push('/admin/branches/${branch.id}/courts'),
           onOpenDashboard: () => context.push('/admin/dashboard'),
+          onOpenImages: images == null
+              ? null
+              : (branch) => context.push('/admin/branches/${branch.id}/images'),
         ),
       ),
     ),
@@ -104,6 +131,22 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
                 context.push<Court>('/admin/courts/${court.id}/edit'),
             onOpenSlotTemplate: (court) =>
                 context.push('/admin/courts/${court.id}/slot-template'),
+            onOpenPricing: (court) =>
+                context.push('/admin/courts/${court.id}/pricing'),
+            onBulkApply: (branch, branchCourts) => showBulkApplyTemplateDialog(
+              context,
+              createBloc: () => BulkApplyTemplateBloc(
+                courts: branchCourts,
+                start: branch.openTime,
+                end: branch.closeTime,
+                branchOpen: branch.openTime,
+                branchClose: branch.closeTime,
+                previewBulk: PreviewBulkSlotTemplate(
+                  deps.slotTemplateRepository,
+                ),
+                applyBulk: ApplyBulkSlotTemplate(deps.slotTemplateRepository),
+              ),
+            ),
             onOpenCalendar: deps.courtCalendarRepository == null
                 ? null
                 : (court) => context.push('/admin/courts/${court.id}/calendar'),
@@ -142,6 +185,23 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
             courtId: courtId,
           )..add(const CourtFormStarted()),
           child: const CourtFormScreen(),
+        ),
+      ),
+    ),
+    GoRoute(
+      path: '/admin/courts/:courtId/pricing',
+      builder: (context, state) => _withId(
+        state.pathParameters['courtId'],
+        (courtId) => BlocProvider(
+          create: (_) => PricingRuleBloc(
+            courtId: courtId,
+            getCourt: GetCourt(courts),
+            getRules: GetPricingRules(deps.pricingRuleRepository),
+            saveRule: SavePricingRule(deps.pricingRuleRepository),
+            deleteRule: DeletePricingRule(deps.pricingRuleRepository),
+            copyToWeekend: CopyWeekdayToWeekend(deps.pricingRuleRepository),
+          )..add(const PricingRuleStarted()),
+          child: const PricingRuleConfigScreen(),
         ),
       ),
     ),

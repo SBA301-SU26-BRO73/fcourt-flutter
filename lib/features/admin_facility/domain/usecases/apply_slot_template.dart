@@ -9,3 +9,21 @@ class ApplySlotTemplate {
   Future<AppliedTemplate> call(int courtId, SlotTemplateRequest request) =>
       _repository.applyTemplate(courtId, request);
 }
+
+class PreviewBulkSlotTemplate {
+  const PreviewBulkSlotTemplate(this._repository);
+
+  final SlotTemplateRepository _repository;
+
+  Future<BulkPreview> call(BulkSlotTemplateRequest request) =>
+      _repository.previewBulk(request);
+}
+
+class ApplyBulkSlotTemplate {
+  const ApplyBulkSlotTemplate(this._repository);
+
+  final SlotTemplateRepository _repository;
+
+  Future<BulkApplied> call(BulkSlotTemplateRequest request) =>
+      _repository.applyBulk(request);
+}
