@@ -16,6 +16,8 @@ class FilterRequest {
 }
 
 class FilterRepository implements DiscoveryRepository {
+  @override
+  Future<List<Court>> courtsOfBranch(int branchId) async => const [];
   final calls = <FilterRequest>[];
   @override
   Future<BranchPage> search({

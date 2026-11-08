@@ -9,6 +9,22 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   final DiscoveryRemoteDataSource source;
 
   @override
+  Future<List<Court>> courtsOfBranch(int branchId) async {
+    if (branchId <= 0) {
+      throw const UnknownFailure('Không tìm thấy chi nhánh.');
+    }
+    try {
+      return await source.courtsOfBranch(branchId);
+    } on DioException catch (error) {
+      throw failureFromDio(error);
+    } on Object {
+      throw const UnknownFailure(
+        'Danh sách sân chưa hợp lệ. Vui lòng thử lại.',
+      );
+    }
+  }
+
+  @override
   Future<BranchPage> search({
     String query = '',
     DiscoverySport? sport,

@@ -22,6 +22,8 @@ class _Health implements HealthRepository {
 }
 
 class _Discovery implements DiscoveryRepository {
+  @override
+  Future<List<Court>> courtsOfBranch(int branchId) async => const [];
   final queries = <String>[];
   @override
   Future<BranchPage> search({
@@ -131,10 +133,10 @@ void main() {
       expect(find.text('Sân Khác'), findsNothing);
       await tester.tap(find.text('Đặt sân ngay'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Chưa thể chọn lịch'), findsOneWidget);
-      Navigator.of(tester.element(find.textContaining('Chưa thể chọn lịch')))
-          .pop();
-      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Chi nhánh chưa có sân hoạt động.'),
+        findsOneWidget,
+      );
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(find.widgetWithText(TextField, 'Đường A'), findsOneWidget);

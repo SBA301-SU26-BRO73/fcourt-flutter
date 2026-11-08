@@ -9,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 class SheetRepository implements DiscoveryRepository {
+  @override
+  Future<List<Court>> courtsOfBranch(int branchId) async => const [];
   bool fail = false;
   final requests = <DiscoveryFilters>[];
   @override

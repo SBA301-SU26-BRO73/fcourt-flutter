@@ -38,6 +38,20 @@ class BranchPage {
   bool get hasNext => page + 1 < totalPages;
 }
 
+class Court {
+  const Court({
+    required this.id,
+    required this.name,
+    required this.courtTypeId,
+    required this.defaultPricePerHour,
+  });
+
+  final int id;
+  final String name;
+  final int courtTypeId;
+  final double defaultPricePerHour;
+}
+
 /// IDs match subscription-service/database/V2__seed_sample_data.sql.
 /// Deployments with another catalog can override the dart-defines.
 enum DiscoverySport {
@@ -63,4 +77,6 @@ abstract interface class DiscoveryRepository {
     DiscoveryFilters filters = const DiscoveryFilters(),
     int page = 0,
   });
+
+  Future<List<Court>> courtsOfBranch(int branchId);
 }
