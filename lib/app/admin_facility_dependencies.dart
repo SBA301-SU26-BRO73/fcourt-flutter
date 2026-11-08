@@ -20,6 +20,10 @@ import '../features/admin_facility/domain/repositories/court_repository.dart';
 import '../features/admin_facility/domain/repositories/pricing_rule_repository.dart';
 import '../features/admin_facility/domain/repositories/slot_template_repository.dart';
 import '../features/catalog/domain/repositories/catalog_repository.dart';
+import '../features/report_export/data/report_file_store.dart';
+import '../features/report_export/data/revenue_report_remote_data_source.dart';
+import '../features/report_export/data/revenue_report_repository_impl.dart';
+import '../features/report_export/domain/report_export.dart';
 
 import 'package:dio/dio.dart';
 
@@ -38,6 +42,8 @@ class AdminFacilityDependencies {
     required this.slotTemplateRepository,
     required this.pricingRuleRepository,
     required this.dashboardRepository,
+    this.revenueReportRepository,
+    this.reportFileOpener = const OpenFilexOpener(),
     required this.analyticsRepository,
     this.branchImageRepository,
     this.branchImagePicker,
@@ -53,6 +59,9 @@ class AdminFacilityDependencies {
   final DashboardRepository dashboardRepository;
   final AnalyticsRepository analyticsRepository;
 
+  /// SCRUM-77: tải báo cáo doanh thu; `null` thì ẩn nút xuất.
+  final RevenueReportRepository? revenueReportRepository;
+  final ReportFileOpener reportFileOpener;
   /// Ảnh chi nhánh (SCRUM-47/48): chủ sân thêm/xóa, khách chỉ đọc qua endpoint công khai.
   final BranchImageRepository? branchImageRepository;
   final BranchImagePicker? branchImagePicker;
@@ -101,6 +110,17 @@ class AdminFacilityDependencies {
       slotTemplateRepository: SlotTemplateRepositoryImpl(facility),
       pricingRuleRepository: PricingRuleRepositoryImpl(facility),
       dashboardRepository: DashboardRepositoryImpl(reporting),
+      revenueReportRepository: RevenueReportRepositoryImpl(
+        RevenueReportRemoteDataSource(
+          createDio(
+            config,
+            tokenStorage,
+            baseUrl: config.reportingUrl,
+            onSessionExpired: onSessionExpired,
+          ),
+        ),
+        const DeviceReportFileStore(),
+      ),
       analyticsRepository: AnalyticsRepositoryImpl(reporting),
       branchImageRepository: BranchImageRepositoryImpl(
         publicDio: publicFacilityDio,

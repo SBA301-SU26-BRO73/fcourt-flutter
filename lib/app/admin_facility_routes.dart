@@ -69,6 +69,8 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
           getStats: GetDashboardStats(deps.dashboardRepository),
         )..add(const DashboardStarted()),
         child: AdminDashboardScreen(
+          exportRepository: deps.revenueReportRepository,
+          fileOpener: deps.reportFileOpener,
           onOpenBranches: () => context.push('/admin/branches'),
           onOpenAnalytics: () => context.push('/admin/analytics'),
         ),

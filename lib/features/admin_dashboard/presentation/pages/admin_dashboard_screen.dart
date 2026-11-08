@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../report_export/domain/report_export.dart';
+import '../../../report_export/presentation/revenue_export_button.dart';
 import '../../domain/entities/dashboard_stats.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../widgets/booking_status_pie_chart.dart';
@@ -13,11 +15,17 @@ class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({
     super.key,
     this.onOpenBranches,
+    this.exportRepository,
+    this.fileOpener,
     this.onOpenAnalytics,
   });
 
   final VoidCallback? onOpenBranches;
   final VoidCallback? onOpenAnalytics;
+
+  /// SCRUM-77: có cả hai thì thanh công cụ có nút xuất báo cáo doanh thu.
+  final RevenueReportRepository? exportRepository;
+  final ReportFileOpener? fileOpener;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +33,18 @@ class AdminDashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Tổng quan'),
         actions: [
+          if (exportRepository != null && fileOpener != null)
+            BlocBuilder<DashboardBloc, DashboardState>(
+              buildWhen: (a, b) =>
+                  a.branches != b.branches ||
+                  a.selectedBranchId != b.selectedBranchId,
+              builder: (context, state) => RevenueExportButton(
+                repository: exportRepository!,
+                opener: fileOpener!,
+                branches: state.branches,
+                initialBranchId: state.selectedBranchId,
+              ),
+            ),
           if (onOpenAnalytics != null)
             IconButton(
               tooltip: 'Phân tích',
