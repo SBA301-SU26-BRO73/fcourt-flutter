@@ -33,5 +33,10 @@ class VoucherUsagePage {
   bool get hasMore => (page + 1) * size < total;
 }
 
-String voucherPhoneDigits(String phone) =>
-    phone.replaceAll(RegExp(r'[^0-9]'), '');
+/// Digits only; a leading country code 84 becomes 0 (same normalization as voucher-service).
+String voucherPhoneDigits(String phone) {
+  final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+  return digits.startsWith('84') && digits.length >= 3
+      ? '0${digits.substring(2)}'
+      : digits;
+}

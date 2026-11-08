@@ -55,7 +55,11 @@ class _HistoryView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Tổng chi phí khuyến mãi của mã'),
+                      Text(
+                        state.query.trim().isEmpty
+                            ? 'Tổng chi phí khuyến mãi của mã'
+                            : 'Chi phí khuyến mãi của kết quả đang lọc',
+                      ),
                       Text(
                         state.totalDiscountMinor == null
                             ? '—'
@@ -64,15 +68,14 @@ class _HistoryView extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       TextField(
-                        enabled: false,
                         key: const ValueKey('usage-phone'),
                         keyboardType: TextInputType.phone,
-                        maxLength: 100,
+                        maxLength: 20,
                         onChanged: cubit.search,
                         decoration: const InputDecoration(
                           labelText: 'Tìm SĐT khách hàng',
                           helperText:
-                              'API hiện tại chưa hỗ trợ tìm theo SĐT.',
+                              'Nhập ít nhất 3 chữ số, hỗ trợ cả dạng +84.',
                           prefixIcon: Icon(Icons.search),
                         ),
                       ),

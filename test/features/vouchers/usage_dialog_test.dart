@@ -77,10 +77,75 @@ void main() {
     expect(cubit.state.totalDiscountMinor, isNull);
     await cubit.close();
   });
+  testWidgets('modal renders legacy fallback and loads pages on demand', (
+    tester,
+  ) async {
+    final repo = HistoryRepository();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: VoucherUsageHistoryDialog(
+          repository: repo,
+          voucherId: 1,
+          code: 'SAVE',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Lượt dùng SAVE'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('usage-phone')))
+          .enabled,
+      isNot(false),
+    );
+    expect(find.text('SĐT chưa được cung cấp'), findsWidgets);
+    expect(find.textContaining('Ghi nhận lúc:'), findsWidgets);
+    expect(repo.calls, ['0:']);
+    expect(find.byType(Card).evaluate().length, lessThan(20));
+    await tester.scrollUntilVisible(
+      find.text('Xem thêm'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Xem thêm'));
+    await tester.pumpAndSettle();
+    expect(repo.calls, ['0:', '1:']);
+  });
   testWidgets(
-    'modal renders honest legacy fallback and loads pages on demand',
+    'phone search is enabled, debounced and shows snapshot fields with fallbacks',
     (tester) async {
-      final repo = HistoryRepository();
+      final repo = HistoryRepository()
+        ..handler = (page, query) => Future.value(
+          VoucherUsagePage(
+            [
+              VoucherUsage(
+                id: 'a',
+                voucherId: 1,
+                bookingId: 5,
+                userId: 9,
+                discountMinor: 10000,
+                usedAt: DateTime.utc(2026, 11, 5),
+                timeSource: VoucherUsageTimeSource.paymentConfirmed,
+                customerName: 'Nguyen Van A',
+                customerPhone: '0912345678',
+                bookingCode: 'FC00000005',
+              ),
+              if (query.isEmpty)
+                VoucherUsage(
+                  id: 'b',
+                  voucherId: 1,
+                  bookingId: 6,
+                  userId: 10,
+                  discountMinor: 10000,
+                  usedAt: DateTime.utc(2026, 11, 5),
+                  timeSource: VoucherUsageTimeSource.recordedAt,
+                ),
+            ],
+            0,
+            query.isEmpty ? 2 : 1,
+            20000,
+          ),
+        );
       await tester.pumpWidget(
         MaterialApp(
           home: VoucherUsageHistoryDialog(
@@ -91,25 +156,25 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Lượt dùng SAVE'), findsOneWidget);
       expect(
         tester
             .widget<TextField>(find.byKey(const ValueKey('usage-phone')))
             .enabled,
-        isFalse,
+        isNot(false),
       );
-      expect(find.text('SĐT chưa được cung cấp'), findsWidgets);
-      expect(find.textContaining('Ghi nhận lúc:'), findsWidgets);
+      expect(find.text('Nguyen Van A'), findsOneWidget);
+      expect(find.text('0912345678'), findsOneWidget);
+      expect(find.text('FC00000005'), findsOneWidget);
+      expect(find.text('Khách hàng #10'), findsOneWidget);
+      expect(find.text('SĐT chưa được cung cấp'), findsOneWidget);
+      await tester.enterText(find.byKey(const ValueKey('usage-phone')), '0912');
+      await tester.pump(const Duration(milliseconds: 100));
       expect(repo.calls, ['0:']);
-      expect(find.byType(Card).evaluate().length, lessThan(20));
-      await tester.scrollUntilVisible(
-        find.text('Xem thêm'),
-        500,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.text('Xem thêm'));
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
-      expect(repo.calls, ['0:', '1:']);
+      expect(repo.calls, ['0:', '0:0912']);
+      expect(find.text('1 lượt dùng'), findsOneWidget);
+      expect(find.text('Khách hàng #10'), findsNothing);
     },
   );
 }
