@@ -86,26 +86,14 @@ class OfflineStore {
       where: 'user_id=? AND branch_id=? AND date=? AND code_hash=?',
       whereArgs: [scope.userId, scope.branchId, scope.date, ticketHash(code)],
     );
-    final meta = await db.query(
-      'snapshots',
-      where: 'user_id=? AND branch_id=? AND date=?',
-      whereArgs: [scope.userId, scope.branchId, scope.date],
-    );
-    if (rows.isEmpty || meta.isEmpty) {
+    await validateSnapshot(scope, now);
+    if (rows.isEmpty) {
       throw const ServerFailure(
         'Chưa có vé trong dữ liệu đầu ca. Kết nối mạng để kiểm tra.',
         statusCode: 404,
       );
     }
     final row = rows.single;
-    final synced = DateTime.parse(meta.single['generated_at'] as String);
-    if (now.isBefore(synced.subtract(const Duration(minutes: 1))) ||
-        now.difference(synced) > const Duration(hours: 12)) {
-      throw const ServerFailure(
-        'Dữ liệu đầu ca đã cũ. Cần đồng bộ lại.',
-        statusCode: 409,
-      );
-    }
     if (row['consumed'] == 1) {
       throw const ServerFailure(
         'Vé đã nhận sân trên thiết bị này',
@@ -120,6 +108,28 @@ class OfflineStore {
       );
     }
     return ticket;
+  }
+
+  Future<void> validateSnapshot(OfflineScope scope, DateTime now) async {
+    final meta = await db.query(
+      'snapshots',
+      where: 'user_id=? AND branch_id=? AND date=?',
+      whereArgs: [scope.userId, scope.branchId, scope.date],
+    );
+    if (meta.isEmpty) {
+      throw const ServerFailure(
+        'Chưa có vé trong dữ liệu đầu ca. Kết nối mạng để kiểm tra.',
+        statusCode: 404,
+      );
+    }
+    final synced = DateTime.parse(meta.single['generated_at'] as String);
+    if (now.isBefore(synced.subtract(const Duration(minutes: 1))) ||
+        now.difference(synced) > const Duration(hours: 12)) {
+      throw const ServerFailure(
+        'Dữ liệu đầu ca đã cũ. Cần đồng bộ lại.',
+        statusCode: 409,
+      );
+    }
   }
 
   OfflineTicket _ticket(Map<String, Object?> row) => OfflineTicket(

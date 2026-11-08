@@ -7,6 +7,7 @@ import '../../domain/entities/booking_selection.dart';
 import '../../domain/repositories/booking_repository.dart';
 import '../../domain/usecases/hold_booking.dart';
 import '../bloc/booking_cubit.dart';
+import '../../../promos/presentation/promo_code_input.dart';
 
 /// SCRUM-23 supplies the selected slots and optional signed-in profile.
 /// SCRUM-33 supplies onHeld to open checkout with the returned hold session.
@@ -16,11 +17,13 @@ class BookingSummaryArguments {
     required this.onHeld,
     this.customerName = '',
     this.phone = '',
+    this.promoCode = '',
   });
   final BookingSelection selection;
   final ValueChanged<BookingCheckout> onHeld;
   final String customerName;
   final String phone;
+  final String promoCode;
 }
 
 class BookingSummaryScreen extends StatelessWidget {
@@ -51,12 +54,14 @@ class _SummaryFormState extends State<_SummaryForm> {
   final _form = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _phone;
+  late String _promoCode;
 
   @override
   void initState() {
     super.initState();
     _name = TextEditingController(text: widget.arguments.customerName);
     _phone = TextEditingController(text: widget.arguments.phone);
+    _promoCode = widget.arguments.promoCode;
   }
 
   @override
@@ -88,7 +93,7 @@ class _SummaryFormState extends State<_SummaryForm> {
               ),
             ),
           );
-          widget.arguments.onHeld(checkout);
+          widget.arguments.onHeld(checkout.withPromoCode(_promoCode));
         }
       },
       builder: (context, state) {
@@ -181,6 +186,14 @@ class _SummaryFormState extends State<_SummaryForm> {
                         ],
                         maxLength: 10,
                         validator: validateBookingPhone,
+                      ),
+                      const SizedBox(height: 12),
+                      PromoCodeInput(
+                        initialCode: widget.arguments.promoCode,
+                        readOnly: locked,
+                        onChanged: (code) => _promoCode = code,
+                        helperText:
+                            'Mã sẽ được kiểm tra và áp dụng ở bước thanh toán.',
                       ),
                       if (state.error case final message?)
                         Padding(

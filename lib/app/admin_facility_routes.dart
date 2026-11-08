@@ -2,24 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/admin_dashboard/domain/usecases/analytics_usecases.dart';
 import '../features/admin_dashboard/domain/usecases/get_dashboard_stats.dart';
+import '../features/admin_dashboard/presentation/bloc/analytics_bloc.dart';
 import '../features/admin_dashboard/presentation/bloc/dashboard_bloc.dart';
+import '../features/admin_dashboard/presentation/pages/analytics_screen.dart';
 import '../features/admin_dashboard/presentation/pages/admin_dashboard_screen.dart';
 import '../features/admin_facility/domain/entities/branch.dart';
 import '../features/admin_facility/domain/entities/court.dart';
 import '../features/admin_facility/domain/usecases/apply_slot_template.dart';
 import '../features/admin_facility/domain/usecases/branch_usecases.dart';
 import '../features/admin_facility/domain/usecases/court_usecases.dart';
+import '../features/admin_facility/domain/usecases/lock_usecases.dart';
+import '../features/admin_facility/domain/usecases/pricing_usecases.dart';
 import '../features/admin_facility/presentation/bloc/branch_form_bloc.dart';
 import '../features/admin_facility/presentation/bloc/branch_list_bloc.dart';
+import '../features/admin_facility/presentation/bloc/bulk_apply_template_bloc.dart';
+import '../features/admin_facility/presentation/bloc/court_calendar_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_form_bloc.dart';
 import '../features/admin_facility/presentation/bloc/court_list_bloc.dart';
+import '../features/admin_facility/presentation/bloc/out_of_service_bloc.dart';
+import '../features/admin_facility/presentation/bloc/pricing_rule_bloc.dart';
 import '../features/admin_facility/presentation/bloc/slot_template_bloc.dart';
 import '../features/admin_facility/presentation/pages/branch_form_screen.dart';
 import '../features/admin_facility/presentation/pages/branch_list_screen.dart';
+import '../features/admin_facility/presentation/pages/court_calendar_screen.dart';
 import '../features/admin_facility/presentation/pages/court_form_screen.dart';
 import '../features/admin_facility/presentation/pages/court_list_screen.dart';
+import '../features/admin_facility/presentation/pages/out_of_service_management_screen.dart';
+import '../features/admin_facility/presentation/pages/pricing_rule_config_screen.dart';
 import '../features/admin_facility/presentation/pages/time_slot_template_screen.dart';
+import '../features/admin_facility/presentation/widgets/bulk_apply_template_dialog.dart';
+import '../src/features/branch_gallery/presentation/admin_branch_images_cubit.dart';
+import '../src/features/branch_gallery/presentation/admin_branch_images_screen.dart';
 import 'admin_facility_dependencies.dart';
 
 /// Route của chủ sân (SCRUM-13/15/17/19). Trả về danh sách rỗng khi app chưa
@@ -28,7 +43,24 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
   if (deps == null) return const [];
   final branches = deps.branchRepository;
   final courts = deps.courtRepository;
+  final images = deps.branchImageRepository;
+  final imagePicker = deps.branchImagePicker;
   return [
+    if (images != null && imagePicker != null)
+      GoRoute(
+        path: '/admin/branches/:branchId/images',
+        builder: (context, state) => _withId(
+          state.pathParameters['branchId'],
+          (id) => BlocProvider(
+            create: (_) => AdminBranchImagesCubit(
+              repository: images,
+              picker: imagePicker,
+              branchId: id,
+            )..load(),
+            child: const AdminBranchImagesScreen(),
+          ),
+        ),
+      ),
     GoRoute(
       path: '/admin/dashboard',
       builder: (context, state) => BlocProvider(
@@ -37,8 +69,22 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
           getStats: GetDashboardStats(deps.dashboardRepository),
         )..add(const DashboardStarted()),
         child: AdminDashboardScreen(
+          exportRepository: deps.revenueReportRepository,
+          fileOpener: deps.reportFileOpener,
           onOpenBranches: () => context.push('/admin/branches'),
+          onOpenAnalytics: () => context.push('/admin/analytics'),
         ),
+      ),
+    ),
+    GoRoute(
+      path: '/admin/analytics',
+      builder: (context, state) => BlocProvider(
+        create: (_) => AnalyticsBloc(
+          getBranches: GetBranches(branches),
+          getRevenueChart: GetRevenueChart(deps.analyticsRepository),
+          getInsights: GetCourtInsights(deps.analyticsRepository),
+        )..add(const AnalyticsStarted()),
+        child: const AnalyticsScreen(),
       ),
     ),
     GoRoute(
@@ -54,6 +100,9 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
           onOpenCourts: (branch) =>
               context.push('/admin/branches/${branch.id}/courts'),
           onOpenDashboard: () => context.push('/admin/dashboard'),
+          onOpenImages: images == null
+              ? null
+              : (branch) => context.push('/admin/branches/${branch.id}/images'),
         ),
       ),
     ),
@@ -99,6 +148,29 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
                 context.push<Court>('/admin/courts/${court.id}/edit'),
             onOpenSlotTemplate: (court) =>
                 context.push('/admin/courts/${court.id}/slot-template'),
+            onOpenPricing: (court) =>
+                context.push('/admin/courts/${court.id}/pricing'),
+            onBulkApply: (branch, branchCourts) => showBulkApplyTemplateDialog(
+              context,
+              createBloc: () => BulkApplyTemplateBloc(
+                courts: branchCourts,
+                start: branch.openTime,
+                end: branch.closeTime,
+                branchOpen: branch.openTime,
+                branchClose: branch.closeTime,
+                previewBulk: PreviewBulkSlotTemplate(
+                  deps.slotTemplateRepository,
+                ),
+                applyBulk: ApplyBulkSlotTemplate(deps.slotTemplateRepository),
+              ),
+            ),
+            onOpenCalendar: deps.courtCalendarRepository == null
+                ? null
+                : (court) => context.push('/admin/courts/${court.id}/calendar'),
+            onOpenOutOfService: deps.courtLockRepository == null
+                ? null
+                : (branchId) =>
+                      context.push('/admin/branches/$branchId/out-of-service'),
           ),
         ),
       ),
@@ -134,6 +206,23 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
       ),
     ),
     GoRoute(
+      path: '/admin/courts/:courtId/pricing',
+      builder: (context, state) => _withId(
+        state.pathParameters['courtId'],
+        (courtId) => BlocProvider(
+          create: (_) => PricingRuleBloc(
+            courtId: courtId,
+            getCourt: GetCourt(courts),
+            getRules: GetPricingRules(deps.pricingRuleRepository),
+            saveRule: SavePricingRule(deps.pricingRuleRepository),
+            deleteRule: DeletePricingRule(deps.pricingRuleRepository),
+            copyToWeekend: CopyWeekdayToWeekend(deps.pricingRuleRepository),
+          )..add(const PricingRuleStarted()),
+          child: const PricingRuleConfigScreen(),
+        ),
+      ),
+    ),
+    GoRoute(
       path: '/admin/courts/:courtId/slot-template',
       builder: (context, state) => _withId(
         state.pathParameters['courtId'],
@@ -148,6 +237,47 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         ),
       ),
     ),
+    if (deps.courtLockRepository != null &&
+        deps.courtCalendarRepository != null)
+      GoRoute(
+        path: '/admin/courts/:courtId/calendar',
+        builder: (context, state) => _withId(
+          state.pathParameters['courtId'],
+          (courtId) => BlocProvider(
+            create: (_) => CourtCalendarBloc(
+              courtId: courtId,
+              getCourt: GetCourt(courts),
+              getDays: GetCalendarDays(deps.courtCalendarRepository!),
+              getLocks: GetCourtLocks(deps.courtLockRepository!),
+              lockCourt: LockCourt(deps.courtLockRepository!),
+              unlockCourt: UnlockCourt(deps.courtLockRepository!),
+            )..add(const CalendarStarted()),
+            child: CourtCalendarScreen(
+              onOpenOutOfService: (branchId) =>
+                  context.push('/admin/branches/$branchId/out-of-service'),
+            ),
+          ),
+        ),
+      ),
+    if (deps.courtLockRepository != null)
+      GoRoute(
+        path: '/admin/branches/:branchId/out-of-service',
+        builder: (context, state) => _withId(
+          state.pathParameters['branchId'],
+          (branchId) => BlocProvider(
+            create: (_) => OutOfServiceBloc(
+              branchId: branchId,
+              getBranch: GetBranch(branches),
+              getCourts: GetCourts(courts),
+              getLocks: GetCourtLocks(deps.courtLockRepository!),
+              lockBranch: LockBranch(deps.courtLockRepository!),
+              unlockCourt: UnlockCourt(deps.courtLockRepository!),
+              unlockGroup: UnlockGroup(deps.courtLockRepository!),
+            )..add(const OutOfServiceStarted()),
+            child: const OutOfServiceManagementScreen(),
+          ),
+        ),
+      ),
   ];
 }
 

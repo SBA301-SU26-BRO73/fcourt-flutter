@@ -91,7 +91,7 @@ void main() {
       );
       expect(find.text('Đã đặt'), findsOneWidget);
       expect(find.text('Đang giữ'), findsOneWidget);
-      expect(find.text('Bảo trì / Bao sân'), findsOneWidget);
+      expect(find.text('Ngừng phục vụ'), findsOneWidget);
     },
   );
 
