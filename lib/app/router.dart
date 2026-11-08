@@ -113,10 +113,11 @@ GoRouter createRouter(
         path: '/admin/subscription',
         builder: (context, state) {
           final repository = dependencies.subscriptions;
-          if (repository == null)
+          if (repository == null) {
             return const Scaffold(
               body: Center(child: Text('Gói dịch vụ chưa khả dụng')),
             );
+          }
           return BlocProvider(
             create: (_) => SubscriptionCubit(
               repository,
