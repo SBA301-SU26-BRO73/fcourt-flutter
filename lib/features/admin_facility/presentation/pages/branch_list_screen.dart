@@ -16,12 +16,16 @@ class BranchListScreen extends StatelessWidget {
     required this.onEditBranch,
     required this.onOpenCourts,
     this.onOpenDashboard,
+    this.onOpenImages,
   });
 
   final Future<Branch?> Function() onCreateBranch;
   final Future<Branch?> Function(Branch branch) onEditBranch;
   final void Function(Branch branch) onOpenCourts;
   final VoidCallback? onOpenDashboard;
+
+  /// Mở màn quản lý ảnh chi nhánh (SCRUM-48); null thì không hiện nút.
+  final void Function(Branch branch)? onOpenImages;
 
   Future<void> _create(BuildContext context) async {
     final created = await onCreateBranch();
@@ -119,6 +123,9 @@ class BranchListScreen extends StatelessWidget {
                   branch: branch,
                   onTap: () => onOpenCourts(branch),
                   onEdit: () => _edit(context, branch),
+                  onImages: onOpenImages == null
+                      ? null
+                      : () => onOpenImages!(branch),
                 );
               },
             ),
@@ -151,11 +158,13 @@ class BranchCard extends StatelessWidget {
     required this.branch,
     required this.onTap,
     required this.onEdit,
+    this.onImages,
   });
 
   final Branch branch;
   final VoidCallback onTap;
   final VoidCallback onEdit;
+  final VoidCallback? onImages;
 
   @override
   Widget build(BuildContext context) {
@@ -193,6 +202,13 @@ class BranchCard extends StatelessWidget {
                       label: const Text('Ngừng hoạt động'),
                       visualDensity: VisualDensity.compact,
                       backgroundColor: scheme.surfaceContainerHighest,
+                    ),
+                  if (onImages != null)
+                    IconButton(
+                      tooltip: 'Ảnh chi nhánh',
+                      color: scheme.onPrimary,
+                      icon: const Icon(Icons.photo_library_outlined),
+                      onPressed: onImages,
                     ),
                   IconButton(
                     tooltip: 'Sửa chi nhánh',

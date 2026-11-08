@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/error/failure.dart';
 import '../../../core/network/command_key.dart';
 import '../domain/pos.dart';
+import '../domain/pending_sale.dart';
 
 class PosState {
   const PosState({
@@ -14,10 +15,12 @@ class PosState {
     this.error,
     this.receipt,
     this.hasMore = false,
+    this.restoring = false,
   });
   final List<PosProduct> products;
   final Map<PosProduct, int> cart;
   final bool loading, selling, uncertain, hasMore;
+  final bool restoring;
   final String? error;
   final PosOrder? receipt;
   int get total =>
@@ -25,8 +28,13 @@ class PosState {
 }
 
 class PosCubit extends Cubit<PosState> {
-  PosCubit(this.repository) : super(const PosState());
+  PosCubit(this.repository, {this.journal})
+    : super(PosState(restoring: journal != null));
   final PosRepository repository;
+  final PosSaleStore? journal;
+  PendingSale? _sale;
+  String? get pendingMethod => _sale?.method;
+  int? get pendingBooking => _sale?.bookingId;
   final Set<String> categories = {};
   String query = '', category = '';
   int _load = 0;
@@ -43,6 +51,7 @@ class PosCubit extends Cubit<PosState> {
     String? error,
     PosOrder? receipt,
     bool? hasMore,
+    bool? restoring,
   }) => emit(
     PosState(
       products: products ?? state.products,
@@ -53,9 +62,34 @@ class PosCubit extends Cubit<PosState> {
       error: error,
       receipt: receipt,
       hasMore: hasMore ?? state.hasMore,
+      restoring: restoring ?? state.restoring,
     ),
   );
   Future<void> load({bool more = false}) async {
+    if (state.restoring) {
+      if (state.loading) return;
+      _emit(loading: true);
+      try {
+        final saved = await journal!.load();
+        if (isClosed) return;
+        _sale = saved;
+        if (saved != null) {
+          _key = saved.key;
+          _method = saved.method;
+          _booking = saved.bookingId;
+          _pending = saved.quantities;
+        }
+        _emit(
+          restoring: false,
+          loading: false,
+          cart: saved?.cart,
+          uncertain: saved != null,
+        );
+      } on Failure catch (e) {
+        if (!isClosed) _emit(loading: false, error: e.message);
+        return;
+      }
+    }
     if (more && (state.loading || !state.hasMore)) return;
     final version = ++_load;
     final before = more ? state.products : <PosProduct>[];
@@ -90,7 +124,7 @@ class PosCubit extends Cubit<PosState> {
   }
 
   void quantity(PosProduct product, int value) {
-    if (state.selling || state.uncertain) return;
+    if (state.selling || state.uncertain || state.restoring) return;
     final cart = Map<PosProduct, int>.of(state.cart);
     final existing = cart.keys.where((p) => p.id == product.id).firstOrNull;
     if (existing != null) cart.remove(existing);
@@ -113,7 +147,7 @@ class PosCubit extends Cubit<PosState> {
           .firstOrNull ??
       0;
   Future<void> sell(String method, int? booking) async {
-    if (state.selling || state.cart.isEmpty) return;
+    if (state.selling || state.restoring || state.cart.isEmpty) return;
     if (!state.uncertain) {
       if (!['CASH', 'BOOKING'].contains(method) ||
           (method == 'BOOKING' && (booking == null || booking <= 0)) ||
@@ -128,23 +162,38 @@ class PosCubit extends Cubit<PosState> {
       _pending = Map.unmodifiable({
         for (final e in state.cart.entries) e.key.id: e.value,
       });
+      _sale = PendingSale(
+        key: _key!,
+        method: _method!,
+        bookingId: _booking,
+        cart: state.cart,
+      );
     }
     _emit(selling: true);
     try {
+      await journal?.save(_sale!);
       final receipt = await repository.create(
         _pending!,
         _method!,
         _booking,
         _key!,
       );
+      await journal?.clear(_key!);
       if (isClosed) return;
       _emit(selling: false, uncertain: false, cart: {}, receipt: receipt);
       // Keep receipt visible; reload is requested when its dialog closes.
     } on Failure catch (e) {
-      final uncertain =
+      var uncertain =
           e is NetworkFailure ||
           e is UnknownFailure ||
           (e is ServerFailure && (e.statusCode ?? 500) >= 500);
+      if (!uncertain) {
+        try {
+          await journal?.clear(_key!);
+        } on Failure {
+          uncertain = true;
+        }
+      }
       if (!isClosed) {
         _emit(
           selling: false,

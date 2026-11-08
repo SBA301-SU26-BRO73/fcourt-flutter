@@ -15,12 +15,22 @@ class BookingCheckout {
     required this.hold,
     required this.customerName,
     required this.phone,
+    this.promoCode = '',
   });
 
   final BookingSelection selection;
   final BookingHold hold;
   final String customerName;
   final String phone;
+  final String promoCode;
+
+  BookingCheckout withPromoCode(String code) => BookingCheckout(
+    selection: selection,
+    hold: hold,
+    customerName: customerName,
+    phone: phone,
+    promoCode: code.trim().toUpperCase(),
+  );
 }
 
 class BookingFailure implements Exception {

@@ -221,6 +221,7 @@ void main() {
         onCreateCourt: onCreate ?? (_) async => null,
         onEditCourt: (_) async => null,
         onOpenSlotTemplate: (_) {},
+        onOpenPricing: (_) {},
       ),
     );
 
@@ -418,6 +419,7 @@ void main() {
             onCreateCourt: (_) async => null,
             onEditCourt: (_) async => null,
             onOpenSlotTemplate: (_) {},
+            onOpenPricing: (_) {},
           ),
         ),
       );
