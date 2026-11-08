@@ -20,6 +20,7 @@ import '../auth/helpers.dart';
 import '../catalog/helpers.dart';
 import '../admin_facility/fixtures.dart';
 import '../admin_facility/mocks.dart';
+import '../admin_facility/pricing_fixtures.dart';
 import 'editor_test.dart' show EditorRepository;
 import 'repository_test.dart' show voucherJson;
 
@@ -77,6 +78,7 @@ void main() {
           courtRepository: MockCourtRepository(),
           courtTypeRepository: MockCourtTypeRepository(),
           slotTemplateRepository: MockSlotTemplateRepository(),
+          pricingRuleRepository: MockPricingRuleRepository(),
           dashboardRepository: Dashboard(),
           analyticsRepository: Analytics(),
         ),

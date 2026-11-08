@@ -18,6 +18,7 @@ import '../auth/helpers.dart';
 import '../catalog/helpers.dart';
 import '../admin_facility/fixtures.dart';
 import '../admin_facility/mocks.dart';
+import '../admin_facility/pricing_fixtures.dart';
 
 class Health extends Mock implements HealthRepository {}
 
@@ -64,6 +65,7 @@ void main() {
           courtRepository: courts,
           courtTypeRepository: MockCourtTypeRepository(),
           slotTemplateRepository: MockSlotTemplateRepository(),
+          pricingRuleRepository: MockPricingRuleRepository(),
           dashboardRepository: Dashboard(),
           analyticsRepository: Analytics(),
         ),

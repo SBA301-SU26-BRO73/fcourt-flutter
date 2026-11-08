@@ -18,6 +18,13 @@ class FacilityRemoteDataSource {
   static String applyTemplatePath(int courtId) =>
       '${courtPath(courtId)}/apply-template';
 
+  static String pricingRulesPath(int courtId) =>
+      '${courtPath(courtId)}/pricing-rules';
+  static String pricingRulePath(int courtId, int ruleId) =>
+      '${pricingRulesPath(courtId)}/$ruleId';
+  static String copyWeekdayToWeekendPath(int courtId) =>
+      '${pricingRulesPath(courtId)}/copy-weekday-to-weekend';
+
   Future<Object?> getBranches() async =>
       (await _dio.get<Object?>(branchesPath)).data;
 
@@ -50,6 +57,38 @@ class FacilityRemoteDataSource {
 
   Future<Object?> applyTemplate(int courtId, Map<String, dynamic> body) async =>
       (await _dio.post<Object?>(applyTemplatePath(courtId), data: body)).data;
+
+  Future<Object?> getPricingRules(int courtId) async =>
+      (await _dio.get<Object?>(pricingRulesPath(courtId))).data;
+
+  Future<Object?> createPricingRule(
+    int courtId,
+    Map<String, dynamic> body,
+  ) async =>
+      (await _dio.post<Object?>(pricingRulesPath(courtId), data: body)).data;
+
+  Future<Object?> updatePricingRule(
+    int courtId,
+    int ruleId,
+    Map<String, dynamic> body,
+  ) async => (await _dio.put<Object?>(
+    pricingRulePath(courtId, ruleId),
+    data: body,
+  )).data;
+
+  Future<void> deletePricingRule(int courtId, int ruleId) async {
+    await _dio.delete<Object?>(pricingRulePath(courtId, ruleId));
+  }
+
+  Future<Object?> copyWeekdayToWeekend(
+    int courtId, {
+    double? multiplier,
+  }) async => (await _dio.post<Object?>(
+    copyWeekdayToWeekendPath(courtId),
+    data: multiplier == null
+        ? <String, dynamic>{}
+        : {'priceMultiplier': multiplier},
+  )).data;
 
   Future<Object?> previewBulkTemplate(Map<String, dynamic> body) async =>
       (await _dio.post<Object?>(bulkPreviewTemplatePath, data: body)).data;

@@ -13,6 +13,7 @@ import 'package:fcourt/features/admin_facility/presentation/pages/branch_form_sc
 import 'package:fcourt/features/admin_facility/presentation/pages/branch_list_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/court_form_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/court_list_screen.dart';
+import 'package:fcourt/features/admin_facility/presentation/pages/pricing_rule_config_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/time_slot_template_screen.dart';
 import 'package:fcourt/features/health/domain/entities/health_status.dart';
 import 'package:fcourt/features/health/domain/repositories/health_repository.dart';
@@ -27,6 +28,7 @@ import '../features/catalog/helpers.dart';
 import '../features/admin_facility/fixtures.dart';
 import '../features/admin_facility/mocks.dart';
 import '../features/admin_dashboard/analytics_helpers.dart';
+import '../features/admin_facility/pricing_fixtures.dart';
 
 class _FakeHealthRepository implements HealthRepository {
   @override
@@ -91,6 +93,7 @@ void main() {
     final courts = MockCourtRepository();
     final types = MockCourtTypeRepository();
     final dashboard = _MockDashboardRepository();
+    final pricing = MockPricingRuleRepository();
     final analytics = MockAnalyticsRepository();
     registerAnalyticsFallbacks();
     when(
@@ -120,6 +123,7 @@ void main() {
     when(() => branches.getBranch(1)).thenAnswer((_) async => sampleBranch());
     when(() => courts.getCourts(1)).thenAnswer((_) async => [sampleCourt()]);
     when(() => courts.getCourt(5)).thenAnswer((_) async => sampleCourt());
+    when(() => pricing.getRules(5)).thenAnswer((_) async => const []);
     when(() => types.getCourtTypes()).thenAnswer((_) async => sampleCourtTypes);
     when(() => dashboard.getStats()).thenAnswer(
       (_) async => const DashboardStats(
@@ -141,6 +145,7 @@ void main() {
       courtRepository: courts,
       courtTypeRepository: types,
       slotTemplateRepository: MockSlotTemplateRepository(),
+      pricingRuleRepository: pricing,
       dashboardRepository: dashboard,
       analyticsRepository: analytics,
     );
@@ -156,6 +161,7 @@ void main() {
     '/admin/courts/new?branchId=1': CourtFormScreen,
     '/admin/courts/5/edit': CourtFormScreen,
     '/admin/courts/5/slot-template': TimeSlotTemplateScreen,
+    '/admin/courts/5/pricing': PricingRuleConfigScreen,
   };
 
   for (final entry in cases.entries) {
