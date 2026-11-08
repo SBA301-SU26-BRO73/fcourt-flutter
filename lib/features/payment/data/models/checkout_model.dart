@@ -19,7 +19,7 @@ class CheckoutModel {
     if (json['bookingId'] != bookingId ||
         amount is! num ||
         !amount.isFinite ||
-        amount <= 0 ||
+        amount < 0 ||
         amount != amount.roundToDouble() ||
         amount > 99999999 ||
         expiresAt == null ||

@@ -1,3 +1,5 @@
+import 'slot_restriction.dart';
+
 enum SlotStatus {
   available,
   booked,
@@ -29,12 +31,14 @@ class CourtSlot {
     required this.endMinute,
     required this.priceMinor,
     required this.status,
+    this.restriction,
   });
   final int id, startMinute, endMinute;
 
   /// One unit is 0.01 VND; totals never accumulate floating-point prices.
   final int priceMinor;
   final SlotStatus status;
+  final SlotRestriction? restriction;
 
   bool isPast(DateTime date, DateTime utcNow) {
     final now = utcNow.toUtc().add(const Duration(hours: 7));
