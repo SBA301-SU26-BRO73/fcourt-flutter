@@ -106,7 +106,7 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
     CalendarCellToggled event,
     Emitter<CourtCalendarState> emit,
   ) {
-    if (state.status != CalendarStatus.ready) return;
+    if (state.status != CalendarStatus.ready || state.submitting) return;
     final slot = state.dayOf(event.cell.date)?.slotAt(event.cell.startMinute);
     if (slot == null || !slot.selectable) return;
     if (_cellHasStarted(event.cell)) {

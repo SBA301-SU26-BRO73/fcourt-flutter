@@ -28,14 +28,16 @@ class MockCalendarRepository extends Mock implements CourtCalendarRepository {}
 
 final _monday = DateTime(2030, 1, 7);
 
-CalendarSlot _slot(int start, CalendarSlotStatus status,
-        {bool event = false}) =>
-    CalendarSlot(
-      startMinute: start,
-      endMinute: start + 30,
-      status: status,
-      isPrivateEvent: event,
-    );
+CalendarSlot _slot(
+  int start,
+  CalendarSlotStatus status, {
+  bool event = false,
+}) => CalendarSlot(
+  startMinute: start,
+  endMinute: start + 30,
+  status: status,
+  isPrivateEvent: event,
+);
 
 List<CalendarDay> _week() => [
   for (var i = 0; i < 7; i++)
@@ -113,9 +115,8 @@ void main() {
     courts = MockCourtRepository();
     branches = MockBranchRepository();
     when(() => courts.getCourt(5)).thenAnswer((_) async => sampleCourt());
-    when(() => courts.getCourts(1)).thenAnswer(
-      (_) async => [sampleCourt(id: 5), sampleCourt(id: 6)],
-    );
+    when(() => courts.getCourts(1))
+        .thenAnswer((_) async => [sampleCourt(id: 5), sampleCourt(id: 6)]);
     when(() => branches.getBranch(1)).thenAnswer((_) async => sampleBranch());
     when(() => calendar.getDays(5, any())).thenAnswer((_) async => _week());
     when(
@@ -130,15 +131,15 @@ void main() {
 
   CourtCalendarBloc calendarBloc({DateTime Function()? now}) =>
       CourtCalendarBloc(
-    courtId: 5,
-    getCourt: GetCourt(courts),
-    getDays: GetCalendarDays(calendar),
-    getLocks: GetCourtLocks(locks),
-    lockCourt: LockCourt(locks),
-    unlockCourt: UnlockCourt(locks),
-    today: () => DateTime(2030, 1, 9, 15),
-    now: now ?? () => DateTime(2030, 1, 7, 7),
-  );
+        courtId: 5,
+        getCourt: GetCourt(courts),
+        getDays: GetCalendarDays(calendar),
+        getLocks: GetCourtLocks(locks),
+        lockCourt: LockCourt(locks),
+        unlockCourt: UnlockCourt(locks),
+        today: () => DateTime(2030, 1, 9, 15),
+        now: now ?? () => DateTime(2030, 1, 7, 7),
+      );
 
   OutOfServiceBloc oosBloc() => OutOfServiceBloc(
     branchId: 1,
@@ -152,22 +153,25 @@ void main() {
   );
 
   group('CourtCalendarBloc', () {
-    test('tải tuần Thứ 2 - Chủ nhật chứa ngày đang xem cùng khóa của sân', () async {
-      final bloc = calendarBloc()..add(const CalendarStarted());
-      await bloc.stream.firstWhere((s) => s.status == CalendarStatus.ready);
-      expect(bloc.state.visibleDates.first, _monday);
-      expect(bloc.state.visibleDates.last, DateTime(2030, 1, 13));
-      expect(bloc.state.locks.single.id, 40);
-      verify(
-        () => locks.getLocks(
-          1,
-          courtId: 5,
-          from: _monday,
-          to: DateTime(2030, 1, 14),
-        ),
-      ).called(1);
-      await bloc.close();
-    });
+    test(
+      'tải tuần Thứ 2 - Chủ nhật chứa ngày đang xem cùng khóa của sân',
+      () async {
+        final bloc = calendarBloc()..add(const CalendarStarted());
+        await bloc.stream.firstWhere((s) => s.status == CalendarStatus.ready);
+        expect(bloc.state.visibleDates.first, _monday);
+        expect(bloc.state.visibleDates.last, DateTime(2030, 1, 13));
+        expect(bloc.state.locks.single.id, 40);
+        verify(
+          () => locks.getLocks(
+            1,
+            courtId: 5,
+            from: _monday,
+            to: DateTime(2030, 1, 14),
+          ),
+        ).called(1);
+        await bloc.close();
+      },
+    );
 
     test('phản hồi tuần cũ không ghi đè tuần mới sau khi điều hướng', () async {
       final oldResponse = Completer<List<CalendarDay>>();
@@ -228,27 +232,30 @@ void main() {
       await bloc.close();
     });
 
-    test('khung đã bắt đầu khi xác nhận bị loại và không gửi lệnh khóa', () async {
-      var now = DateTime(2030, 1, 7, 7, 59);
-      final bloc = calendarBloc(now: () => now)..add(const CalendarStarted());
-      await bloc.stream.firstWhere((s) => s.status == CalendarStatus.ready);
-      bloc.add(CalendarCellToggled(CellKey(_monday, 480)));
-      await bloc.stream.firstWhere(
-        (state) => state.selected.contains(CellKey(_monday, 480)),
-      );
+    test(
+      'khung đã bắt đầu khi xác nhận bị loại và không gửi lệnh khóa',
+      () async {
+        var now = DateTime(2030, 1, 7, 7, 59);
+        final bloc = calendarBloc(now: () => now)..add(const CalendarStarted());
+        await bloc.stream.firstWhere((s) => s.status == CalendarStatus.ready);
+        bloc.add(CalendarCellToggled(CellKey(_monday, 480)));
+        await bloc.stream.firstWhere(
+          (state) => state.selected.contains(CellKey(_monday, 480)),
+        );
 
-      now = DateTime(2030, 1, 7, 8, 1);
-      bloc.add(const CalendarLockSubmitted(_details));
-      await bloc.stream.firstWhere((state) => state.notice?.isError == true);
+        now = DateTime(2030, 1, 7, 8, 1);
+        bloc.add(const CalendarLockSubmitted(_details));
+        await bloc.stream.firstWhere((state) => state.notice?.isError == true);
 
-      expect(bloc.state.selected, isEmpty);
-      expect(
-        bloc.state.dayOf(_monday)?.slotAt(480)?.status,
-        CalendarSlotStatus.expired,
-      );
-      verifyNever(() => locks.lockCourt(any()));
-      await bloc.close();
-    });
+        expect(bloc.state.selected, isEmpty);
+        expect(
+          bloc.state.dayOf(_monday)?.slotAt(480)?.status,
+          CalendarSlotStatus.expired,
+        );
+        verifyNever(() => locks.lockCourt(any()));
+        await bloc.close();
+      },
+    );
 
     test('khóa các ô gộp thành khoảng liên tục và tải lại lịch', () async {
       when(() => locks.lockCourt(any())).thenAnswer((_) async => _lock());
@@ -259,22 +266,45 @@ void main() {
       }
       bloc.add(CalendarCellToggled(CellKey(DateTime(2030, 1, 8), 480)));
       bloc.add(const CalendarLockSubmitted(_details));
-      final saved = await bloc.stream
-          .firstWhere((s) => s.notice != null && !s.submitting);
+      final saved = await bloc.stream.firstWhere(
+        (s) => s.notice != null && !s.submitting,
+      );
       final requests = verify(() => locks.lockCourt(captureAny())).captured
           .cast<CourtLockRequest>();
-      expect(
-        requests.map((r) => (r.startAt, r.endAt)),
-        [
-          (DateTime(2030, 1, 7, 8), DateTime(2030, 1, 7, 9, 30)),
-          (DateTime(2030, 1, 8, 8), DateTime(2030, 1, 8, 8, 30)),
-        ],
-      );
+      expect(requests.map((r) => (r.startAt, r.endAt)), [
+        (DateTime(2030, 1, 7, 8), DateTime(2030, 1, 7, 9, 30)),
+        (DateTime(2030, 1, 8, 8), DateTime(2030, 1, 8, 8, 30)),
+      ]);
       expect(requests.first.details, _details);
       expect(saved.notice!.isError, isFalse);
       await bloc.stream.firstWhere((s) => s.status == CalendarStatus.ready);
       expect(bloc.state.selected, isEmpty);
       verify(() => calendar.getDays(5, any())).called(2);
+      await bloc.close();
+    });
+
+    test('không đổi lựa chọn khi lệnh khóa đang gửi', () async {
+      final response = Completer<CourtLock>();
+      when(() => locks.lockCourt(any())).thenAnswer((_) => response.future);
+      final bloc = calendarBloc()..add(const CalendarStarted());
+      await bloc.stream.firstWhere(
+        (state) => state.status == CalendarStatus.ready,
+      );
+      bloc.add(CalendarCellToggled(CellKey(_monday, 480)));
+      await bloc.stream.firstWhere(
+        (state) => state.selected.contains(CellKey(_monday, 480)),
+      );
+
+      bloc.add(const CalendarLockSubmitted(_details));
+      await bloc.stream.firstWhere((state) => state.submitting);
+      bloc.add(CalendarCellToggled(CellKey(_monday, 510)));
+      await Future<void>.delayed(Duration.zero);
+      expect(bloc.state.selected, {CellKey(_monday, 480)});
+
+      response.complete(_lock());
+      await bloc.stream.firstWhere(
+        (state) => state.notice != null && !state.submitting,
+      );
       await bloc.close();
     });
 
@@ -300,8 +330,9 @@ void main() {
         ..add(CalendarCellToggled(CellKey(_monday, 480)))
         ..add(CalendarCellToggled(CellKey(DateTime(2030, 1, 8), 480)))
         ..add(const CalendarLockSubmitted(_details));
-      final failed = await bloc.stream
-          .firstWhere((s) => s.notice != null && !s.submitting);
+      final failed = await bloc.stream.firstWhere(
+        (s) => s.notice != null && !s.submitting,
+      );
       expect(failed.notice!.isError, isTrue);
       expect(failed.notice!.message, contains('1 slot đã được đặt'));
       expect(failed.notice!.message, contains('đã khóa 1/2 khoảng'));
@@ -313,8 +344,9 @@ void main() {
       final bloc = calendarBloc()..add(const CalendarStarted());
       await bloc.stream.firstWhere((s) => s.status == CalendarStatus.ready);
       bloc.add(const CalendarUnlockRequested(40));
-      final done = await bloc.stream
-          .firstWhere((s) => s.notice != null && !s.submitting);
+      final done = await bloc.stream.firstWhere(
+        (s) => s.notice != null && !s.submitting,
+      );
       expect(done.notice!.message, 'Đã mở khóa');
       await bloc.stream.firstWhere((s) => s.status == CalendarStatus.ready);
       when(() => locks.unlock(41)).thenThrow(
@@ -338,9 +370,7 @@ void main() {
       },
       verify: (bloc) {
         expect(bloc.state.visibleDates, [DateTime(2030, 1, 9)]);
-        verify(
-          () => calendar.getDays(5, [DateTime(2030, 1, 9)]),
-        ).called(1);
+        verify(() => calendar.getDays(5, [DateTime(2030, 1, 9)])).called(1);
       },
     );
   });
@@ -356,8 +386,20 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => [
-          _lock(id: 2, group: 'b', courtId: 6, start: DateTime(2030, 1, 9, 8), end: DateTime(2030, 1, 9, 9)),
-          _lock(id: 1, group: 'b', courtId: 5, start: DateTime(2030, 1, 9, 8), end: DateTime(2030, 1, 9, 9)),
+          _lock(
+            id: 2,
+            group: 'b',
+            courtId: 6,
+            start: DateTime(2030, 1, 9, 8),
+            end: DateTime(2030, 1, 9, 9),
+          ),
+          _lock(
+            id: 1,
+            group: 'b',
+            courtId: 5,
+            start: DateTime(2030, 1, 9, 8),
+            end: DateTime(2030, 1, 9, 9),
+          ),
           _lock(id: 3, group: 'a'),
         ],
       );
@@ -365,9 +407,7 @@ void main() {
       await bloc.stream.firstWhere((s) => s.status == OutOfServiceStatus.ready);
       expect(bloc.state.groups.map((g) => g.groupId), ['a', 'b']);
       expect(bloc.state.groups.last.locks.map((l) => l.courtId), [5, 6]);
-      verify(
-        () => locks.getLocks(1, from: DateTime(2030, 1, 7)),
-      ).called(1);
+      verify(() => locks.getLocks(1, from: DateTime(2030, 1, 7))).called(1);
       await bloc.close();
     });
 
@@ -396,7 +436,9 @@ void main() {
           ),
         ),
       );
-      final failed = await bloc.stream.firstWhere((s) => s.conflicts.isNotEmpty);
+      final failed = await bloc.stream.firstWhere(
+        (s) => s.conflicts.isNotEmpty,
+      );
       expect(failed.notice!.isError, isTrue);
       expect(failed.notice!.saved, isFalse);
       expect(failed.conflicts.single.courtId, 6);
@@ -450,11 +492,27 @@ void main() {
     });
 
     test('từ chối giờ lẻ, kết thúc trước bắt đầu, quá khứ và quá 31 ngày', () {
-      expect(compute(start: const ClockTime(13, 15)).error, contains('30 phút'));
-      expect(compute(end: const ClockTime(12, 0)).error, contains('sau giờ bắt đầu'));
-      expect(compute(first: DateTime(2030, 1, 7), end: const ClockTime(7, 0), start: const ClockTime(6, 0)).error, contains('đã qua'));
+      expect(
+        compute(start: const ClockTime(13, 15)).error,
+        contains('30 phút'),
+      );
+      expect(
+        compute(end: const ClockTime(12, 0)).error,
+        contains('sau giờ bắt đầu'),
+      );
+      expect(
+        compute(
+          first: DateTime(2030, 1, 7),
+          end: const ClockTime(7, 0),
+          start: const ClockTime(6, 0),
+        ).error,
+        contains('đã qua'),
+      );
       expect(compute(last: DateTime(2030, 3, 15)).error, contains('31 ngày'));
-      expect(compute(first: DateTime(2030, 1, 10), last: DateTime(2030, 1, 9)).error, contains('Ngày kết thúc'));
+      expect(
+        compute(first: DateTime(2030, 1, 10), last: DateTime(2030, 1, 9)).error,
+        contains('Ngày kết thúc'),
+      );
     });
   });
 
@@ -477,19 +535,33 @@ void main() {
       return bloc;
     }
 
-    testWidgets('hiện tuần, phân biệt ô trống / đã đặt / bao sân và chú thích', (tester) async {
-      final semantics = tester.ensureSemantics();
-      await pump(tester);
-      expect(find.text('Lịch Sân 5'), findsOneWidget);
-      expect(find.text('07/01 - 13/01'), findsOneWidget);
-      expect(find.text('Bao sân'), findsOneWidget); // chú thích
-      expect(find.bySemanticsLabel('07/01 08:00-08:30, Trống'), findsOneWidget);
-      expect(find.bySemanticsLabel('07/01 09:30-10:00, Bao sân'), findsOneWidget);
-      expect(find.bySemanticsLabel('07/01 10:00-10:30, Đã đặt'), findsOneWidget);
-      semantics.dispose();
-    });
+    testWidgets(
+      'hiện tuần, phân biệt ô trống / đã đặt / bao sân và chú thích',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        await pump(tester);
+        expect(find.text('Lịch Sân 5'), findsOneWidget);
+        expect(find.text('07/01 - 13/01'), findsOneWidget);
+        expect(find.text('Bao sân'), findsOneWidget); // chú thích
+        expect(
+          find.bySemanticsLabel('07/01 08:00-08:30, Trống'),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsLabel('07/01 09:30-10:00, Bao sân'),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsLabel('07/01 10:00-10:30, Đã đặt'),
+          findsOneWidget,
+        );
+        semantics.dispose();
+      },
+    );
 
-    testWidgets('chọn ô, nhập lý do và khóa; thiếu lý do bị chặn', (tester) async {
+    testWidgets('chọn ô, nhập lý do và khóa; thiếu lý do bị chặn', (
+      tester,
+    ) async {
       when(() => locks.lockCourt(any())).thenAnswer((_) async => _lock());
       await pump(tester);
       await tester.tap(find.byKey(const Key('cell-2030-01-07-480')));
@@ -529,7 +601,9 @@ void main() {
       expect(find.text('Đã khóa khung giờ đã chọn'), findsOneWidget);
     });
 
-    testWidgets('chạm ô đã khóa xem chi tiết và mở khóa sau khi xác nhận', (tester) async {
+    testWidgets('chạm ô đã khóa xem chi tiết và mở khóa sau khi xác nhận', (
+      tester,
+    ) async {
       when(() => locks.unlock(40)).thenAnswer((_) async {});
       await pump(tester);
       await tester.tap(find.byKey(const Key('cell-2030-01-07-570')));
@@ -554,9 +628,7 @@ void main() {
   });
 
   group('OutOfServiceManagementScreen', () {
-    Future<OutOfServiceBloc> pump(
-      WidgetTester tester,
-    ) async {
+    Future<OutOfServiceBloc> pump(WidgetTester tester) async {
       tester.view.physicalSize = const Size(900, 3000);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -576,7 +648,9 @@ void main() {
       return bloc;
     }
 
-    testWidgets('bao tất cả sân cả ngày bằng một lệnh và hiện thẻ sự kiện', (tester) async {
+    testWidgets('bao tất cả sân cả ngày bằng một lệnh và hiện thẻ sự kiện', (
+      tester,
+    ) async {
       when(() => locks.lockBranch(any())).thenAnswer(
         (_) async => CourtLockGroup(
           groupId: 'g-2',
@@ -594,8 +668,14 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.enterText(find.byKey(const Key('lock-reason')), 'Giải đấu doanh nghiệp');
-      await tester.enterText(find.byKey(const Key('lock-public-reason')), 'Giải đấu');
+      await tester.enterText(
+        find.byKey(const Key('lock-reason')),
+        'Giải đấu doanh nghiệp',
+      );
+      await tester.enterText(
+        find.byKey(const Key('lock-public-reason')),
+        'Giải đấu',
+      );
       await tester.tap(find.byKey(const Key('submit-out-of-service')));
       await tester.pumpAndSettle();
 
@@ -612,60 +692,75 @@ void main() {
       expect(find.textContaining('Đã khóa 2 sân'), findsOneWidget);
     });
 
-    testWidgets('chọn danh sách sân: phải chọn ít nhất một sân; gửi đúng courtIds', (tester) async {
-      when(() => locks.lockBranch(any())).thenAnswer(
-        (_) async => CourtLockGroup(groupId: 'g-3', locks: [_lock(courtId: 6)]),
-      );
-      await pump(tester);
-      await tester.tap(find.byKey(const Key('all-courts')));
-      await tester.pump();
-      await tester.enterText(find.byKey(const Key('lock-reason')), 'Sửa sàn');
-      await tester.tap(find.byKey(const Key('submit-out-of-service')));
-      await tester.pump();
-      expect(find.text('Chọn ít nhất một sân'), findsOneWidget);
-      verifyNever(() => locks.lockBranch(any()));
+    testWidgets(
+      'chọn danh sách sân: phải chọn ít nhất một sân; gửi đúng courtIds',
+      (tester) async {
+        when(() => locks.lockBranch(any())).thenAnswer(
+          (_) async =>
+              CourtLockGroup(groupId: 'g-3', locks: [_lock(courtId: 6)]),
+        );
+        await pump(tester);
+        await tester.tap(find.byKey(const Key('all-courts')));
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('lock-reason')), 'Sửa sàn');
+        await tester.tap(find.byKey(const Key('submit-out-of-service')));
+        await tester.pump();
+        expect(find.text('Chọn ít nhất một sân'), findsOneWidget);
+        verifyNever(() => locks.lockBranch(any()));
 
-      await tester.tap(find.byKey(const Key('court-chip-6')));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('submit-out-of-service')));
-      await tester.pumpAndSettle();
-      final request =
-          verify(() => locks.lockBranch(captureAny())).captured.single
-              as BranchLockRequest;
-      expect(request.allCourts, isFalse);
-      expect(request.courtIds, [6]);
-      expect(request.startAt, DateTime(2030, 1, 8, 13));
-      expect(request.endAt, DateTime(2030, 1, 8, 18));
-    });
+        await tester.tap(find.byKey(const Key('court-chip-6')));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('submit-out-of-service')));
+        await tester.pumpAndSettle();
+        final request =
+            verify(() => locks.lockBranch(captureAny())).captured.single
+                as BranchLockRequest;
+        expect(request.allCourts, isFalse);
+        expect(request.courtIds, [6]);
+        expect(request.startAt, DateTime(2030, 1, 8, 13));
+        expect(request.endAt, DateTime(2030, 1, 8, 18));
+      },
+    );
 
-    testWidgets('form không hợp lệ không gọi API; xung đột hiện danh sách slot', (tester) async {
-      when(() => locks.lockBranch(any())).thenThrow(
-        LockConflictFailure.fromConflicts(const [
-          LockConflict(
-            courtId: 6,
-            date: '2030-01-08',
-            startTime: '13:00',
-            endTime: '13:30',
-            status: 'BOOKED',
-          ),
-        ]),
-      );
-      await pump(tester);
-      await tester.tap(find.byKey(const Key('submit-out-of-service')));
-      await tester.pump();
-      expect(find.text('Nhập lý do khóa'), findsOneWidget);
-      verifyNever(() => locks.lockBranch(any()));
+    testWidgets(
+      'form không hợp lệ không gọi API; xung đột hiện danh sách slot',
+      (tester) async {
+        when(() => locks.lockBranch(any())).thenThrow(
+          LockConflictFailure.fromConflicts(const [
+            LockConflict(
+              courtId: 6,
+              date: '2030-01-08',
+              startTime: '13:00',
+              endTime: '13:30',
+              status: 'BOOKED',
+            ),
+          ]),
+        );
+        await pump(tester);
+        await tester.tap(find.byKey(const Key('submit-out-of-service')));
+        await tester.pump();
+        expect(find.text('Nhập lý do khóa'), findsOneWidget);
+        verifyNever(() => locks.lockBranch(any()));
 
-      await tester.enterText(find.byKey(const Key('lock-reason')), 'Giải đấu');
-      await tester.tap(find.byKey(const Key('submit-out-of-service')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('lock-conflicts')), findsOneWidget);
-      expect(find.textContaining('Sân 6 · 2030-01-08 13:00-13:30 · Đã đặt'), findsOneWidget);
-      // form được giữ nguyên để chủ sân đổi khung giờ
-      expect(find.text('Giải đấu'), findsWidgets);
-    });
+        await tester.enterText(
+          find.byKey(const Key('lock-reason')),
+          'Giải đấu',
+        );
+        await tester.tap(find.byKey(const Key('submit-out-of-service')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('lock-conflicts')), findsOneWidget);
+        expect(
+          find.textContaining('Sân 6 · 2030-01-08 13:00-13:30 · Đã đặt'),
+          findsOneWidget,
+        );
+        // form được giữ nguyên để chủ sân đổi khung giờ
+        expect(find.text('Giải đấu'), findsWidgets);
+      },
+    );
 
-    testWidgets('danh sách khóa: mở khóa cả nhóm sau khi xác nhận', (tester) async {
+    testWidgets('danh sách khóa: mở khóa cả nhóm sau khi xác nhận', (
+      tester,
+    ) async {
       when(
         () => locks.getLocks(
           1,
@@ -674,7 +769,10 @@ void main() {
           to: any(named: 'to'),
         ),
       ).thenAnswer(
-        (_) async => [_lock(id: 1, group: 'g-1', courtId: 5), _lock(id: 2, group: 'g-1', courtId: 6)],
+        (_) async => [
+          _lock(id: 1, group: 'g-1', courtId: 5),
+          _lock(id: 2, group: 'g-1', courtId: 6),
+        ],
       );
       when(() => locks.unlockGroup('g-1')).thenAnswer((_) async {});
       await pump(tester);
