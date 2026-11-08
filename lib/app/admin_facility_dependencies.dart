@@ -8,12 +8,16 @@ import '../features/admin_facility/data/datasources/facility_remote_data_source.
 import '../features/admin_facility/data/repositories/branch_repository_impl.dart';
 import '../features/admin_facility/data/repositories/catalog_court_type_repository.dart';
 import '../features/admin_facility/data/repositories/court_repository_impl.dart';
+import '../features/admin_facility/data/repositories/pricing_rule_repository_impl.dart';
 import '../features/admin_facility/data/repositories/slot_template_repository_impl.dart';
 import '../features/admin_facility/domain/repositories/branch_repository.dart';
 import '../features/admin_facility/domain/repositories/court_repository.dart';
+import '../features/admin_facility/domain/repositories/pricing_rule_repository.dart';
 import '../features/admin_facility/domain/repositories/slot_template_repository.dart';
 import '../features/catalog/domain/repositories/catalog_repository.dart';
+
 import 'package:dio/dio.dart';
+
 import '../src/features/branch_gallery/data/branch_image_repository_impl.dart';
 import '../src/features/branch_gallery/data/device_branch_image_picker.dart';
 import '../src/features/branch_gallery/domain/branch_image.dart';
@@ -26,6 +30,7 @@ class AdminFacilityDependencies {
     required this.courtRepository,
     required this.courtTypeRepository,
     required this.slotTemplateRepository,
+    required this.pricingRuleRepository,
     required this.dashboardRepository,
     this.branchImageRepository,
     this.branchImagePicker,
@@ -35,6 +40,7 @@ class AdminFacilityDependencies {
   final CourtRepository courtRepository;
   final CourtTypeRepository courtTypeRepository;
   final SlotTemplateRepository slotTemplateRepository;
+  final PricingRuleRepository pricingRuleRepository;
   final DashboardRepository dashboardRepository;
 
   /// Ảnh chi nhánh (SCRUM-47/48): chủ sân thêm/xóa, khách chỉ đọc qua endpoint công khai.
@@ -77,6 +83,7 @@ class AdminFacilityDependencies {
       courtRepository: CourtRepositoryImpl(facility),
       courtTypeRepository: CatalogCourtTypeRepository(catalogRepository),
       slotTemplateRepository: SlotTemplateRepositoryImpl(facility),
+      pricingRuleRepository: PricingRuleRepositoryImpl(facility),
       dashboardRepository: DashboardRepositoryImpl(reporting),
       branchImageRepository: BranchImageRepositoryImpl(
         publicDio: publicFacilityDio,
