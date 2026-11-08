@@ -20,6 +20,17 @@ String formatCompactVnd(num amount) {
 
 double _round1(double value) => (value * 10).roundToDouble() / 10;
 
+/// Số tiền đầy đủ cho tooltip: `1250000` → `"1.250.000 đ"`.
+String formatFullVnd(num amount) {
+  final digits = amount.round().abs().toString();
+  final grouped = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) grouped.write('.');
+    grouped.write(digits[i]);
+  }
+  return '${amount < 0 ? '-' : ''}$grouped đ';
+}
+
 /// `0.725` → `"72.5%"`.
 String formatPercent(double ratio) {
   final value = (ratio * 1000).roundToDouble() / 10;

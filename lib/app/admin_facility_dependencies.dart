@@ -2,7 +2,9 @@ import '../core/config/app_config.dart';
 import '../core/network/dio_client.dart';
 import '../core/storage/token_storage.dart';
 import '../features/admin_dashboard/data/datasources/reporting_remote_data_source.dart';
+import '../features/admin_dashboard/data/repositories/analytics_repository_impl.dart';
 import '../features/admin_dashboard/data/repositories/dashboard_repository_impl.dart';
+import '../features/admin_dashboard/domain/repositories/analytics_repository.dart';
 import '../features/admin_dashboard/domain/repositories/dashboard_repository.dart';
 import '../features/admin_facility/data/datasources/facility_remote_data_source.dart';
 import '../features/admin_facility/data/repositories/branch_repository_impl.dart';
@@ -32,6 +34,7 @@ class AdminFacilityDependencies {
     required this.slotTemplateRepository,
     required this.pricingRuleRepository,
     required this.dashboardRepository,
+    required this.analyticsRepository,
     this.branchImageRepository,
     this.branchImagePicker,
   });
@@ -42,6 +45,7 @@ class AdminFacilityDependencies {
   final SlotTemplateRepository slotTemplateRepository;
   final PricingRuleRepository pricingRuleRepository;
   final DashboardRepository dashboardRepository;
+  final AnalyticsRepository analyticsRepository;
 
   /// Ảnh chi nhánh (SCRUM-47/48): chủ sân thêm/xóa, khách chỉ đọc qua endpoint công khai.
   final BranchImageRepository? branchImageRepository;
@@ -85,6 +89,7 @@ class AdminFacilityDependencies {
       slotTemplateRepository: SlotTemplateRepositoryImpl(facility),
       pricingRuleRepository: PricingRuleRepositoryImpl(facility),
       dashboardRepository: DashboardRepositoryImpl(reporting),
+      analyticsRepository: AnalyticsRepositoryImpl(reporting),
       branchImageRepository: BranchImageRepositoryImpl(
         publicDio: publicFacilityDio,
         adminDio: facilityDio,
