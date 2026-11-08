@@ -9,10 +9,13 @@ import '../features/admin_dashboard/domain/repositories/dashboard_repository.dar
 import '../features/admin_facility/data/datasources/facility_remote_data_source.dart';
 import '../features/admin_facility/data/repositories/branch_repository_impl.dart';
 import '../features/admin_facility/data/repositories/catalog_court_type_repository.dart';
+import '../features/admin_facility/data/repositories/court_calendar_repository_impl.dart';
+import '../features/admin_facility/data/repositories/court_lock_repository_impl.dart';
 import '../features/admin_facility/data/repositories/court_repository_impl.dart';
 import '../features/admin_facility/data/repositories/pricing_rule_repository_impl.dart';
 import '../features/admin_facility/data/repositories/slot_template_repository_impl.dart';
 import '../features/admin_facility/domain/repositories/branch_repository.dart';
+import '../features/admin_facility/domain/repositories/court_lock_repository.dart';
 import '../features/admin_facility/domain/repositories/court_repository.dart';
 import '../features/admin_facility/domain/repositories/pricing_rule_repository.dart';
 import '../features/admin_facility/domain/repositories/slot_template_repository.dart';
@@ -23,6 +26,7 @@ import 'package:dio/dio.dart';
 import '../src/features/branch_gallery/data/branch_image_repository_impl.dart';
 import '../src/features/branch_gallery/data/device_branch_image_picker.dart';
 import '../src/features/branch_gallery/domain/branch_image.dart';
+import '../src/features/customer_slots/domain/slot_repository.dart';
 
 /// Repository cho các màn hình chủ sân: chi nhánh, sân, mẫu khung giờ
 /// (facility-service) và dashboard (reporting-service).
@@ -37,6 +41,8 @@ class AdminFacilityDependencies {
     required this.analyticsRepository,
     this.branchImageRepository,
     this.branchImagePicker,
+    this.courtLockRepository,
+    this.courtCalendarRepository,
   });
 
   final BranchRepository branchRepository;
@@ -51,12 +57,18 @@ class AdminFacilityDependencies {
   final BranchImageRepository? branchImageRepository;
   final BranchImagePicker? branchImagePicker;
 
+  /// Khóa slot / bao sân (SCRUM-49/111) và lịch trạng thái ô từ discovery;
+  /// null khi app chưa cấu hình (route lịch và bao sân không được đăng ký).
+  final CourtLockRepository? courtLockRepository;
+  final CourtCalendarRepository? courtCalendarRepository;
+
   /// Mỗi service có Dio riêng theo `FACILITY_BASE_URL` / `REPORTING_BASE_URL`
   /// (mặc định `API_BASE_URL`), cùng chung TokenStorage để gắn Bearer token.
   factory AdminFacilityDependencies.create(
     AppConfig config,
     TokenStorage tokenStorage,
     CatalogRepository catalogRepository, {
+    SlotRepository? slotRepository,
     void Function()? onSessionExpired,
   }) {
     final facilityDio = createDio(
@@ -95,6 +107,10 @@ class AdminFacilityDependencies {
         adminDio: facilityDio,
       ),
       branchImagePicker: DeviceBranchImagePicker(),
+      courtLockRepository: CourtLockRepositoryImpl(facility),
+      courtCalendarRepository: slotRepository == null
+          ? null
+          : DiscoveryCourtCalendarRepository(slotRepository),
     );
   }
 }
