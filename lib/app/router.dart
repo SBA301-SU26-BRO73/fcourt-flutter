@@ -601,6 +601,7 @@ GoRouter createRouter(
       GoRoute(
         path: '/branches/:id',
         builder: (context, state) => BranchDetailScreen(
+          discoveryRepository: dependencies.discoveryRepository,
           reviews: dependencies.reviews,
           maps: dependencies.branchMaps,
           branchId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,

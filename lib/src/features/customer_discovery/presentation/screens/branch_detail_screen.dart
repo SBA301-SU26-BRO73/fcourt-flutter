@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+
+import '../../../../../core/error/failure.dart';
 
 import '../../../../../features/maps/domain/branch_location.dart';
 import '../../../../../features/maps/presentation/branch_map_card.dart';
@@ -19,6 +22,7 @@ class BranchDetailScreen extends StatelessWidget {
     this.maps,
     this.galleryRepository,
     this.reviews,
+    this.discoveryRepository,
   });
   final BranchMapPlatform? maps;
   final ReviewRepository? reviews;
@@ -27,6 +31,7 @@ class BranchDetailScreen extends StatelessWidget {
 
   /// Nguồn ảnh chi nhánh (SCRUM-48); null thì giữ ảnh minh họa mặc định.
   final BranchImageRepository? galleryRepository;
+  final DiscoveryRepository? discoveryRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -158,11 +163,14 @@ class BranchDetailScreen extends StatelessWidget {
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             const SizedBox(height: 12),
-                            Text(
-                              data.courtCount == 0
-                                  ? 'Chi nhánh chưa có sân hoạt động.'
-                                  : 'Danh sách sân đang được cập nhật. Vui lòng quay lại sau.',
-                            ),
+                            if (discoveryRepository != null)
+                              _BranchCourts(
+                                repository: discoveryRepository!,
+                                branchId: branchId,
+                                branch: data,
+                              )
+                            else
+                              const Text('Chi nhánh chưa có sân hoạt động.'),
                             const SizedBox(height: 24),
                           ],
                         ),
@@ -187,22 +195,147 @@ class BranchDetailScreen extends StatelessWidget {
           child: FilledButton.icon(
             icon: const Icon(Icons.calendar_month_outlined),
             label: const Text('Đặt sân ngay'),
-            onPressed: () => showModalBottomSheet<void>(
-              context: context,
-              showDragHandle: true,
-              builder: (context) => const SafeArea(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    'Chưa thể chọn lịch vì danh sách sân chưa được cập nhật. '
-                    'Vui lòng thử lại sau.',
-                  ),
-                ),
-              ),
-            ),
+            onPressed: discoveryRepository == null
+                ? null
+                : () async {
+                    late final List<Court> courts;
+                    try {
+                      courts = await discoveryRepository!.courtsOfBranch(
+                        branchId,
+                      );
+                    } on Object {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Không tải được danh sách sân. Vui lòng thử lại.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    if (!context.mounted) return;
+                    if (courts.length == 1) {
+                      context.push(
+                        '/courts/${courts.single.id}/slots?courtName=${Uri.encodeQueryComponent(courts.single.name)}&branchName=${Uri.encodeQueryComponent(data.name)}',
+                      );
+                    } else if (courts.length > 1) {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        showDragHandle: true,
+                        builder: (sheetContext) => SafeArea(
+                          child: ListView(
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              const ListTile(
+                                title: Text('Chọn sân để xem lịch'),
+                              ),
+                              for (final court in courts)
+                                ListTile(
+                                  title: Text(court.name),
+                                  subtitle: Text(
+                                    '${NumberFormat.decimalPattern('vi').format(court.defaultPricePerHour)} đ/giờ',
+                                  ),
+                                  onTap: () {
+                                    Navigator.pop(sheetContext);
+                                    context.push(
+                                      '/courts/${court.id}/slots?courtName=${Uri.encodeQueryComponent(court.name)}&branchName=${Uri.encodeQueryComponent(data.name)}',
+                                    );
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Chi nhánh chưa có sân hoạt động.'),
+                        ),
+                      );
+                    }
+                  },
           ),
         ),
       ),
     );
   }
+}
+
+class _BranchCourts extends StatefulWidget {
+  const _BranchCourts({
+    required this.repository,
+    required this.branchId,
+    required this.branch,
+  });
+  final DiscoveryRepository repository;
+  final int branchId;
+  final Branch branch;
+
+  @override
+  State<_BranchCourts> createState() => _BranchCourtsState();
+}
+
+class _BranchCourtsState extends State<_BranchCourts> {
+  late Future<List<Court>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  void _load() {
+    _future = widget.repository.courtsOfBranch(widget.branchId);
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<Court>>(
+    future: _future,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Padding(
+          padding: EdgeInsets.all(12),
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (snapshot.hasError) {
+        final message = snapshot.error is Failure
+            ? (snapshot.error as Failure).message
+            : 'Không tải được danh sách sân. Vui lòng thử lại.';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            TextButton.icon(
+              onPressed: () => setState(_load),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Thử lại'),
+            ),
+          ],
+        );
+      }
+      final courts = snapshot.data ?? const <Court>[];
+      if (courts.isEmpty) return const Text('Chi nhánh chưa có sân hoạt động.');
+      return Column(
+        children: [
+          for (final court in courts)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.sports_tennis),
+                title: Text(court.name),
+                subtitle: Text(
+                  '${NumberFormat.decimalPattern('vi').format(court.defaultPricePerHour)} đ/giờ',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(
+                  '/courts/${court.id}/slots?courtName=${Uri.encodeQueryComponent(court.name)}&branchName=${Uri.encodeQueryComponent(widget.branch.name)}',
+                ),
+              ),
+            ),
+        ],
+      );
+    },
+  );
 }

@@ -14,6 +14,8 @@ class PendingSearch {
 }
 
 class PendingRepository implements DiscoveryRepository {
+  @override
+  Future<List<Court>> courtsOfBranch(int branchId) async => const [];
   final calls = <PendingSearch>[];
   @override
   Future<BranchPage> search({

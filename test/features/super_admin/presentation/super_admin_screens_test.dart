@@ -31,6 +31,8 @@ class _FakeHealthRepository implements HealthRepository {
 
 class _FakeDiscoveryRepository implements DiscoveryRepository {
   @override
+  Future<List<Court>> courtsOfBranch(int branchId) async => const [];
+  @override
   Future<BranchPage> search({
     String query = '',
     DiscoverySport? sport,
