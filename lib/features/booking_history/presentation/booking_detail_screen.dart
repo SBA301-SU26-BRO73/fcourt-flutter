@@ -16,12 +16,14 @@ class BookingDetailScreen extends StatefulWidget {
     this.onTicket,
     this.cancellation,
     this.onRefund,
+    this.onReview,
   });
   final BookingRepository repository;
   final int id;
   final ValueChanged<int>? onTicket;
   final CancellationRepository? cancellation;
   final ValueChanged<int>? onRefund;
+  final Future<void> Function(int)? onReview;
   @override
   State<BookingDetailScreen> createState() => _BookingDetailScreenState();
 }
@@ -32,6 +34,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   String? _error;
   int _generation = 0;
   bool _loading = false;
+  bool _reviewing = false;
   @override
   void initState() {
     super.initState();
@@ -147,6 +150,19 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             Text(b.courtName),
+            if (b.status == 'COMPLETED' && widget.onReview != null)
+              OutlinedButton.icon(
+                onPressed: _reviewing ? null : () async {
+                  setState(() => _reviewing = true);
+                  try {
+                    await widget.onReview!(b.id);
+                  } finally {
+                    if (mounted) setState(() => _reviewing = false);
+                  }
+                },
+                icon: const Icon(Icons.star_outline),
+                label: const Text('Đánh giá sân'),
+              ),
             Text('Mã đơn: ${b.code}'),
             Text(b.label),
             Text('${b.date} · ${b.slots.join(', ')}'),

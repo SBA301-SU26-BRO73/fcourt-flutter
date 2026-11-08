@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../../features/maps/domain/branch_location.dart';
 import '../../../../../features/maps/presentation/branch_map_card.dart';
+import '../../../../../features/reviews/domain/review.dart';
+import '../../../../../features/reviews/presentation/review_list_widget.dart';
 
 import '../../../branch_gallery/domain/branch_image.dart';
 import '../../../branch_gallery/presentation/branch_gallery_section.dart';
@@ -16,8 +18,10 @@ class BranchDetailScreen extends StatelessWidget {
     this.branch,
     this.maps,
     this.galleryRepository,
+    this.reviews,
   });
   final BranchMapPlatform? maps;
+  final ReviewRepository? reviews;
   final int branchId;
   final Branch? branch;
 
@@ -49,100 +53,132 @@ class BranchDetailScreen extends StatelessWidget {
     const artwork = CourtArtwork(height: 210, label: 'Ảnh sân chưa cập nhật');
     return Scaffold(
       appBar: AppBar(title: const Text('Chi tiết chi nhánh')),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: galleryRepository == null
-                      ? artwork
-                      : BranchGallerySection(
-                          repository: galleryRepository!,
-                          branchId: branchId,
-                          placeholder: artwork,
-                        ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  data.name,
-                  style: Theme.of(context).textTheme.headlineMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  [
-                    data.address,
-                    data.district,
-                    data.city,
-                  ].whereType<String>().where((s) => s.isNotEmpty).join(', '),
-                ),
-                const SizedBox(height: 16),
-                if (maps != null) ...[
-                  BranchMapCard(
-                    key: ValueKey(branchId),
-                    location: data.location,
-                    name: data.name,
-                    platform: maps!,
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: [
-                    const LabelIcon(Icons.star_border, 'Chưa có đánh giá'),
-                    LabelIcon(
-                      Icons.location_on_outlined,
-                      data.distanceKm == null
-                          ? 'Khoảng cách chưa cập nhật'
-                          : '${data.distanceKm!.toStringAsFixed(1)} km',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  branchPrice(data),
-                  style: Theme.of(context).textTheme.titleLarge
-                      ?.copyWith(color: Theme.of(context).colorScheme.primary),
-                ),
-                const Text(
-                  'Giá tham khảo; giá chính xác được xác nhận khi chọn lịch.',
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Tiện ích sân',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 12),
-                const Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    LabelIcon(Icons.wifi, 'Wifi · Chưa cập nhật'),
-                    LabelIcon(Icons.local_parking, 'Bãi xe · Chưa cập nhật'),
-                    LabelIcon(
-                      Icons.local_cafe_outlined,
-                      'Quầy nước · Chưa cập nhật',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Sân trong chi nhánh (${data.courtCount})',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  data.courtCount == 0 ? 'Chi nhánh chưa có sân hoạt động.' : 'Danh sách sân đang được cập nhật. Vui lòng quay lại sau.',
-                ),
-                const SizedBox(height: 24),
+      body: DefaultTabController(
+        length: 2,
+        child: Column(
+          children: [
+            const TabBar(
+              tabs: [
+                Tab(text: 'Thông tin'),
+                Tab(text: 'Đánh giá'),
               ],
             ),
-          ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  SafeArea(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 760),
+                        child: ListView(
+                          padding: const EdgeInsets.all(20),
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: galleryRepository == null
+                                  ? artwork
+                                  : BranchGallerySection(
+                                      repository: galleryRepository!,
+                                      branchId: branchId,
+                                      placeholder: artwork,
+                                    ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              data.name,
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              [data.address, data.district, data.city]
+                                  .whereType<String>()
+                                  .where((s) => s.isNotEmpty)
+                                  .join(', '),
+                            ),
+                            const SizedBox(height: 16),
+                            if (maps != null) ...[
+                              BranchMapCard(
+                                key: ValueKey(branchId),
+                                location: data.location,
+                                name: data.name,
+                                platform: maps!,
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            Wrap(
+                              spacing: 16,
+                              runSpacing: 8,
+                              children: [
+                                LabelIcon(
+                                  Icons.location_on_outlined,
+                                  data.distanceKm == null
+                                      ? 'Khoảng cách chưa cập nhật'
+                                      : '${data.distanceKm!.toStringAsFixed(1)} km',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              branchPrice(data),
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
+                                  ),
+                            ),
+                            const Text(
+                              'Giá tham khảo; giá chính xác được xác nhận khi chọn lịch.',
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Tiện ích sân',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 12),
+                            const Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: [
+                                LabelIcon(Icons.wifi, 'Wifi · Chưa cập nhật'),
+                                LabelIcon(
+                                  Icons.local_parking,
+                                  'Bãi xe · Chưa cập nhật',
+                                ),
+                                LabelIcon(
+                                  Icons.local_cafe_outlined,
+                                  'Quầy nước · Chưa cập nhật',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Sân trong chi nhánh (${data.courtCount})',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              data.courtCount == 0
+                                  ? 'Chi nhánh chưa có sân hoạt động.'
+                                  : 'Danh sách sân đang được cập nhật. Vui lòng quay lại sau.',
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  reviews == null
+                      ? const Center(child: Text('Đánh giá chưa khả dụng'))
+                      : ReviewListWidget(
+                          repository: reviews!,
+                          branchId: branchId,
+                        ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: SafeArea(

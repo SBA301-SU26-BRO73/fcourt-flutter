@@ -1,4 +1,8 @@
 import 'dart:async';
+import '../features/reviews/domain/review.dart';
+import '../features/reviews/domain/review_photo.dart';
+import '../features/reviews/data/review_repository_impl.dart';
+import '../features/reviews/data/device_review_photo_picker.dart';
 
 import '../features/promos/data/promo_repository_impl.dart';
 import '../features/promos/domain/promo_repository.dart';
@@ -121,6 +125,9 @@ class AppDependencies {
     this.refundRepository,
     this.adminRefunds,
     this.ledgerExporter,
+    this.reviews,
+    this.reviewPhotoPicker,
+    this.reviewPhotoUploader,
     this.promos,
     this.platformOverview,
     this.subscriptions,
@@ -166,6 +173,9 @@ class AppDependencies {
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
+  final ReviewRepository? reviews;
+  final ReviewPhotoPicker? reviewPhotoPicker;
+  final ReviewPhotoUploader? reviewPhotoUploader;
   final PromoRepository? promos;
   final SubscriptionRepository? subscriptions;
   final SubscriptionCheckoutLauncher subscriptionCheckoutLauncher;
@@ -244,6 +254,9 @@ class AppDependencies {
       ),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
+      reviews: ReviewRepositoryImpl(createDio(config, tokenStorage,
+        baseUrl: config.discoveryUrl, onSessionExpired: onSessionExpired)),
+      reviewPhotoPicker: DeviceReviewPhotoPicker(),
       subscriptions: SubscriptionRepositoryImpl(
         createDio(
           config,

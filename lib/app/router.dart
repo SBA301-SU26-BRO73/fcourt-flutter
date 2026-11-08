@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../features/reviews/presentation/rating_bottom_sheet.dart';
 
 import '../features/subscription/presentation/subscription_cubit.dart';
 import '../features/subscription/presentation/subscription_screen.dart';
@@ -105,6 +106,23 @@ GoRouter createRouter(
 }) {
   final repository = dependencies.authRepository;
   final catalog = dependencies.catalogRepository;
+  var ratingOpen = false;
+  Future<void> rate(BuildContext context, int bookingId) async {
+    final reviews = dependencies.reviews;
+    if (ratingOpen || reviews == null) return;
+    ratingOpen = true;
+    try {
+      final result = await showRatingBottomSheet(context,
+        repository: reviews, bookingId: bookingId,
+        picker: dependencies.reviewPhotoPicker, uploader: dependencies.reviewPhotoUploader);
+      if (context.mounted && result != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cảm ơn bạn đã đánh giá sân!')));
+      }
+    } finally {
+      ratingOpen = false;
+    }
+  }
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refreshListenable,
@@ -328,6 +346,7 @@ GoRouter createRouter(
             );
           }
           return BookingHistoryScreen(
+            onReview: dependencies.reviews == null ? null : (id) => rate(context, id),
             repository: repository,
             onDetail: (id) => context.push('/bookings/$id'),
             onTransactions: dependencies.customerTransactions == null
@@ -347,6 +366,7 @@ GoRouter createRouter(
             );
           }
           return BookingDetailScreen(
+            onReview: dependencies.reviews == null ? null : (id) => rate(context, id),
             repository: repository,
             id: id,
             cancellation: dependencies.cancellationRepository,
@@ -575,6 +595,7 @@ GoRouter createRouter(
       GoRoute(
         path: '/branches/:id',
         builder: (context, state) => BranchDetailScreen(
+          reviews: dependencies.reviews,
           maps: dependencies.branchMaps,
           branchId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
           branch: state.extra is Branch ? state.extra as Branch : null,
