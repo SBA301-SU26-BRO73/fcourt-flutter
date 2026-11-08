@@ -31,6 +31,7 @@ class CourtCalendarScreen extends StatelessWidget {
 
   void _onCell(BuildContext context, DateTime date, CalendarSlot slot) {
     final bloc = context.read<CourtCalendarBloc>();
+    if (bloc.state.status != CalendarStatus.ready) return;
     switch (slot.status) {
       case CalendarSlotStatus.available:
         bloc.add(CalendarCellToggled(CellKey(date, slot.startMinute)));

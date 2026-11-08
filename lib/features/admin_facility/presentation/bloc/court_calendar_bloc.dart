@@ -54,7 +54,15 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
     CalendarStarted event,
     Emitter<CourtCalendarState> emit,
   ) async {
-    emit(state.copyWith(status: CalendarStatus.loading, clearMessage: true));
+    emit(
+      state.copyWith(
+        status: CalendarStatus.loading,
+        days: const [],
+        locks: const [],
+        selected: const {},
+        clearMessage: true,
+      ),
+    );
     try {
       final court = await _getCourt(courtId);
       emit(state.copyWith(court: court));
@@ -152,7 +160,15 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
     final court = state.court;
     if (court == null) return;
     final revision = ++_loadRevision;
-    emit(state.copyWith(status: CalendarStatus.loading, clearMessage: true));
+    emit(
+      state.copyWith(
+        status: CalendarStatus.loading,
+        days: const [],
+        locks: const [],
+        selected: const {},
+        clearMessage: true,
+      ),
+    );
     final dates = state.visibleDates;
     final last = dates.last;
     try {
@@ -247,7 +263,7 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
     CalendarUnlockRequested event,
     Emitter<CourtCalendarState> emit,
   ) async {
-    if (state.submitting) return;
+    if (state.status != CalendarStatus.ready || state.submitting) return;
     emit(state.copyWith(submitting: true));
     CalendarNotice notice;
     try {

@@ -189,6 +189,11 @@ void main() {
       await oldRequested.future;
       bloc.add(const CalendarShifted(1));
       await newRequested.future;
+      expect(bloc.state.status, CalendarStatus.loading);
+      expect(bloc.state.days, isEmpty);
+      bloc.add(const CalendarUnlockRequested(40));
+      await Future<void>.delayed(Duration.zero);
+      verifyNever(() => locks.unlock(any()));
       final nextMonday = DateTime(2030, 1, 14);
       newResponse.complete([CalendarDay(date: nextMonday, slots: const [])]);
       await bloc.stream.firstWhere(
@@ -311,6 +316,7 @@ void main() {
       final done = await bloc.stream
           .firstWhere((s) => s.notice != null && !s.submitting);
       expect(done.notice!.message, 'Đã mở khóa');
+      await bloc.stream.firstWhere((s) => s.status == CalendarStatus.ready);
       when(() => locks.unlock(41)).thenThrow(
         const ServerFailure('Không tìm thấy dữ liệu', statusCode: 404),
       );
