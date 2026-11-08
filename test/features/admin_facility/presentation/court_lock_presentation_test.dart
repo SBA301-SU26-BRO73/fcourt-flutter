@@ -128,7 +128,8 @@ void main() {
     ).thenAnswer((_) async => [_lock()]);
   });
 
-  CourtCalendarBloc calendarBloc() => CourtCalendarBloc(
+  CourtCalendarBloc calendarBloc({DateTime Function()? now}) =>
+      CourtCalendarBloc(
     courtId: 5,
     getCourt: GetCourt(courts),
     getDays: GetCalendarDays(calendar),
@@ -136,6 +137,7 @@ void main() {
     lockCourt: LockCourt(locks),
     unlockCourt: UnlockCourt(locks),
     today: () => DateTime(2030, 1, 9, 15),
+    now: now ?? () => DateTime(2030, 1, 7, 7),
   );
 
   OutOfServiceBloc oosBloc() => OutOfServiceBloc(
@@ -218,6 +220,28 @@ void main() {
       bloc.add(CalendarCellToggled(CellKey(_monday, 480)));
       await Future<void>.delayed(Duration.zero);
       expect(bloc.state.selected, {CellKey(DateTime(2030, 1, 8), 570)});
+      await bloc.close();
+    });
+
+    test('khung đã bắt đầu khi xác nhận bị loại và không gửi lệnh khóa', () async {
+      var now = DateTime(2030, 1, 7, 7, 59);
+      final bloc = calendarBloc(now: () => now)..add(const CalendarStarted());
+      await bloc.stream.firstWhere((s) => s.status == CalendarStatus.ready);
+      bloc.add(CalendarCellToggled(CellKey(_monday, 480)));
+      await bloc.stream.firstWhere(
+        (state) => state.selected.contains(CellKey(_monday, 480)),
+      );
+
+      now = DateTime(2030, 1, 7, 8, 1);
+      bloc.add(const CalendarLockSubmitted(_details));
+      await bloc.stream.firstWhere((state) => state.notice?.isError == true);
+
+      expect(bloc.state.selected, isEmpty);
+      expect(
+        bloc.state.dayOf(_monday)?.slotAt(480)?.status,
+        CalendarSlotStatus.expired,
+      );
+      verifyNever(() => locks.lockCourt(any()));
       await bloc.close();
     });
 

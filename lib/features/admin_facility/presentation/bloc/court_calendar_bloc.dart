@@ -23,7 +23,9 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
     required this._lockCourt,
     required this._unlockCourt,
     DateTime Function()? today,
+    DateTime Function()? now,
   }) : super(CourtCalendarState(anchor: _day((today ?? DateTime.now)()))) {
+    _now = now ?? DateTime.now;
     on<CalendarStarted>(_onStarted);
     on<CalendarModeChanged>(_onModeChanged);
     on<CalendarShifted>(_onShifted);
@@ -42,6 +44,7 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
   final GetCourtLocks _getLocks;
   final LockCourt _lockCourt;
   final UnlockCourt _unlockCourt;
+  late final DateTime Function() _now;
   int _loadRevision = 0;
 
   static DateTime _day(DateTime value) =>
@@ -98,10 +101,51 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
     if (state.status != CalendarStatus.ready) return;
     final slot = state.dayOf(event.cell.date)?.slotAt(event.cell.startMinute);
     if (slot == null || !slot.selectable) return;
+    if (_cellHasStarted(event.cell)) {
+      emit(
+        state.copyWith(
+          days: _expireCells({event.cell}),
+          selected: state.selected.difference({event.cell}),
+          notice: CalendarNotice(
+            'Khung giờ đã bắt đầu nên không thể khóa',
+            isError: true,
+          ),
+        ),
+      );
+      return;
+    }
     final next = {...state.selected};
     if (!next.remove(event.cell)) next.add(event.cell);
     emit(state.copyWith(selected: next));
   }
+
+  bool _cellHasStarted(CellKey cell) {
+    final venueNow = _now().toUtc().add(const Duration(hours: 7));
+    final start = DateTime.utc(
+      cell.date.year,
+      cell.date.month,
+      cell.date.day,
+    ).add(Duration(minutes: cell.startMinute));
+    return !start.isAfter(venueNow);
+  }
+
+  List<CalendarDay> _expireCells(Set<CellKey> cells) => [
+    for (final day in state.days)
+      CalendarDay(
+        date: day.date,
+        slots: [
+          for (final slot in day.slots)
+            if (cells.contains(CellKey(day.date, slot.startMinute)))
+              CalendarSlot(
+                startMinute: slot.startMinute,
+                endMinute: slot.endMinute,
+                status: CalendarSlotStatus.expired,
+              )
+            else
+              slot,
+        ],
+      ),
+  ];
 
   /// Tải lại ngày/tuần đang xem; lựa chọn bị xóa vì dữ liệu ô có thể đã đổi.
   Future<void> _load(Emitter<CourtCalendarState> emit) async {
@@ -145,7 +189,25 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
     CalendarLockSubmitted event,
     Emitter<CourtCalendarState> emit,
   ) async {
-    if (state.submitting || state.selected.isEmpty) return;
+    if (state.status != CalendarStatus.ready ||
+        state.submitting ||
+        state.selected.isEmpty) {
+      return;
+    }
+    final expired = state.selected.where(_cellHasStarted).toSet();
+    if (expired.isNotEmpty) {
+      emit(
+        state.copyWith(
+          days: _expireCells(expired),
+          selected: state.selected.difference(expired),
+          notice: CalendarNotice(
+            'Đã bỏ các khung giờ vừa bắt đầu. Vui lòng kiểm tra lại lịch trước khi khóa.',
+            isError: true,
+          ),
+        ),
+      );
+      return;
+    }
     final ranges = mergeSelection(
       state.selected,
       (cell) => state.dayOf(cell.date)!.slotAt(cell.startMinute)!.endMinute,
