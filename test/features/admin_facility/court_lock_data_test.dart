@@ -395,6 +395,36 @@ void main() {
     expect(day.slots.map((s) => s.isPrivateEvent), [false, true, false, false]);
     expect(day.slots[1].publicReason, 'Giải đấu');
   });
+
+  test('lịch chủ sân hết hạn ô trống đã qua theo giờ địa điểm', () async {
+    final slots = _FakeSlots({
+      DateTime(2030, 1, 5): [
+        const CourtSlot(
+          id: 1,
+          startMinute: 540,
+          endMinute: 570,
+          priceMinor: 1,
+          status: SlotStatus.available,
+        ),
+        const CourtSlot(
+          id: 2,
+          startMinute: 570,
+          endMinute: 600,
+          priceMinor: 1,
+          status: SlotStatus.available,
+        ),
+      ],
+    });
+    final days = await DiscoveryCourtCalendarRepository(
+      slots,
+      now: () => DateTime.utc(2030, 1, 5, 2, 5), // 09:05 ICT
+    ).getDays(5, [DateTime(2030, 1, 5)]);
+
+    expect(days.single.slots.map((s) => s.status), [
+      CalendarSlotStatus.expired,
+      CalendarSlotStatus.available,
+    ]);
+  });
 }
 
 class _FakeSlots implements SlotRepository {

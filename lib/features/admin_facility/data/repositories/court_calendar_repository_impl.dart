@@ -7,12 +7,17 @@ import '../../domain/repositories/court_lock_repository.dart';
 /// SCRUM-22) và model `CourtSlot`/`SlotRestriction` của SCRUM-113, nên hai bên
 /// luôn phân biệt trống / đã đặt / giữ chỗ / khóa giống nhau.
 class DiscoveryCourtCalendarRepository implements CourtCalendarRepository {
-  const DiscoveryCourtCalendarRepository(this._slots);
+  const DiscoveryCourtCalendarRepository(
+    this._slots, {
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
 
   final SlotRepository _slots;
+  final DateTime Function() _now;
 
   @override
   Future<List<CalendarDay>> getDays(int courtId, List<DateTime> dates) async {
+    final now = _now();
     final days = await Future.wait([
       for (final date in dates) _slots.getSlots(courtId, date),
     ]);
@@ -20,7 +25,10 @@ class DiscoveryCourtCalendarRepository implements CourtCalendarRepository {
       for (var i = 0; i < dates.length; i++)
         CalendarDay(
           date: DateTime(dates[i].year, dates[i].month, dates[i].day),
-          slots: [for (final slot in days[i]) _toCalendar(slot)],
+          slots: [
+            for (final slot in days[i])
+              _toCalendar(slot.isPast(dates[i], now) ? slot.expired : slot),
+          ],
         ),
     ];
   }

@@ -42,6 +42,7 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
   final GetCourtLocks _getLocks;
   final LockCourt _lockCourt;
   final UnlockCourt _unlockCourt;
+  int _loadRevision = 0;
 
   static DateTime _day(DateTime value) =>
       DateTime(value.year, value.month, value.day);
@@ -94,6 +95,7 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
     CalendarCellToggled event,
     Emitter<CourtCalendarState> emit,
   ) {
+    if (state.status != CalendarStatus.ready) return;
     final slot = state.dayOf(event.cell.date)?.slotAt(event.cell.startMinute);
     if (slot == null || !slot.selectable) return;
     final next = {...state.selected};
@@ -105,6 +107,7 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
   Future<void> _load(Emitter<CourtCalendarState> emit) async {
     final court = state.court;
     if (court == null) return;
+    final revision = ++_loadRevision;
     emit(state.copyWith(status: CalendarStatus.loading, clearMessage: true));
     final dates = state.visibleDates;
     final last = dates.last;
@@ -116,15 +119,19 @@ class CourtCalendarBloc extends Bloc<CourtCalendarEvent, CourtCalendarState> {
         from: dates.first,
         to: DateTime(last.year, last.month, last.day + 1),
       );
+      final loadedDays = await days;
+      final loadedLocks = await locks;
+      if (emit.isDone || revision != _loadRevision) return;
       emit(
         state.copyWith(
           status: CalendarStatus.ready,
-          days: await days,
-          locks: await locks,
+          days: loadedDays,
+          locks: loadedLocks,
           selected: const {},
         ),
       );
     } on Failure catch (failure) {
+      if (emit.isDone || revision != _loadRevision) return;
       emit(
         state.copyWith(
           status: CalendarStatus.failure,

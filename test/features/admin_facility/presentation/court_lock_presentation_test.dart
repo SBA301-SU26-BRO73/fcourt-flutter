@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:fcourt/core/error/failure.dart';
 import 'package:fcourt/features/admin_facility/data/repositories/facility_failures.dart';
@@ -162,6 +164,41 @@ void main() {
           to: DateTime(2030, 1, 14),
         ),
       ).called(1);
+      await bloc.close();
+    });
+
+    test('phản hồi tuần cũ không ghi đè tuần mới sau khi điều hướng', () async {
+      final oldResponse = Completer<List<CalendarDay>>();
+      final newResponse = Completer<List<CalendarDay>>();
+      final oldRequested = Completer<void>();
+      final newRequested = Completer<void>();
+      var requests = 0;
+      when(() => calendar.getDays(5, any())).thenAnswer((_) {
+        requests++;
+        if (requests == 1) {
+          oldRequested.complete();
+          return oldResponse.future;
+        }
+        newRequested.complete();
+        return newResponse.future;
+      });
+
+      final bloc = calendarBloc()..add(const CalendarStarted());
+      await oldRequested.future;
+      bloc.add(const CalendarShifted(1));
+      await newRequested.future;
+      final nextMonday = DateTime(2030, 1, 14);
+      newResponse.complete([CalendarDay(date: nextMonday, slots: const [])]);
+      await bloc.stream.firstWhere(
+        (state) =>
+            state.status == CalendarStatus.ready &&
+            state.visibleDates.first == nextMonday,
+      );
+      oldResponse.complete([CalendarDay(date: _monday, slots: const [])]);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(bloc.state.visibleDates.first, nextMonday);
+      expect(bloc.state.days.single.date, nextMonday);
       await bloc.close();
     });
 
