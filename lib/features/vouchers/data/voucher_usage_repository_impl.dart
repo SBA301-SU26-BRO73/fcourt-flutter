@@ -61,7 +61,7 @@ class VoucherUsageRepositoryImpl implements VoucherUsageRepository {
       discountMinor: _money(raw['discountAmount']),
       usedAt: time.toUtc(),
       timeSource: source,
-      customerName: optional('customerName', 100),
+      customerName: optional('customerName', 150),
       customerPhone: optional('customerPhone', 100),
       bookingCode: optional('bookingCode', 50),
     );
@@ -78,9 +78,10 @@ class VoucherUsageRepositoryImpl implements VoucherUsageRepository {
         page < 0 ||
         page > 100000 ||
         search.length > 100 ||
-        (search.trim().isNotEmpty && phone.isEmpty)) {
+        (search.trim().isNotEmpty && phone.length < 3) ||
+        phone.length > 15) {
       throw const ServerFailure(
-        'Vui lòng kiểm tra voucher, trang hoặc số điện thoại tìm kiếm',
+        'Vui lòng kiểm tra voucher, trang hoặc nhập SĐT tìm kiếm từ 3 đến 15 chữ số',
       );
     }
     return remoteCall(
@@ -90,7 +91,7 @@ class VoucherUsageRepositoryImpl implements VoucherUsageRepository {
           queryParameters: {
             'page': page,
             'size': VoucherUsagePage.size,
-            if (phone.isNotEmpty) 'search': phone,
+            if (phone.isNotEmpty) 'phone': phone,
           },
         )).data;
         if (raw == null ||
@@ -117,7 +118,7 @@ class VoucherUsageRepositoryImpl implements VoucherUsageRepository {
             items.any(
               (row) =>
                   row.customerPhone == null ||
-                  !voucherPhoneDigits(row.customerPhone!).contains(phone),
+                  !voucherPhoneDigits(row.customerPhone!).startsWith(phone),
             )) {
           throw const ServerFailure(
             'Máy chủ chưa trả kết quả lọc SĐT hợp lệ. Vui lòng cập nhật API lịch sử voucher.',
