@@ -4,6 +4,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:fcourt/src/features/customer_slots/data/stomp_slot_invalidations.dart';
 import 'package:fcourt/src/features/customer_slots/domain/slot_invalidations.dart';
 import 'package:fcourt/src/features/customer_slots/domain/court_slot.dart';
+import 'package:fcourt/src/features/customer_slots/domain/slot_restriction.dart';
 import 'package:fcourt/src/features/customer_slots/presentation/slot_picker_cubit.dart';
 import 'package:fcourt/src/features/customer_slots/presentation/slot_picker_screen.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,19 @@ class Events implements SlotInvalidations {
 }
 
 Future<void> flush() => Future<void>.delayed(Duration.zero);
+
+/// A Full Court Lock (Bao sân): OUT_OF_SERVICE plus a private-event restriction.
+CourtSlot privateEventSlot(int id) {
+  final base = slot(id, status: SlotStatus.outOfService);
+  return CourtSlot(
+    id: base.id,
+    startMinute: base.startMinute,
+    endMinute: base.endMinute,
+    priceMinor: base.priceMinor,
+    status: SlotStatus.outOfService,
+    restriction: const SlotRestriction(isPrivateEvent: true),
+  );
+}
 void main() {
   test('validates court/date and rejects malformed events', () {
     expect(
@@ -153,7 +167,7 @@ void main() {
     expect(
       SlotPickerCubit.slotChangeAlert(
         [at(23, SlotStatus.available), at(24, SlotStatus.available)],
-        [at(23, SlotStatus.privateEvent), at(24, SlotStatus.privateEvent)],
+        [privateEventSlot(23), privateEventSlot(24)],
       ),
       'Khung giờ 18:00 vừa được chủ sân Bao sân (và 1 khung giờ khác)',
     );
@@ -260,9 +274,7 @@ void main() {
         lockType: 'PRIVATE_EVENT',
       ),
     );
-    repository.calls.last.result.complete([
-      slot(23, status: SlotStatus.privateEvent),
-    ]);
+    repository.calls.last.result.complete([privateEventSlot(23)]);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(

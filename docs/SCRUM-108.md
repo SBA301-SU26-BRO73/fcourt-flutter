@@ -25,10 +25,11 @@ PRIVATE_EVENT (Full Court Lock). Unknown values degrade to SLOT_CHANGED, so an o
 backend still works. Every event only triggers a re-read; after a background resync the
 screen compares old and new statuses and shows a SnackBar, for example "Khung giờ 18:00
 vừa có người giữ chỗ", "... vừa được chủ sân Bao sân" or "... vừa trống lại". The schedule API
-(discovery) already returns `restriction.type` additively on OUT_OF_SERVICE slots, so the app now shows
-two states: purple "Bao sân" (`restriction.type == PRIVATE_EVENT`, `SlotStatus.privateEvent`) and blue
-"Bảo trì" (any other OUT_OF_SERVICE). The alert wording comes from the slot's own new status, not from the
-event hint, so it stays accurate when events are lost or coalesced. A restriction never upgrades a non-locked state.
+(discovery) already returns `restriction.type` additively on OUT_OF_SERVICE slots, and the grid
+(SCRUM-113) shows a Bao sân slot as `OUT_OF_SERVICE` with `restriction.isPrivateEvent`, using the
+existing `SlotRestriction` model. The alert wording comes from the slot's own new status and restriction, not
+from the event hint, so it stays accurate when events are lost or coalesced. A restriction never upgrades a
+non-locked state.
 
 ## Configuration
 

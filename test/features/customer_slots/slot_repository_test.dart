@@ -13,14 +13,12 @@ Map<String, Object> row(
   String end, {
   String status = 'AVAILABLE',
   num price = 75000,
-  String? restrictionType,
 }) => {
   'slotId': id,
   'startTime': start,
   'endTime': end,
   'price': price,
   'status': status,
-  if (restrictionType != null) 'restriction': {'type': restrictionType},
 };
 
 void main() {
@@ -66,49 +64,7 @@ void main() {
       );
     final result = await SlotRepositoryImpl(SlotRemoteDataSource(dio))
         .getSlots(1, DateTime(2030));
-    expect(
-      result.map((s) => s.status),
-      SlotStatus.values.where((s) => s != SlotStatus.privateEvent),
-    );
-  });
-
-  test('Full Court Lock is distinct from maintenance', () async {
-    final dio = Dio(BaseOptions(baseUrl: 'http://test'))
-      ..httpClientAdapter = FakeAdapter(
-        (_) => jsonResponse(200, [
-          row(1, '07:00:00', '07:30:00', status: 'OUT_OF_SERVICE'),
-          row(
-            2,
-            '07:30:00',
-            '08:00:00',
-            status: 'OUT_OF_SERVICE',
-            restrictionType: 'PRIVATE_EVENT',
-          ),
-          row(
-            3,
-            '08:00:00',
-            '08:30:00',
-            status: 'OUT_OF_SERVICE',
-            restrictionType: 'OUT_OF_SERVICE',
-          ),
-          // A restriction never upgrades a non-locked state.
-          row(
-            4,
-            '08:30:00',
-            '09:00:00',
-            status: 'BOOKED',
-            restrictionType: 'PRIVATE_EVENT',
-          ),
-        ]),
-      );
-    final result = await SlotRepositoryImpl(SlotRemoteDataSource(dio))
-        .getSlots(1, DateTime(2030));
-    expect(result.map((s) => s.status), [
-      SlotStatus.outOfService,
-      SlotStatus.privateEvent,
-      SlotStatus.outOfService,
-      SlotStatus.booked,
-    ]);
+    expect(result.map((s) => s.status), SlotStatus.values);
   });
 
   test(

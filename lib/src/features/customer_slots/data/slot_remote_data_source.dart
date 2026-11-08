@@ -39,13 +39,7 @@ class SlotRemoteDataSource {
         startMinute: start,
         endMinute: end == 0 ? 1440 : end,
         priceMinor: scaled.round(),
-        status: SlotStatus.fromApi(
-          row['status'] as String,
-          restrictionType: switch (row['restriction']) {
-            {'type': final String type} => type,
-            _ => null,
-          },
-        ),
+        status: SlotStatus.fromApi(row['status'] as String),
         restriction: _restriction(row['restriction'], row['status']),
       );
     }).toList()..sort((a, b) => a.startMinute.compareTo(b.startMinute));

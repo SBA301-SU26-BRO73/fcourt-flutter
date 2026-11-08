@@ -6,22 +6,16 @@ enum SlotStatus {
   hold,
   outOfService,
   expired,
-  unknown,
+  unknown;
 
-  /// Owner's Full Court Lock (Bao sân). The API reports it as OUT_OF_SERVICE
-  /// plus `restriction.type == PRIVATE_EVENT`; maintenance has no such type.
-  privateEvent;
-
-  static SlotStatus fromApi(String value, {String? restrictionType}) =>
-      switch (value) {
-        'AVAILABLE' => available,
-        'BOOKED' => booked,
-        'HOLD' => hold,
-        'OUT_OF_SERVICE' =>
-          restrictionType == 'PRIVATE_EVENT' ? privateEvent : outOfService,
-        'EXPIRED' => expired,
-        _ => unknown,
-      };
+  static SlotStatus fromApi(String value) => switch (value) {
+    'AVAILABLE' => available,
+    'BOOKED' => booked,
+    'HOLD' => hold,
+    'OUT_OF_SERVICE' => outOfService,
+    'EXPIRED' => expired,
+    _ => unknown,
+  };
 }
 
 class CourtSlot {

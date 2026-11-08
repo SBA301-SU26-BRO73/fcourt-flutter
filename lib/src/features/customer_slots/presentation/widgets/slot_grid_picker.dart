@@ -16,7 +16,6 @@ extension SlotAppearance on SlotStatus {
     SlotStatus.booked => 'Đã đặt',
     SlotStatus.hold => 'Đang giữ',
     SlotStatus.outOfService => 'Ngừng phục vụ',
-    SlotStatus.privateEvent => 'Bao sân',
     SlotStatus.expired => 'Đã qua',
     SlotStatus.unknown => 'Không khả dụng',
   };
@@ -24,8 +23,7 @@ extension SlotAppearance on SlotStatus {
     SlotStatus.available => const Color(0xFF176B3A),
     SlotStatus.booked => const Color(0xFFAB2929),
     SlotStatus.hold => const Color(0xFF965000),
-    SlotStatus.outOfService => const Color(0xFF3C6E8F),
-    SlotStatus.privateEvent => const Color(0xFF7B3FA0),
+    SlotStatus.outOfService => const Color(0xFF705A7B),
     _ => const Color(0xFF646B69),
   };
 

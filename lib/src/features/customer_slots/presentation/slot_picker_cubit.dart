@@ -178,13 +178,17 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
     final time =
         '${((first.startMinute ~/ 60) % 24).toString().padLeft(2, '0')}:'
         '${(first.startMinute % 60).toString().padLeft(2, '0')}';
-    final what = switch (first.status) {
-      SlotStatus.hold => 'vừa có người giữ chỗ',
-      SlotStatus.booked => 'vừa được đặt',
-      SlotStatus.privateEvent => 'vừa được chủ sân Bao sân',
-      SlotStatus.outOfService => 'vừa tạm ngừng phục vụ (bảo trì)',
-      _ => 'vừa trống lại',
-    };
+    final privateEvent =
+        first.status == SlotStatus.outOfService &&
+        first.restriction?.isPrivateEvent == true;
+    final what = privateEvent
+        ? 'vừa được chủ sân Bao sân'
+        : switch (first.status) {
+            SlotStatus.hold => 'vừa có người giữ chỗ',
+            SlotStatus.booked => 'vừa được đặt',
+            SlotStatus.outOfService => 'vừa tạm ngừng phục vụ (bảo trì)',
+            _ => 'vừa trống lại',
+          };
     final more = changed.length > 1
         ? ' (và ${changed.length - 1} khung giờ khác)'
         : '';
