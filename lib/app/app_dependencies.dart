@@ -3,6 +3,7 @@ import '../features/reviews/domain/review.dart';
 import '../features/reviews/domain/review_photo.dart';
 import '../features/reviews/data/review_repository_impl.dart';
 import '../features/reviews/data/device_review_photo_picker.dart';
+import '../features/reviews/data/review_photo_uploader_impl.dart';
 
 import '../features/promos/data/promo_repository_impl.dart';
 import '../features/promos/domain/promo_repository.dart';
@@ -201,6 +202,12 @@ class AppDependencies {
       tokenStorage,
       onSessionExpired: onSessionExpired,
     );
+    final reviewDio = createDio(
+      config,
+      tokenStorage,
+      baseUrl: config.discoveryUrl,
+      onSessionExpired: onSessionExpired,
+    );
     final publicDio = Dio(
       BaseOptions(
         baseUrl: config.discoveryUrl,
@@ -254,9 +261,9 @@ class AppDependencies {
       ),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
-      reviews: ReviewRepositoryImpl(createDio(config, tokenStorage,
-        baseUrl: config.discoveryUrl, onSessionExpired: onSessionExpired)),
+      reviews: ReviewRepositoryImpl(reviewDio),
       reviewPhotoPicker: DeviceReviewPhotoPicker(),
+      reviewPhotoUploader: ReviewPhotoUploaderImpl(reviewDio),
       subscriptions: SubscriptionRepositoryImpl(
         createDio(
           config,
