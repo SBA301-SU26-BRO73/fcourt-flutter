@@ -98,4 +98,22 @@ void main() {
       await cubit.close();
     },
   );
+
+  testWidgets(
+    'invalid draft cancels an earlier valid filter debounce and keeps last valid filters',
+    (tester) async {
+      final repository = FilterRepository();
+      final cubit = DiscoveryCubit(repository);
+      const valid = DiscoveryFilters(city: 'HCM');
+
+      cubit.updateFilters(valid);
+      await tester.pump(const Duration(milliseconds: 150));
+      cubit.updateFilters(const DiscoveryFilters(minPrice: 'not-a-price'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(repository.calls, isEmpty);
+      expect(cubit.state.filters, same(valid));
+      await cubit.close();
+    },
+  );
 }

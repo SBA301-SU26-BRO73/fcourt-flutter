@@ -35,9 +35,10 @@ class DiscoveryCubit extends Cubit<DiscoveryState> {
   int _revision = 0;
 
   void updateFilters(DiscoveryFilters filters) {
-    if (filters.errors.isNotEmpty) return;
     _debounce?.cancel();
+    _debounce = null;
     _revision++;
+    if (filters.errors.isNotEmpty) return;
     emit(
       DiscoveryState(query: state.query, sport: state.sport, filters: filters),
     );
