@@ -7,6 +7,8 @@ import '../features/subscription/data/subscription_repository_impl.dart';
 import '../features/subscription/data/device_subscription_checkout_launcher.dart';
 import '../features/admin_bookings/data/admin_booking_repository_impl.dart';
 import '../features/admin_bookings/domain/admin_booking_repository.dart';
+import '../features/vouchers/data/voucher_usage_repository_impl.dart';
+import '../features/vouchers/domain/voucher_usage_repository.dart';
 import '../features/vouchers/data/voucher_repository_impl.dart';
 import '../features/vouchers/domain/voucher_repository.dart';
 import '../features/maps/domain/branch_location.dart';
@@ -126,6 +128,7 @@ class AppDependencies {
         const DeviceSubscriptionCheckoutLauncher(),
     this.adminBookings,
     this.vouchers,
+    this.voucherUsages,
     this.branchMaps,
   });
 
@@ -168,6 +171,7 @@ class AppDependencies {
   final SubscriptionCheckoutLauncher subscriptionCheckoutLauncher;
   final AdminBookingRepository? adminBookings;
   final VoucherRepository? vouchers;
+  final VoucherUsageRepository? voucherUsages;
   final BranchMapPlatform? branchMaps;
 
   /// SCRUM-79: thống kê toàn nền tảng của super admin (reporting-service).
@@ -259,6 +263,15 @@ class AppDependencies {
           tokenStorage,
           baseUrl: config.voucherUrl,
           onSessionExpired: onSessionExpired,
+        ),
+      ),
+      voucherUsages: VoucherUsageRepositoryImpl(
+        createDio(
+          config,
+          tokenStorage,
+          baseUrl: config.voucherUrl,
+          onSessionExpired: onSessionExpired,
+          logRequests: false,
         ),
       ),
       ledgerExporter: CsvLedgerExporter(AdminTransactionsImpl(dio)),

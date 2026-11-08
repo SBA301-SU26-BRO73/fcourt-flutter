@@ -477,7 +477,7 @@ GoRouter createRouter(
             create: (_) =>
                 VoucherCubit(repository, facility.branchRepository)
                   ..initialize(),
-            child: const VoucherManagementScreen(),
+            child: VoucherManagementScreen(usages: dependencies.voucherUsages),
           );
         },
       ),
