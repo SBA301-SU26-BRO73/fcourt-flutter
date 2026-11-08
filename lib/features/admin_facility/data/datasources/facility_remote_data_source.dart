@@ -13,6 +13,8 @@ class FacilityRemoteDataSource {
       '$branchesPath/$branchId/courts';
   static String courtPath(int id) => '/api/admin/courts/$id';
   static String courtStatusPath(int id) => '${courtPath(id)}/status';
+  static const bulkApplyTemplatePath = '/api/admin/courts/bulk-apply-template';
+  static const bulkPreviewTemplatePath = '$bulkApplyTemplatePath/preview';
   static String applyTemplatePath(int courtId) =>
       '${courtPath(courtId)}/apply-template';
 
@@ -48,4 +50,10 @@ class FacilityRemoteDataSource {
 
   Future<Object?> applyTemplate(int courtId, Map<String, dynamic> body) async =>
       (await _dio.post<Object?>(applyTemplatePath(courtId), data: body)).data;
+
+  Future<Object?> previewBulkTemplate(Map<String, dynamic> body) async =>
+      (await _dio.post<Object?>(bulkPreviewTemplatePath, data: body)).data;
+
+  Future<Object?> applyBulkTemplate(Map<String, dynamic> body) async =>
+      (await _dio.post<Object?>(bulkApplyTemplatePath, data: body)).data;
 }
