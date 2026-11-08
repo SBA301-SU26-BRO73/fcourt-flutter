@@ -14,6 +14,7 @@ class CourtListScreen extends StatelessWidget {
     required this.onCreateCourt,
     required this.onEditCourt,
     required this.onOpenSlotTemplate,
+    required this.onOpenPricing,
     this.onBulkApply,
     this.onOpenCalendar,
     this.onOpenOutOfService,
@@ -23,6 +24,7 @@ class CourtListScreen extends StatelessWidget {
   final Future<Court?> Function(int branchId) onCreateCourt;
   final Future<Court?> Function(Court court) onEditCourt;
   final void Function(Court court) onOpenSlotTemplate;
+  final void Function(Court court) onOpenPricing;
 
   /// SCRUM-52: mở hộp thoại áp dụng mẫu cho nhiều sân của chi nhánh; trả về
   /// thông báo thành công hoặc `null` khi hủy. `null` = ẩn nút.
@@ -171,6 +173,7 @@ class CourtListScreen extends StatelessWidget {
               onCalendar: onOpenCalendar == null
                   ? null
                   : () => onOpenCalendar!(court),
+              onPricing: () => onOpenPricing(court),
               onMaintenanceChanged: (value) => bloc.add(
                 CourtMaintenanceToggled(court.id, maintenance: value),
               ),
@@ -224,6 +227,7 @@ class CourtCard extends StatelessWidget {
     required this.onTap,
     required this.onSlotTemplate,
     this.onCalendar,
+    required this.onPricing,
     required this.onMaintenanceChanged,
   });
 
@@ -233,6 +237,7 @@ class CourtCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onSlotTemplate;
   final VoidCallback? onCalendar;
+  final VoidCallback onPricing;
   final ValueChanged<bool> onMaintenanceChanged;
 
   @override
@@ -259,6 +264,13 @@ class CourtCard extends StatelessWidget {
                       icon: const Icon(Icons.calendar_month_outlined),
                       onPressed: onCalendar,
                     ),
+                  IconButton(
+                    key: Key('court-pricing-${court.id}'),
+                    tooltip: 'Cấu hình giá',
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.payments_outlined),
+                    onPressed: onPricing,
+                  ),
                   IconButton(
                     tooltip: 'Mẫu khung giờ',
                     visualDensity: VisualDensity.compact,

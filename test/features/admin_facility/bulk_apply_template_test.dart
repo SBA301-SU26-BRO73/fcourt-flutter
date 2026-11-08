@@ -355,6 +355,7 @@ void main() {
           onCreateCourt: (_) async => null,
           onEditCourt: (_) async => null,
           onOpenSlotTemplate: (_) {},
+          onOpenPricing: (_) {},
           onBulkApply: (branch, list) => showBulkApplyTemplateDialog(
             context,
             createBloc: () => BulkApplyTemplateBloc(
