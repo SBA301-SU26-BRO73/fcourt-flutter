@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+import '../../../../core/validation/booking_slot_times.dart';
+
 import '../../domain/entities/booking_ticket.dart';
 import '../../domain/entities/payment_checkout.dart';
 import '../../domain/repositories/ticket_repository.dart';
@@ -47,22 +49,7 @@ class TicketRepositoryImpl implements TicketRepository {
       if (rawSlots is! List || rawSlots.isEmpty || rawSlots.length > 48) {
         throw const FormatException('Invalid slots');
       }
-      final slots = rawSlots.map((slot) {
-        if (slot is! Map ||
-            slot['startTime'] is! String ||
-            slot['endTime'] is! String) {
-          throw const FormatException('Invalid slot');
-        }
-        final start = slot['startTime'] as String,
-            end = slot['endTime'] as String;
-        final pattern = RegExp(r'^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$');
-        if (!pattern.hasMatch(start) ||
-            !pattern.hasMatch(end) ||
-            start.compareTo(end) >= 0) {
-          throw const FormatException('Invalid time');
-        }
-        return '${start.substring(0, 5)}–${end.substring(0, 5)}';
-      }).toList();
+      final slots = bookingSlotTimes(rawSlots);
       final bookingCode = text('bookingCode'),
           branch = text('branchName'),
           court = text('courtName');
