@@ -1,4 +1,9 @@
 import 'dart:async';
+
+import '../features/subscription/presentation/subscription_cubit.dart';
+import '../features/subscription/presentation/subscription_screen.dart';
+import '../features/admin_bookings/presentation/admin_booking_cubit.dart';
+import '../features/admin_bookings/presentation/admin_booking_management_screen.dart';
 import '../features/vouchers/presentation/voucher_cubit.dart';
 import '../features/vouchers/presentation/voucher_management_screen.dart';
 import '../features/refunds/presentation/admin_refund_approval_screen.dart';
@@ -106,6 +111,24 @@ GoRouter createRouter(
       role: authBloc.state.role,
     ),
     routes: [
+      GoRoute(
+        path: '/admin/subscription',
+        builder: (context, state) {
+          final repository = dependencies.subscriptions;
+          if (repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Gói dịch vụ chưa khả dụng')),
+            );
+          }
+          return BlocProvider(
+            create: (_) => SubscriptionCubit(
+              repository,
+              dependencies.subscriptionCheckoutLauncher,
+            )..refresh(),
+            child: const SubscriptionScreen(),
+          );
+        },
+      ),
       if (dependencies.offline != null)
         GoRoute(
           path: AppRoutes.offlineCheckIn,
@@ -416,15 +439,41 @@ GoRouter createRouter(
         },
       ),
       GoRoute(
+        path: '/admin/bookings',
+        builder: (context, state) {
+          final repository = dependencies.adminBookings;
+          final facility = dependencies.adminFacility;
+          if (repository == null || facility == null) {
+            return const Scaffold(
+              body: Center(child: Text('Quản lý đơn đặt sân chưa khả dụng')),
+            );
+          }
+          return BlocProvider(
+            create: (_) => AdminBookingCubit(
+              repository,
+              facility.branchRepository,
+              facility.courtRepository,
+            )..initialize(),
+            child: const AdminBookingManagementScreen(),
+          );
+        },
+      ),
+      GoRoute(
         path: '/admin/vouchers',
         builder: (context, state) {
           final repository = dependencies.vouchers;
           final facility = dependencies.adminFacility;
           if (repository == null || facility == null) {
-            return const Scaffold(body: Center(child: Text('Quản lý voucher chưa khả dụng')));
+            return const Scaffold(
+              body: Center(child: Text('Quản lý voucher chưa khả dụng')),
+            );
           }
-          return BlocProvider(create: (_) => VoucherCubit(repository, facility.branchRepository)..initialize(),
-            child: const VoucherManagementScreen());
+          return BlocProvider(
+            create: (_) =>
+                VoucherCubit(repository, facility.branchRepository)
+                  ..initialize(),
+            child: const VoucherManagementScreen(),
+          );
         },
       ),
       GoRoute(

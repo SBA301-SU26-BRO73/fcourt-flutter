@@ -25,6 +25,8 @@ Failure facilityFailure(ServerFailure failure) {
     403 => 'Bạn không có quyền thực hiện thao tác này',
     409 when detail.startsWith('Slot overlaps') =>
       'Khung giờ trùng với mẫu khung giờ đang có',
+    409 when detail.startsWith('Time range overlaps pricing rule') =>
+      'Khung giờ trùng với một quy tắc giá khác trong cùng nhóm ngày',
     409 when detail.startsWith('Template cannot be applied') =>
       'Có sân không áp dụng được mẫu (${_conflictCount(detail) ?? 'một số'} '
           'sân); không có thay đổi nào được lưu. Hãy xem trước lại',
@@ -35,6 +37,12 @@ Failure facilityFailure(ServerFailure failure) {
     400 when detail.startsWith('Slots must be within branch hours') =>
       'Khung giờ phải nằm trong giờ mở cửa của chi nhánh'
           '${_tail(detail, 'Slots must be within branch hours')}',
+    400 when detail == 'endTime must be after startTime' =>
+      'Giờ kết thúc phải sau giờ bắt đầu',
+    400 when detail.startsWith('Times must be aligned') =>
+      'Giờ bắt đầu và kết thúc phải là bội số của 30 phút',
+    400 when detail.startsWith('There are no weekday pricing rules') =>
+      'Chưa có quy tắc giá ngày thường để sao chép',
     400 when failure.errors.isNotEmpty =>
       'Dữ liệu chưa hợp lệ: ${failure.errors.join('; ')}',
     400 => 'Dữ liệu chưa hợp lệ: $detail',

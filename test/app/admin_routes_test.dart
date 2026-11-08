@@ -8,10 +8,12 @@ import 'package:fcourt/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fcourt/features/admin_dashboard/domain/entities/dashboard_stats.dart';
 import 'package:fcourt/features/admin_dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:fcourt/features/admin_dashboard/presentation/pages/admin_dashboard_screen.dart';
+import 'package:fcourt/features/admin_dashboard/presentation/pages/analytics_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/branch_form_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/branch_list_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/court_form_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/court_list_screen.dart';
+import 'package:fcourt/features/admin_facility/presentation/pages/pricing_rule_config_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/time_slot_template_screen.dart';
 import 'package:fcourt/features/health/domain/entities/health_status.dart';
 import 'package:fcourt/features/health/domain/repositories/health_repository.dart';
@@ -25,6 +27,8 @@ import '../features/auth/helpers.dart';
 import '../features/catalog/helpers.dart';
 import '../features/admin_facility/fixtures.dart';
 import '../features/admin_facility/mocks.dart';
+import '../features/admin_dashboard/analytics_helpers.dart';
+import '../features/admin_facility/pricing_fixtures.dart';
 
 class _FakeHealthRepository implements HealthRepository {
   @override
@@ -89,11 +93,37 @@ void main() {
     final courts = MockCourtRepository();
     final types = MockCourtTypeRepository();
     final dashboard = _MockDashboardRepository();
+    final pricing = MockPricingRuleRepository();
+    final analytics = MockAnalyticsRepository();
+    registerAnalyticsFallbacks();
+    when(
+      () => analytics.getRevenueChart(
+        branchId: any(named: 'branchId'),
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        granularity: any(named: 'granularity'),
+      ),
+    ).thenAnswer((_) async => sampleRevenueChart);
+    when(
+      () => analytics.getTopCourts(
+        branchId: any(named: 'branchId'),
+        period: any(named: 'period'),
+        date: any(named: 'date'),
+      ),
+    ).thenAnswer((_) async => sampleTopCourts);
+    when(
+      () => analytics.getPeakHours(
+        branchId: any(named: 'branchId'),
+        period: any(named: 'period'),
+        date: any(named: 'date'),
+      ),
+    ).thenAnswer((_) async => samplePeakHours());
     when(() => branches.getBranches())
         .thenAnswer((_) async => [sampleBranch()]);
     when(() => branches.getBranch(1)).thenAnswer((_) async => sampleBranch());
     when(() => courts.getCourts(1)).thenAnswer((_) async => [sampleCourt()]);
     when(() => courts.getCourt(5)).thenAnswer((_) async => sampleCourt());
+    when(() => pricing.getRules(5)).thenAnswer((_) async => const []);
     when(() => types.getCourtTypes()).thenAnswer((_) async => sampleCourtTypes);
     when(() => dashboard.getStats()).thenAnswer(
       (_) async => const DashboardStats(
@@ -115,12 +145,15 @@ void main() {
       courtRepository: courts,
       courtTypeRepository: types,
       slotTemplateRepository: MockSlotTemplateRepository(),
+      pricingRuleRepository: pricing,
       dashboardRepository: dashboard,
+      analyticsRepository: analytics,
     );
   });
 
   final cases = <String, Type>{
     '/admin/dashboard': AdminDashboardScreen,
+    '/admin/analytics': AnalyticsScreen,
     '/admin/branches': BranchListScreen,
     '/admin/branches/new': BranchFormScreen,
     '/admin/branches/1/edit': BranchFormScreen,
@@ -128,6 +161,7 @@ void main() {
     '/admin/courts/new?branchId=1': CourtFormScreen,
     '/admin/courts/5/edit': CourtFormScreen,
     '/admin/courts/5/slot-template': TimeSlotTemplateScreen,
+    '/admin/courts/5/pricing': PricingRuleConfigScreen,
   };
 
   for (final entry in cases.entries) {
