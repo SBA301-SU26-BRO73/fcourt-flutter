@@ -50,7 +50,6 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
        super(SlotPickerState(date: date ?? venueToday(now?.call()))) {
     _subscription = invalidations?.changes.listen((change) {
       if (change == null || change.date == slotDateKey(state.date)) {
-        _hint = change;
         _resync();
       }
     });
@@ -74,7 +73,6 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
   final Duration pollInterval;
   final int healthyPollFactor;
   int _quietTicks = 0;
-  SlotChange? _hint;
   final DateTime Function() _now;
   late final Timer _expiry;
   int _revision = 0;
@@ -120,9 +118,8 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
           .toList();
       final selectedBefore = silent ? state.selectedIds : previous;
       final alert = silent && !state.loading && state.error == null
-          ? slotChangeAlert(state.slots, slots, _hint)
+          ? slotChangeAlert(state.slots, slots)
           : null;
-      _hint = null;
       final ids = slots
           .where(
             (s) =>
@@ -161,9 +158,8 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
   /// e.g. "Khung giờ 18:00 vừa có người giữ chỗ". Null when nothing changed.
   static String? slotChangeAlert(
     List<CourtSlot> before,
-    List<CourtSlot> after, [
-    SlotChange? hint,
-  ]) {
+    List<CourtSlot> after,
+  ) {
     final previous = {for (final s in before) s.id: s.status};
     final changed = <CourtSlot>[];
     for (final slot in after) {
@@ -185,10 +181,8 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
     final what = switch (first.status) {
       SlotStatus.hold => 'vừa có người giữ chỗ',
       SlotStatus.booked => 'vừa được đặt',
-      SlotStatus.outOfService =>
-        hint?.isFullCourtLock == true
-            ? 'vừa được chủ sân Bao sân'
-            : 'vừa tạm ngừng phục vụ',
+      SlotStatus.privateEvent => 'vừa được chủ sân Bao sân',
+      SlotStatus.outOfService => 'vừa tạm ngừng phục vụ (bảo trì)',
       _ => 'vừa trống lại',
     };
     final more = changed.length > 1
