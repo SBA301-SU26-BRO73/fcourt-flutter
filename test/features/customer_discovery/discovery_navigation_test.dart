@@ -27,6 +27,7 @@ class _Discovery implements DiscoveryRepository {
   Future<BranchPage> search({
     String query = '',
     DiscoverySport? sport,
+    DiscoveryFilters filters = const DiscoveryFilters(),
     int page = 0,
   }) async {
     queries.add(query);

@@ -38,6 +38,7 @@ Cấu hình đọc lúc build qua `--dart-define-from-file`, không hard-code tr
 - Chạy trên điện thoại thật: sửa `API_BASE_URL` thành IP LAN của máy chạy backend, ví dụ `http://192.168.1.10:8080`. Đừng commit thay đổi này.
 - Bản debug cho phép `http` (cleartext). Bản release chỉ cho `https`.
 - Không đưa secret vào `env/*.json`, vì file này được commit.
+- Đăng nhập Google cần tạo OAuth Web client ID và Android client (package `com.bro73.fcourt`, SHA-1/SHA-256 của signing key) trong Google Cloud Console. Truyền Web client ID bằng `--dart-define=GOOGLE_WEB_CLIENT_ID=...` hoặc thêm khóa này vào file `--dart-define-from-file`. Cùng Web client ID phải được đặt vào `AUTH_GOOGLE_CLIENT_ID` của auth-service. Đây là client ID công khai, không phải client secret.
 
 ## Cấu trúc
 
@@ -117,6 +118,18 @@ Android có snapshot SQLite theo nhân viên/chi nhánh/ngày và hàng đợi b
 Đồng bộ đầu ca khi có mạng, chỉ nhận vé trong cửa sổ hợp lệ và cache dưới 12 giờ.
 Kết quả offline là tạm thời; kiểm tra hàng đợi/xung đột sau khi kết nối lại.
 Đổi tài khoản hoặc đăng xuất không cho phép dùng snapshot của phiên cũ.
+
+Nếu mở lại app khi mất mạng, nhân viên có access token còn hạn, đúng vai trò
+STAFF và snapshot hợp lệ của hôm nay được vào `/staff/offline`. Chế độ này
+chỉ cho quét/nhập mã nhận sân; POS, lịch online và quản trị vẫn bị chặn.
+Bấm “Kết nối lại để xác thực online” để khôi phục phiên đầy đủ qua server.
+Token hết hạn, lỗi xác thực 401/403 hoặc cache sai ngày/cũ không được dùng
+làm phiên offline.
+
+Foreground đẩy hàng đợi mỗi 2 giây; reconnect/resume đẩy hàng đợi trước rồi
+tải lại vé. Snapshot tự làm mới mỗi 5 phút; tải đầu ca thất bại tự thử lại
+sau 30 giây. Các timer dừng khi app vào nền hoặc người dùng rời phiên nhân viên.
+Đây là lịch thử đồng bộ, không phải cam kết server hoàn tất trong 3 giây.
 
 Backend cần khóa ký permit và credential staff-to-booking riêng; tuyệt đối không
 đưa secret này vào ứng dụng. Workmanager hỗ trợ gửi nền nhưng phụ thuộc Android;

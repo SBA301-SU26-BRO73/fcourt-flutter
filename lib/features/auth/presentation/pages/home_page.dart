@@ -46,6 +46,14 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(user.role.label),
+              if (user.role == UserRole.admin) ...[
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.push('/admin/vouchers'),
+                  icon: const Icon(Icons.local_offer_outlined),
+                  label: const Text('Quản lý voucher'),
+                ),
+              ],
               if (user.role == UserRole.superAdmin) ...[
                 const SizedBox(height: 24),
                 FilledButton.tonalIcon(
@@ -60,6 +68,12 @@ class HomePage extends StatelessWidget {
                   onPressed: () => context.push(AppRoutes.discover),
                   icon: const Icon(Icons.search),
                   label: const Text('Tìm sân'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/bookings'),
+                  icon: const Icon(Icons.history),
+                  label: const Text('Lịch sử đặt sân'),
                 ),
               ],
             ],
