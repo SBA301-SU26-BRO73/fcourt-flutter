@@ -61,7 +61,13 @@ class _SlotContactSheetState extends State<SlotContactSheet> {
                 FilledButton.icon(
                   onPressed: _calling ? null : _call,
                   icon: const Icon(Icons.phone),
-                  label: Text(_calling ? 'Đang mở cuộc gọi…' : 'Gọi chủ sân'),
+                  label: Text(
+                    _calling
+                        ? 'Đang mở cuộc gọi…'
+                        : contact.isPrivateEvent
+                        ? 'Gọi liên hệ sự kiện'
+                        : 'Gọi chủ sân',
+                  ),
                 )
               else
                 const Text('Chưa có số điện thoại hợp lệ để gọi.'),

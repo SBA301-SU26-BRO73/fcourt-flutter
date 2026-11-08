@@ -40,7 +40,7 @@ void main() {
     }
     expect(calls, 0);
   });
-  testWidgets('public contact calls only tel and prevents duplicate launches', (
+  testWidgets('event contact calls only tel and prevents duplicate launches', (
     tester,
   ) async {
     final pending = Completer<bool>();
@@ -63,7 +63,8 @@ void main() {
       ),
     );
     expect(find.text('Chủ sân'), findsOneWidget);
-    await tester.tap(find.text('Gọi chủ sân'));
+    expect(find.text('Gọi liên hệ sự kiện'), findsOneWidget);
+    await tester.tap(find.text('Gọi liên hệ sự kiện'));
     await tester.pump();
     expect(calls.single.toString(), 'tel:+84901234567');
     expect(
@@ -81,5 +82,23 @@ void main() {
       isNotNull,
     );
     expect(calls.length, 1);
+  });
+
+  testWidgets('owner contact keeps the owner call label', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SlotContactSheet(
+            contact: SlotRestriction(
+              isPrivateEvent: false,
+              contactPhone: '+84901234567',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Gọi chủ sân'), findsOneWidget);
+    expect(find.text('Gọi liên hệ sự kiện'), findsNothing);
   });
 }
