@@ -73,6 +73,7 @@ class _FakeDiscoveryRepository implements DiscoveryRepository {
   Future<BranchPage> search({
     String query = '',
     DiscoverySport? sport,
+    DiscoveryFilters filters = const DiscoveryFilters(),
     int page = 0,
   }) async =>
       const BranchPage(branches: [], page: 0, totalPages: 0, totalElements: 0);
