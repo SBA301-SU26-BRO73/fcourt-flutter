@@ -1,6 +1,10 @@
 import 'dart:async';
+
 import '../features/admin_bookings/data/admin_booking_repository_impl.dart';
 import '../features/admin_bookings/domain/admin_booking_repository.dart';
+import '../features/maps/domain/branch_location.dart';
+import '../features/maps/data/device_branch_map_platform.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
@@ -106,6 +110,7 @@ class AppDependencies {
     this.adminRefunds,
     this.ledgerExporter,
     this.adminBookings,
+    this.branchMaps,
   });
 
   final AppConfig config;
@@ -143,6 +148,7 @@ class AppDependencies {
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
   final AdminBookingRepository? adminBookings;
+  final BranchMapPlatform? branchMaps;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -201,6 +207,7 @@ class AppDependencies {
       paymentRepository: PaymentRepositoryImpl(dio),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
+      branchMaps: DeviceBranchMapPlatform(),
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
