@@ -3,6 +3,7 @@ import 'package:fcourt/app/app_dependencies.dart';
 import 'package:fcourt/app/admin_facility_dependencies.dart';
 import 'package:fcourt/core/config/app_config.dart';
 import 'package:fcourt/features/admin_dashboard/domain/repositories/dashboard_repository.dart';
+import 'package:fcourt/features/admin_dashboard/domain/repositories/analytics_repository.dart';
 import 'package:fcourt/features/health/domain/repositories/health_repository.dart';
 import 'package:fcourt/features/vouchers/data/voucher_model.dart';
 import 'package:fcourt/features/vouchers/domain/voucher.dart';
@@ -28,6 +29,8 @@ class Health extends Mock implements HealthRepository {}
 class Discovery extends Mock implements DiscoveryRepository {}
 
 class Dashboard extends Mock implements DashboardRepository {}
+
+class Analytics extends Mock implements AnalyticsRepository {}
 
 class ScreenRepository extends EditorRepository {
   bool enabled = true;
@@ -77,6 +80,7 @@ void main() {
           slotTemplateRepository: MockSlotTemplateRepository(),
           pricingRuleRepository: MockPricingRuleRepository(),
           dashboardRepository: Dashboard(),
+          analyticsRepository: Analytics(),
         ),
       );
       await tester.pumpWidget(FcourtApp(dependencies: dependencies));

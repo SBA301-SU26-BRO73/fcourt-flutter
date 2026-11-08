@@ -2,7 +2,9 @@ import '../core/config/app_config.dart';
 import '../core/network/dio_client.dart';
 import '../core/storage/token_storage.dart';
 import '../features/admin_dashboard/data/datasources/reporting_remote_data_source.dart';
+import '../features/admin_dashboard/data/repositories/analytics_repository_impl.dart';
 import '../features/admin_dashboard/data/repositories/dashboard_repository_impl.dart';
+import '../features/admin_dashboard/domain/repositories/analytics_repository.dart';
 import '../features/admin_dashboard/domain/repositories/dashboard_repository.dart';
 import '../features/admin_facility/data/datasources/facility_remote_data_source.dart';
 import '../features/admin_facility/data/repositories/branch_repository_impl.dart';
@@ -38,6 +40,7 @@ class AdminFacilityDependencies {
     required this.dashboardRepository,
     this.revenueReportRepository,
     this.reportFileOpener = const OpenFilexOpener(),
+    required this.analyticsRepository,
     this.branchImageRepository,
     this.branchImagePicker,
   });
@@ -48,6 +51,7 @@ class AdminFacilityDependencies {
   final SlotTemplateRepository slotTemplateRepository;
   final PricingRuleRepository pricingRuleRepository;
   final DashboardRepository dashboardRepository;
+  final AnalyticsRepository analyticsRepository;
 
   /// SCRUM-77: tải báo cáo doanh thu; `null` thì ẩn nút xuất.
   final RevenueReportRepository? revenueReportRepository;
@@ -105,6 +109,7 @@ class AdminFacilityDependencies {
         ),
         const DeviceReportFileStore(),
       ),
+      analyticsRepository: AnalyticsRepositoryImpl(reporting),
       branchImageRepository: BranchImageRepositoryImpl(
         publicDio: publicFacilityDio,
         adminDio: facilityDio,

@@ -17,9 +17,11 @@ class AdminDashboardScreen extends StatelessWidget {
     this.onOpenBranches,
     this.exportRepository,
     this.fileOpener,
+    this.onOpenAnalytics,
   });
 
   final VoidCallback? onOpenBranches;
+  final VoidCallback? onOpenAnalytics;
 
   /// SCRUM-77: có cả hai thì thanh công cụ có nút xuất báo cáo doanh thu.
   final RevenueReportRepository? exportRepository;
@@ -43,8 +45,17 @@ class AdminDashboardScreen extends StatelessWidget {
                 initialBranchId: state.selectedBranchId,
               ),
             ),
-          IconButton(tooltip: 'Gói dịch vụ', icon: const Icon(Icons.workspace_premium_outlined),
-            onPressed: () => context.push('/admin/subscription')),
+          if (onOpenAnalytics != null)
+            IconButton(
+              tooltip: 'Phân tích',
+              icon: const Icon(Icons.insights_outlined),
+              onPressed: onOpenAnalytics,
+            ),
+          IconButton(
+            tooltip: 'Gói dịch vụ',
+            icon: const Icon(Icons.workspace_premium_outlined),
+            onPressed: () => context.push('/admin/subscription'),
+          ),
           if (onOpenBranches != null)
             IconButton(
               tooltip: 'Chi nhánh',

@@ -6,6 +6,7 @@ import 'package:fcourt/features/admin_bookings/domain/admin_booking_repository.d
 import 'package:fcourt/features/admin_bookings/domain/admin_booking_query.dart';
 import 'package:fcourt/features/admin_bookings/presentation/admin_booking_management_screen.dart';
 import 'package:fcourt/features/admin_dashboard/domain/repositories/dashboard_repository.dart';
+import 'package:fcourt/features/admin_dashboard/domain/repositories/analytics_repository.dart';
 import 'package:fcourt/features/health/domain/repositories/health_repository.dart';
 import 'package:fcourt/src/features/customer_discovery/domain/discovery_repository.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,8 @@ class Health extends Mock implements HealthRepository {}
 class Discovery extends Mock implements DiscoveryRepository {}
 
 class Dashboard extends Mock implements DashboardRepository {}
+
+class Analytics extends Mock implements AnalyticsRepository {}
 
 class Bookings implements AdminBookingRepository {
   int calls = 0;
@@ -64,6 +67,7 @@ void main() {
           slotTemplateRepository: MockSlotTemplateRepository(),
           pricingRuleRepository: MockPricingRuleRepository(),
           dashboardRepository: Dashboard(),
+          analyticsRepository: Analytics(),
         ),
       );
       await tester.pumpWidget(FcourtApp(dependencies: dependencies));
