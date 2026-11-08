@@ -1,3 +1,5 @@
+import 'discovery_filters.dart';
+export 'discovery_filters.dart';
 import '../../../../features/maps/domain/branch_location.dart';
 
 class Branch {
@@ -58,6 +60,7 @@ abstract interface class DiscoveryRepository {
   Future<BranchPage> search({
     String query = '',
     DiscoverySport? sport,
+    DiscoveryFilters filters = const DiscoveryFilters(),
     int page = 0,
   });
 }
