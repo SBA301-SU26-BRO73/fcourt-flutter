@@ -1,4 +1,17 @@
 import 'dart:async';
+
+import '../features/promos/data/promo_repository_impl.dart';
+import '../features/promos/domain/promo_repository.dart';
+import '../features/subscription/domain/subscription.dart';
+import '../features/subscription/data/subscription_repository_impl.dart';
+import '../features/subscription/data/device_subscription_checkout_launcher.dart';
+import '../features/admin_bookings/data/admin_booking_repository_impl.dart';
+import '../features/admin_bookings/domain/admin_booking_repository.dart';
+import '../features/vouchers/data/voucher_repository_impl.dart';
+import '../features/vouchers/domain/voucher_repository.dart';
+import '../features/maps/domain/branch_location.dart';
+import '../features/maps/data/device_branch_map_platform.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
@@ -57,12 +70,17 @@ import '../features/operations/domain/counter.dart';
 import '../features/operations/data/http_counter_repository.dart';
 import '../features/pos/domain/pos.dart';
 import '../features/pos/data/http_pos_repository.dart';
+import '../features/pos/data/secure_pos_sale_store.dart';
+import '../features/pos/domain/pending_sale.dart';
 import '../features/offline/data/offline_runtime.dart';
 import '../features/offline/data/offline_operations.dart';
 import 'admin_facility_dependencies.dart';
 import '../features/super_admin/data/datasources/super_admin_remote_data_source.dart';
 import '../features/super_admin/data/repositories/court_owner_approval_repository_impl.dart';
+import '../features/super_admin/data/datasources/platform_overview_remote_data_source.dart';
+import '../features/super_admin/data/repositories/platform_overview_repository_impl.dart';
 import '../features/super_admin/domain/repositories/court_owner_approval_repository.dart';
+import '../features/super_admin/domain/repositories/platform_overview_repository.dart';
 
 /// Nơi lắp ráp các dependency của app (không dùng thư viện DI để giữ đơn giản).
 /// Thêm repository của feature mới vào đây, và tạo bản giả trong test qua
@@ -82,6 +100,7 @@ class AppDependencies {
     this.operations,
     this.counter,
     this.pos,
+    this.posSaleStore,
     this.offline,
     this.paymentRepository,
     this.qrSaver,
@@ -100,6 +119,14 @@ class AppDependencies {
     this.refundRepository,
     this.adminRefunds,
     this.ledgerExporter,
+    this.promos,
+    this.platformOverview,
+    this.subscriptions,
+    this.subscriptionCheckoutLauncher =
+        const DeviceSubscriptionCheckoutLauncher(),
+    this.adminBookings,
+    this.vouchers,
+    this.branchMaps,
   });
 
   final AppConfig config;
@@ -117,6 +144,7 @@ class AppDependencies {
   final OperationsRepository? operations;
   final CounterRepository? counter;
   final PosRepository? pos;
+  final PosSaleStore Function()? posSaleStore;
   final OfflineRuntime? offline;
   final PaymentRepository? paymentRepository;
   final QrSaver? qrSaver;
@@ -135,6 +163,15 @@ class AppDependencies {
   final RefundRepository? refundRepository;
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
+  final PromoRepository? promos;
+  final SubscriptionRepository? subscriptions;
+  final SubscriptionCheckoutLauncher subscriptionCheckoutLauncher;
+  final AdminBookingRepository? adminBookings;
+  final VoucherRepository? vouchers;
+  final BranchMapPlatform? branchMaps;
+
+  /// SCRUM-79: thống kê toàn nền tảng của super admin (reporting-service).
+  final PlatformOverviewRepository? platformOverview;
 
   factory AppDependencies.create(AppConfig config) {
     final tokenStorage = SecureTokenStorage();
@@ -174,9 +211,13 @@ class AppDependencies {
         config,
         tokenStorage,
         catalogRepository,
+        slotRepository: SlotRepositoryImpl(SlotRemoteDataSource(publicDio)),
         onSessionExpired: onSessionExpired,
       ),
-      authRepository: AuthRepositoryImpl(AuthRemoteDataSource(dio), tokenStorage),
+      authRepository: AuthRepositoryImpl(
+        AuthRemoteDataSource(dio),
+        tokenStorage,
+      ),
       catalogRepository: catalogRepository,
       sessionExpired: sessionExpired.stream,
       discoveryRepository: DiscoveryRepositoryImpl(
@@ -188,12 +229,49 @@ class AppDependencies {
         createDio(config, tokenStorage, baseUrl: config.facilityUrl),
       ),
       paymentRepository: PaymentRepositoryImpl(dio),
+      promos: PromoRepositoryImpl(
+        dio,
+        createDio(
+          config,
+          tokenStorage,
+          baseUrl: config.voucherUrl,
+          onSessionExpired: onSessionExpired,
+        ),
+      ),
       qrSaver: QrGallerySaver(),
       bookingHistoryRepository: history.BookingRepositoryImpl(dio),
+      subscriptions: SubscriptionRepositoryImpl(
+        createDio(
+          config,
+          tokenStorage,
+          baseUrl: config.subscriptionUrl,
+          onSessionExpired: onSessionExpired,
+        ),
+      ),
+      branchMaps: DeviceBranchMapPlatform(),
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
+      adminBookings: AdminBookingRepositoryImpl(dio),
+      vouchers: VoucherRepositoryImpl(
+        createDio(
+          config,
+          tokenStorage,
+          baseUrl: config.voucherUrl,
+          onSessionExpired: onSessionExpired,
+        ),
+      ),
       ledgerExporter: CsvLedgerExporter(AdminTransactionsImpl(dio)),
+      platformOverview: PlatformOverviewRepositoryImpl(
+        PlatformOverviewRemoteDataSource(
+          createDio(
+            config,
+            tokenStorage,
+            baseUrl: config.reportingUrl,
+            onSessionExpired: onSessionExpired,
+          ),
+        ),
+      ),
       refundRepository: RefundRepositoryImpl(dio),
       adminRefunds: AdminRefundsImpl(dio),
       ticketRepository: TicketRepositoryImpl(dio),
@@ -212,6 +290,7 @@ class AppDependencies {
       pos: HttpPosRepository(
         createDio(config, tokenStorage, baseUrl: config.posBaseUrl),
       ),
+      posSaleStore: () => SecurePosSaleStore(tokenStorage),
       counter: HttpCounterRepository(
         createDio(config, tokenStorage, baseUrl: config.staffBaseUrl),
         // Public availability reads never carry employee credentials.

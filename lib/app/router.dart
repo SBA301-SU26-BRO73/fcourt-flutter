@@ -2,6 +2,12 @@ import '../src/features/customer_slots/data/stomp_slot_invalidations.dart';
 
 import 'dart:async';
 
+import '../features/subscription/presentation/subscription_cubit.dart';
+import '../features/subscription/presentation/subscription_screen.dart';
+import '../features/admin_bookings/presentation/admin_booking_cubit.dart';
+import '../features/admin_bookings/presentation/admin_booking_management_screen.dart';
+import '../features/vouchers/presentation/voucher_cubit.dart';
+import '../features/vouchers/presentation/voucher_management_screen.dart';
 import '../features/refunds/presentation/admin_refund_approval_screen.dart';
 import '../features/refunds/presentation/customer_refund_screen.dart';
 import '../features/transactions/presentation/admin_transaction_history_screen.dart';
@@ -45,7 +51,10 @@ import '../features/catalog/presentation/pages/catalog_page.dart';
 import '../features/health/domain/usecases/get_health_status.dart';
 import '../features/health/presentation/bloc/health_bloc.dart';
 import '../features/health/presentation/pages/health_page.dart';
+import '../features/super_admin/domain/repositories/platform_overview_repository.dart';
 import '../features/super_admin/domain/usecases/owner_approval_usecases.dart';
+import '../features/super_admin/presentation/bloc/platform_overview_cubit.dart';
+import '../features/super_admin/presentation/pages/super_admin_overview_screen.dart';
 import '../features/super_admin/presentation/bloc/owner_detail_cubit.dart';
 import '../features/super_admin/presentation/bloc/pending_owners_cubit.dart';
 import '../features/super_admin/presentation/pages/owner_approval_detail_screen.dart';
@@ -56,6 +65,9 @@ import 'auth_redirect.dart';
 import '../features/staff/presentation/staff_page.dart';
 import '../features/pos/presentation/pos_page.dart';
 import '../features/operations/presentation/schedule_page.dart';
+import '../features/offline/data/offline_operations.dart';
+import '../features/offline/presentation/offline_check_in_page.dart';
+import '../features/offline/presentation/offline_panel.dart';
 import '../src/features/customer_discovery/domain/discovery_repository.dart';
 import '../src/features/customer_discovery/presentation/discovery_cubit.dart';
 import '../src/features/customer_discovery/presentation/screens/customer_home_screen.dart';
@@ -104,10 +116,43 @@ GoRouter createRouter(
       role: authBloc.state.role,
     ),
     routes: [
+      GoRoute(
+        path: '/admin/subscription',
+        builder: (context, state) {
+          final repository = dependencies.subscriptions;
+          if (repository == null) {
+            return const Scaffold(
+              body: Center(child: Text('Gói dịch vụ chưa khả dụng')),
+            );
+          }
+          return BlocProvider(
+            create: (_) => SubscriptionCubit(
+              repository,
+              dependencies.subscriptionCheckoutLauncher,
+            )..refresh(),
+            child: const SubscriptionScreen(),
+          );
+        },
+      ),
+      if (dependencies.offline != null)
+        GoRoute(
+          path: AppRoutes.offlineCheckIn,
+          builder: (_, _) => OfflineCheckInPage(
+            repository: OfflineOperations.cached(
+              dependencies.offline!.coordinator,
+            ),
+            syncPanel: OfflinePanel(runtime: dependencies.offline!),
+            onReconnect: () => authBloc.add(const AuthStarted()),
+            onLogin: () => authBloc.add(const AuthSessionExpired()),
+          ),
+        ),
       if (dependencies.pos != null)
         GoRoute(
           path: '/staff/pos',
-          builder: (_, _) => PosPage(repository: dependencies.pos!),
+          builder: (_, _) => PosPage(
+            repository: dependencies.pos!,
+            journal: dependencies.posSaleStore?.call(),
+          ),
         ),
       if (dependencies.operations != null)
         GoRoute(
@@ -258,6 +303,8 @@ GoRouter createRouter(
             repository: repository,
             branchId: id,
             exporter: dependencies.ledgerExporter,
+            revenueReports: dependencies.adminFacility?.revenueReportRepository,
+            fileOpener: dependencies.adminFacility?.reportFileOpener,
           );
         },
       ),
@@ -344,6 +391,8 @@ GoRouter createRouter(
             repository: paymentRepository,
             saver: saver,
             arguments: arguments,
+            promos: dependencies.promos,
+            onFreeConfirmed: () => context.go('/payments/ticket', extra: arguments),
             onUploadReceipt: () =>
                 context.push('/payments/receipt', extra: arguments),
           );
@@ -393,6 +442,44 @@ GoRouter createRouter(
             arguments: args,
             onConfirmed: () => context.go('/payments/ticket', extra: args),
             onSupport: () => context.go('/bookings/${args.bookingId}'),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/admin/bookings',
+        builder: (context, state) {
+          final repository = dependencies.adminBookings;
+          final facility = dependencies.adminFacility;
+          if (repository == null || facility == null) {
+            return const Scaffold(
+              body: Center(child: Text('Quản lý đơn đặt sân chưa khả dụng')),
+            );
+          }
+          return BlocProvider(
+            create: (_) => AdminBookingCubit(
+              repository,
+              facility.branchRepository,
+              facility.courtRepository,
+            )..initialize(),
+            child: const AdminBookingManagementScreen(),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/admin/vouchers',
+        builder: (context, state) {
+          final repository = dependencies.vouchers;
+          final facility = dependencies.adminFacility;
+          if (repository == null || facility == null) {
+            return const Scaffold(
+              body: Center(child: Text('Quản lý voucher chưa khả dụng')),
+            );
+          }
+          return BlocProvider(
+            create: (_) =>
+                VoucherCubit(repository, facility.branchRepository)
+                  ..initialize(),
+            child: const VoucherManagementScreen(),
           );
         },
       ),
@@ -494,8 +581,10 @@ GoRouter createRouter(
       GoRoute(
         path: '/branches/:id',
         builder: (context, state) => BranchDetailScreen(
+          maps: dependencies.branchMaps,
           branchId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
           branch: state.extra is Branch ? state.extra as Branch : null,
+          galleryRepository: dependencies.adminFacility?.branchImageRepository,
         ),
       ),
       // Màn kiểm tra kết nối BE, dùng khi phát triển.
@@ -509,6 +598,18 @@ GoRouter createRouter(
         ),
       ),
       ...adminFacilityRoutes(dependencies.adminFacility),
+      GoRoute(
+        path: AppRoutes.superAdminOverview,
+        builder: (context, state) {
+          final repository = dependencies.platformOverview;
+          if (repository == null) return const _UnavailableScreen();
+          return BlocProvider(
+            create: (_) => PlatformOverviewCubit(GetPlatformOverview(repository))
+              ..load(),
+            child: const SuperAdminOverviewScreen(),
+          );
+        },
+      ),
       GoRoute(
         path: '/super-admin/owners/pending',
         builder: (context, state) {

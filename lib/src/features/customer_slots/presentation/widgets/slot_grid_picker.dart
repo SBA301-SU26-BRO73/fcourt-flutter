@@ -15,7 +15,7 @@ extension SlotAppearance on SlotStatus {
     SlotStatus.available => 'Trống',
     SlotStatus.booked => 'Đã đặt',
     SlotStatus.hold => 'Đang giữ',
-    SlotStatus.outOfService => 'Bảo trì / Bao sân',
+    SlotStatus.outOfService => 'Ngừng phục vụ',
     SlotStatus.expired => 'Đã qua',
     SlotStatus.unknown => 'Không khả dụng',
   };
@@ -26,6 +26,32 @@ extension SlotAppearance on SlotStatus {
     SlotStatus.outOfService => const Color(0xFF705A7B),
     _ => const Color(0xFF646B69),
   };
+
+  String? get unavailableReason => switch (this) {
+    SlotStatus.available => null,
+    SlotStatus.booked => 'Khung giờ này đã có người đặt.',
+    SlotStatus.hold => 'Khung giờ đang được giữ chỗ, hiện chưa thể chọn.',
+    SlotStatus.outOfService => 'Khung giờ bị khóa và không nhận đặt lẻ.',
+    SlotStatus.expired => 'Khung giờ đã bắt đầu hoặc đã qua, không thể đặt.',
+    SlotStatus.unknown => 'Khung giờ không khả dụng, không thể chọn.',
+  };
+}
+
+extension RestrictedSlotAppearance on CourtSlot {
+  bool get isPrivateEvent =>
+      status == SlotStatus.outOfService && restriction?.isPrivateEvent == true;
+  String get displayLabel => isPrivateEvent ? 'Bao sân' : status.label;
+  Color get displayColor =>
+      isPrivateEvent ? const Color(0xFF4648D4) : status.color;
+  String? get unavailableReason {
+    final reason = isPrivateEvent
+        ? 'Khung giờ đã được bao sân cho sự kiện, không nhận đặt lẻ.'
+        : status.unavailableReason;
+    final publicReason = status == SlotStatus.outOfService
+        ? restriction?.publicReason
+        : null;
+    return publicReason == null ? reason : '$reason $publicReason';
+  }
 }
 
 /// Touch-sized adaptation of React CourtAvailabilityGrid for one real court.
@@ -55,7 +81,9 @@ class SlotGridPicker extends StatelessWidget {
               child: _SlotCell(
                 key: ValueKey('slot-${slot.id}'),
                 slot: slot,
-                selected: selectedIds.contains(slot.id),
+                selected:
+                    slot.status == SlotStatus.available &&
+                    selectedIds.contains(slot.id),
                 onTap: () {
                   if (onToggle(slot.id)) HapticFeedback.selectionClick();
                 },
@@ -81,13 +109,15 @@ class _SlotCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = slot.status == SlotStatus.available;
-    final color = slot.status.color;
-    final label = selected ? 'Đã chọn' : slot.status.label;
+    final color = slot.displayColor;
+    final label = selected ? 'Đã chọn' : slot.displayLabel;
     final time = '${slotTime(slot.startMinute)}–${slotTime(slot.endMinute)}';
-    return Semantics(
+    final cell = Semantics(
+      container: true,
       button: true,
       enabled: enabled,
       selected: selected,
+      hint: slot.unavailableReason,
       label:
           '$time${slot.endMinute == 1440 ? ', kết thúc ngày tiếp theo' : ''}, '
           '${slotMoney(slot.priceMinor)}, $label',
@@ -138,6 +168,10 @@ class _SlotCell extends StatelessWidget {
                             ? Icons.check_circle
                             : enabled
                             ? Icons.add_circle_outline
+                            : slot.isPrivateEvent
+                            ? Icons.celebration_outlined
+                            : slot.status == SlotStatus.outOfService
+                            ? Icons.block
                             : Icons.lock_outline,
                         size: 20,
                         color: selected ? Colors.white : color,
@@ -166,6 +200,10 @@ class _SlotCell extends StatelessWidget {
         ),
       ),
     );
+    final reason = slot.unavailableReason;
+    return reason == null
+        ? cell
+        : Tooltip(message: reason, excludeFromSemantics: true, child: cell);
   }
 }
 
@@ -176,6 +214,14 @@ class SlotLegend extends StatelessWidget {
     spacing: 16,
     runSpacing: 10,
     children: [
+      const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.celebration_outlined, size: 14, color: Color(0xFF4648D4)),
+          SizedBox(width: 5),
+          Text('Bao sân'),
+        ],
+      ),
       for (final status in SlotStatus.values.where(
         (s) => s != SlotStatus.unknown,
       ))
