@@ -1,5 +1,6 @@
 import 'dart:async';
-
+import '../features/vouchers/presentation/voucher_cubit.dart';
+import '../features/vouchers/presentation/voucher_management_screen.dart';
 import '../features/refunds/presentation/admin_refund_approval_screen.dart';
 import '../features/refunds/presentation/customer_refund_screen.dart';
 import '../features/transactions/presentation/admin_transaction_history_screen.dart';
@@ -410,6 +411,18 @@ GoRouter createRouter(
             onConfirmed: () => context.go('/payments/ticket', extra: args),
             onSupport: () => context.go('/bookings/${args.bookingId}'),
           );
+        },
+      ),
+      GoRoute(
+        path: '/admin/vouchers',
+        builder: (context, state) {
+          final repository = dependencies.vouchers;
+          final facility = dependencies.adminFacility;
+          if (repository == null || facility == null) {
+            return const Scaffold(body: Center(child: Text('Quản lý voucher chưa khả dụng')));
+          }
+          return BlocProvider(create: (_) => VoucherCubit(repository, facility.branchRepository)..initialize(),
+            child: const VoucherManagementScreen());
         },
       ),
       GoRoute(
