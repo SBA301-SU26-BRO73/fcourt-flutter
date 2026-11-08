@@ -12,7 +12,7 @@ for attempt in 1 2 3; do
   fi
 
   if (( attempt == 3 )) || ! grep -Eq \
-    'Received status code (429|500|502|503|504)|Server returned HTTP response code: (429|500|502|503|504)|Gradle threw an error while downloading artifacts from the network' \
+    'Received status code (429|500|502|503|504)|Server returned HTTP response code: (429|500|502|503|504)|Gradle threw an error while downloading artifacts from the network|Hash of downloaded file .* is [0-9a-f]+, expected [0-9a-f]+' \
     "$build_log"; then
     exit "$build_status"
   fi
