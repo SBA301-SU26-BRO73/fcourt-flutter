@@ -1,3 +1,5 @@
+import '../src/features/customer_slots/data/stomp_slot_invalidations.dart';
+
 import 'dart:async';
 import '../features/reviews/presentation/rating_bottom_sheet.dart';
 
@@ -560,7 +562,11 @@ GoRouter createRouter(
           }
           final dateText = state.uri.queryParameters['date'];
           final parsed = dateText == null ? null : DateTime.tryParse(dateText);
+          const slotSocket = String.fromEnvironment('SLOT_WEBSOCKET_URL');
           return SlotPickerScreen(
+            invalidations: slotSocket.isEmpty
+                ? null
+                : StompSlotInvalidations(slotSocket, courtId),
             repository: repository,
             courtId: courtId,
             courtName: state.uri.queryParameters['courtName'],
