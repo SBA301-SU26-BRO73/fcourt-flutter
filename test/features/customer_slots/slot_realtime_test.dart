@@ -153,12 +153,7 @@ void main() {
     expect(
       SlotPickerCubit.slotChangeAlert(
         [at(23, SlotStatus.available), at(24, SlotStatus.available)],
-        [at(23, SlotStatus.outOfService), at(24, SlotStatus.outOfService)],
-        const SlotChange(
-          '2030-01-01',
-          type: 'LOCK_CREATED',
-          lockType: 'PRIVATE_EVENT',
-        ),
+        [at(23, SlotStatus.privateEvent), at(24, SlotStatus.privateEvent)],
       ),
       'Khung giờ 18:00 vừa được chủ sân Bao sân (và 1 khung giờ khác)',
     );
@@ -266,7 +261,7 @@ void main() {
       ),
     );
     repository.calls.last.result.complete([
-      slot(23, status: SlotStatus.outOfService),
+      slot(23, status: SlotStatus.privateEvent),
     ]);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
@@ -274,11 +269,13 @@ void main() {
       find.text('Khung giờ 18:00 vừa được chủ sân Bao sân'),
       findsOneWidget,
     );
-    expect(find.text('Bảo trì / Bao sân'), findsWidgets);
+    expect(find.text('Bao sân'), findsWidgets);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 1));
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
     await tester.pump(const Duration(seconds: 20));
   });
 }
