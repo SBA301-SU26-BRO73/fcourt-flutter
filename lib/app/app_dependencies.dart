@@ -3,6 +3,8 @@ import 'dart:async';
 import '../features/subscription/domain/subscription.dart';
 import '../features/subscription/data/subscription_repository_impl.dart';
 import '../features/subscription/data/device_subscription_checkout_launcher.dart';
+import '../features/admin_bookings/data/admin_booking_repository_impl.dart';
+import '../features/admin_bookings/domain/admin_booking_repository.dart';
 import '../features/vouchers/data/voucher_repository_impl.dart';
 import '../features/vouchers/domain/voucher_repository.dart';
 import '../features/maps/domain/branch_location.dart';
@@ -115,6 +117,7 @@ class AppDependencies {
     this.subscriptions,
     this.subscriptionCheckoutLauncher =
         const DeviceSubscriptionCheckoutLauncher(),
+    this.adminBookings,
     this.vouchers,
     this.branchMaps,
   });
@@ -155,6 +158,7 @@ class AppDependencies {
   final LedgerReportExporter? ledgerExporter;
   final SubscriptionRepository? subscriptions;
   final SubscriptionCheckoutLauncher subscriptionCheckoutLauncher;
+  final AdminBookingRepository? adminBookings;
   final VoucherRepository? vouchers;
   final BranchMapPlatform? branchMaps;
 
@@ -227,6 +231,7 @@ class AppDependencies {
       cancellationRepository: CancellationRepositoryImpl(dio),
       customerTransactions: CustomerTransactionsImpl(dio),
       adminTransactions: AdminTransactionsImpl(dio),
+      adminBookings: AdminBookingRepositoryImpl(dio),
       vouchers: VoucherRepositoryImpl(
         createDio(
           config,
