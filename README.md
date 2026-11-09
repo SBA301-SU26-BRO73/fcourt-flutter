@@ -26,6 +26,13 @@ flutter analyze
 flutter test
 ```
 
+### CI (GitHub Actions)
+
+- `flutter analyze` coi cả `info` là lỗi, cả ở local lẫn CI (`--fatal-infos --fatal-warnings`). Chạy lại `flutter analyze` sau khi merge `dev` vào nhánh của bạn, vì CI kiểm tra bản merge với `dev`.
+- Phiên bản Flutter ghim ở một chỗ: `.github/actions/setup-flutter/action.yml`. Đổi phiên bản thì sửa file đó và dòng Flutter ở mục yêu cầu.
+- Script `.github/scripts/retry-on-network-error.sh` chỉ chạy lại lệnh khi log có dấu hiệu lỗi tải (HTTP 429/5xx, hash native asset sai, Gradle không tải được). Test fail và lỗi analyze không bao giờ bị chạy lại; đừng thêm retry quanh test.
+- Required check giữ tên `analyze-and-test`, `android-build`, `signing-smoke`, `changes`. PR chỉ đổi tài liệu thì `analyze-and-test` được bỏ qua (tính là đạt).
+
 ## Cấu hình môi trường
 
 ### Firebase Cloud Messaging (Android)
