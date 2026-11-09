@@ -9,6 +9,9 @@ import '../features/auth/domain/usecases/restore_session.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/auth/domain/entities/user_role.dart';
 import '../features/offline/data/offline_access.dart';
+import '../features/notifications/data/push_service.dart';
+import '../features/notifications/domain/push_payload.dart';
+import '../features/notifications/domain/push_session_coordinator.dart';
 import 'app_dependencies.dart';
 import 'router.dart';
 import 'theme/app_theme.dart';
@@ -28,6 +31,8 @@ class _FcourtAppState extends State<FcourtApp> {
   late final GoRouter _router;
   late final StreamSubscription<void> _sessionExpired;
   late final StreamSubscription<AuthState> _offlineLifecycle;
+  late final StreamSubscription<AuthState>? _pushLifecycle;
+  late final StreamSubscription<PushPayload>? _pushPayloads;
 
   @override
   void initState() {
@@ -46,6 +51,26 @@ class _FcourtAppState extends State<FcourtApp> {
       _authBloc,
       refreshListenable: _refresh,
     );
+    final pushService = widget.dependencies.pushService;
+    final pushCoordinator = widget.dependencies.pushSessionCoordinator;
+    if (pushService != null && pushCoordinator != null) {
+      _pushLifecycle = _authBloc.stream.listen((state) {
+        pushCoordinator.onAuthenticationChanged(
+          state.status == AuthStatus.authenticated,
+        );
+      });
+      pushCoordinator.onAuthenticationChanged(
+        _authBloc.state.status == AuthStatus.authenticated,
+      );
+      _pushPayloads = pushService.payloads.listen((payload) {
+        final route = payload.route;
+        if (route != null && route.startsWith('/')) _router.go(route);
+      });
+      unawaited(_initializePush(pushService, pushCoordinator));
+    } else {
+      _pushLifecycle = null;
+      _pushPayloads = null;
+    }
     _sessionExpired = widget.dependencies.sessionExpired.listen(
       (_) => _authBloc.add(const AuthSessionExpired()),
     );
@@ -62,11 +87,25 @@ class _FcourtAppState extends State<FcourtApp> {
   void dispose() {
     _sessionExpired.cancel();
     _offlineLifecycle.cancel();
+    _pushLifecycle?.cancel();
+    _pushPayloads?.cancel();
+    unawaited(widget.dependencies.pushService?.dispose());
     unawaited(widget.dependencies.offline?.close());
     _refresh.dispose();
     _router.dispose();
     _authBloc.close();
     super.dispose();
+  }
+
+  Future<void> _initializePush(
+    PushService service,
+    PushSessionCoordinator coordinator,
+  ) async {
+    try {
+      await service.initialize(coordinator);
+    } catch (_) {
+      // Lỗi khởi tạo push không được ngăn app mở.
+    }
   }
 
   @override

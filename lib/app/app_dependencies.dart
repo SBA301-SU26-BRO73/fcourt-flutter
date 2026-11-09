@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import '../features/reviews/domain/review.dart';
 import '../features/reviews/domain/review_photo.dart';
 import '../features/reviews/data/review_repository_impl.dart';
@@ -21,6 +22,7 @@ import '../features/maps/data/device_branch_map_platform.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/config/app_config.dart';
 import '../src/features/customer_discovery/data/discovery_remote_data_source.dart';
@@ -35,6 +37,10 @@ import '../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../features/auth/data/repositories/auth_repository_impl.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/presentation/services/document_picker.dart';
+import '../features/notifications/data/device_registry.dart';
+import '../features/notifications/data/device_store.dart';
+import '../features/notifications/data/push_service.dart';
+import '../features/notifications/domain/push_session_coordinator.dart';
 import '../features/catalog/data/datasources/catalog_remote_data_source.dart';
 import '../features/catalog/data/repositories/catalog_repository_impl.dart';
 import '../features/catalog/domain/repositories/catalog_repository.dart';
@@ -138,6 +144,8 @@ class AppDependencies {
     this.vouchers,
     this.voucherUsages,
     this.branchMaps,
+    this.pushService,
+    this.pushSessionCoordinator,
   });
 
   final AppConfig config;
@@ -184,6 +192,8 @@ class AppDependencies {
   final VoucherRepository? vouchers;
   final VoucherUsageRepository? voucherUsages;
   final BranchMapPlatform? branchMaps;
+  final PushService? pushService;
+  final PushSessionCoordinator? pushSessionCoordinator;
 
   /// SCRUM-79: thống kê toàn nền tảng của super admin (reporting-service).
   final PlatformOverviewRepository? platformOverview;
@@ -196,6 +206,22 @@ class AppDependencies {
       config,
       tokenStorage,
       onSessionExpired: onSessionExpired,
+    );
+    final pushService = PushService();
+    final deviceRegistry = DeviceRegistry(
+      dio: dio,
+      store: SecurePushDeviceStore(),
+      appVersion: () async => (await PackageInfo.fromPlatform()).version,
+    );
+    final pushSessionCoordinator = PushSessionCoordinator(
+      register: () async {
+        final token = await pushService.getToken();
+        if (token != null && token.isNotEmpty) {
+          await deviceRegistry.register(token);
+        }
+      },
+      unregister: deviceRegistry.unregister,
+      clearLocal: () => deviceRegistry.unregister(deleteRemote: false),
     );
     final authDio = createDio(
       AppConfig(env: config.env, apiBaseUrl: config.authBaseUrl),
@@ -227,6 +253,8 @@ class AppDependencies {
     );
     return AppDependencies(
       config: config,
+      pushService: pushService,
+      pushSessionCoordinator: pushSessionCoordinator,
       healthRepository: HealthRepositoryImpl(HealthRemoteDataSource(dio)),
       adminFacility: AdminFacilityDependencies.create(
         config,
@@ -238,6 +266,7 @@ class AppDependencies {
       authRepository: AuthRepositoryImpl(
         AuthRemoteDataSource(dio),
         tokenStorage,
+        beforeLogout: deviceRegistry.unregister,
       ),
       catalogRepository: catalogRepository,
       sessionExpired: sessionExpired.stream,

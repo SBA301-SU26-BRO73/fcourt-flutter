@@ -10,10 +10,15 @@ import '../datasources/auth_remote_data_source.dart';
 import '../models/auth_session_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(this._remote, this._tokens);
+  AuthRepositoryImpl(
+    this._remote,
+    this._tokens, {
+    this._beforeLogout,
+  });
 
   final AuthRemoteDataSource _remote;
   final TokenStorage _tokens;
+  final Future<void> Function()? _beforeLogout;
   Future<void>? _googleInitialization;
 
   @override
@@ -122,6 +127,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout() async {
     final tokens = await _tokens.read();
     try {
+      if (tokens != null && _beforeLogout != null) {
+        try {
+          await _beforeLogout().timeout(const Duration(seconds: 3));
+        } catch (_) {
+          // Push cleanup is best effort; logout must proceed even if it fails.
+        }
+      }
       if (tokens != null) await _remote.logout(tokens.refreshToken);
     } on DioException {
       // Thu hồi phía BE là cố gắng tối đa: người dùng vẫn phải thoát được khi mất mạng.
