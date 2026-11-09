@@ -3,17 +3,27 @@ name: CI
 on:
   pull_request:
     branches: [main, dev, 'feat/**', 'feature/**']
+  # Chạy cả sau khi merge vào dev để biết nhánh tích hợp còn xanh hay không.
+  push:
+    branches: [dev]
 
+permissions:
+  contents: read
+
+# PR mới đẩy lên thì hủy lần chạy cũ của cùng PR. Push vào dev không bao giờ bị hủy,
+# mỗi commit trên dev cần một kết quả đầy đủ.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # The Android debug build takes about 6 minutes and can only break when native or
-  # dependency inputs change, so run it only for those PRs. A skipped job counts as passed.
+  # Chỉ job này quyết định job nặng nào cần chạy. Job bị bỏ qua tính là đạt với required check,
+  # nên tên analyze-and-test / android-build giữ nguyên để branch protection không phải đổi.
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
+      code: ${{ steps.filter.outputs.code }}
       android: ${{ steps.filter.outputs.android }}
     steps:
       - uses: actions/checkout@v4
@@ -21,33 +31,54 @@ jobs:
           fetch-depth: 0
       - id: filter
         env:
+          EVENT: ${{ github.event_name }}
           BASE: ${{ github.event.pull_request.base.ref }}
         run: |
-          if git diff --name-only "origin/${BASE}...HEAD" | grep -Eq '^(android/|pubspec\.(yaml|lock)$|env/|\.github/(workflows/ci\.yml|scripts/))'; then
+          # Push vào dev: luôn chạy đầy đủ.
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "android=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          files=$(git diff --name-only "origin/${BASE}...HEAD")
+          echo "Changed files:"; echo "$files"
+
+          # PR chỉ đổi tài liệu/ghi chú thì bỏ qua analyze + test.
+          if echo "$files" | grep -Evq '(\.md$|^docs/|^\.idea/|^LICENSE$)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Build Android mất khoảng 6 phút và chỉ hỏng khi đổi native hoặc dependency.
+          if echo "$files" | grep -Eq '^(android/|pubspec\.(yaml|lock)$|env/|\.github/(workflows/ci\.yml|scripts/|actions/))'; then
             echo "android=true" >> "$GITHUB_OUTPUT"
           else
             echo "android=false" >> "$GITHUB_OUTPUT"
           fi
 
   analyze-and-test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: 3.47.7
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
 
       - name: Install dependencies
-        run: flutter pub get
+        run: bash .github/scripts/retry-on-network-error.sh flutter pub get
 
+      # Analyzer coi cả info là lỗi (đây là mặc định của `flutter analyze`, ghi rõ ở đây để
+      # CI và máy local giống nhau). Chạy `flutter analyze` trước khi push.
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
 
+      # Chỉ chạy lại khi build hook tải sqlite3 lỗi mạng. Test fail thật không bao giờ bị chạy lại.
       - name: Test
-        run: flutter test
+        run: bash .github/scripts/retry-on-network-error.sh flutter test
 
   android-build:
     needs: changes
@@ -64,11 +95,7 @@ jobs:
           cache-dependency-path: |
             android/**/*.gradle*
             android/gradle/wrapper/gradle-wrapper.properties
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: 3.47.7
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Add placeholder google-services.json
         run: bash .github/scripts/write-ci-google-services.sh
       - name: Build Android debug smoke
