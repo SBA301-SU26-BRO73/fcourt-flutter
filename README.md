@@ -28,6 +28,10 @@ flutter test
 
 ## Cấu hình môi trường
 
+### Firebase Cloud Messaging (Android)
+
+Ứng dụng Android dùng Firebase project **FCourt** (`chatappinno`), app **FCourt Android** (`com.bro73.fcourt`). Mỗi thành viên cần tải `google-services.json` từ Firebase Console: mở project FCourt, vào Project settings → General → Your apps → FCourt Android → Download `google-services.json`, rồi đặt tại `android/app/google-services.json`. File này đã được thêm vào `.gitignore`; không commit hoặc gửi file trong repository.
+
 Cấu hình đọc lúc build qua `--dart-define-from-file`, không hard-code trong code.
 
 | File | Dùng cho | `API_BASE_URL` |
@@ -65,6 +69,8 @@ Quy tắc phụ thuộc: `presentation → domain ← data`. Chi tiết và các
 | `dio` | gọi API. `AuthInterceptor` gắn Bearer token và tự refresh khi gặp 401 |
 | `go_router` | điều hướng |
 | `flutter_secure_storage` | lưu access token và refresh token |
+| `firebase_core`, `firebase_messaging` | khởi tạo Firebase Android, nhận FCM và lấy token thiết bị |
+| `package_info_plus` | gửi phiên bản ứng dụng trong đăng ký thiết bị push |
 | `freezed`, `json_serializable`, `build_runner` | sinh code model (chạy `dart run build_runner build`) |
 | `cached_network_image`, `intl` | ảnh mạng, định dạng ngày giờ và tiền |
 | `mobile_scanner` | quét QR. Quyền camera do owner feature quét QR khai báo khi dùng |
@@ -110,7 +116,6 @@ Xem [kế hoạch triển khai](FLUTTER_EXECUTION_PLAN.md) và
 ## Chưa có trong khung
 
 - Android flavors (dev/prod). Hiện tách môi trường bằng `env/*.json`.
-- Firebase/FCM, Google Maps, đăng nhập Google. Owner feature tương ứng tự thêm khi cần.
 
 ## Check-in offline (SCRUM-116)
 
