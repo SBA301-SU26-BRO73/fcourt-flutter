@@ -43,6 +43,8 @@ jobs:
       - run: flutter test
       - name: Test release signature verification
         run: python3 -m unittest discover -s tool -p 'test_*.py' -v
+      - name: Add placeholder google-services.json
+        run: bash .github/scripts/write-ci-google-services.sh
       - name: Verify missing-key guard and signed fixtures
         run: python3 tool/android_signing_smoke.py
 
