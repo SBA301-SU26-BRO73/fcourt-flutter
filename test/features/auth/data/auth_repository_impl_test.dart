@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:fcourt/core/error/failure.dart';
 import 'package:fcourt/core/storage/token_storage.dart';
@@ -15,7 +17,10 @@ import '../helpers.dart';
 class MockRemote extends Mock implements AuthRemoteDataSource {}
 
 void main() {
-  const savedTokens = AuthTokens(accessToken: 'old-access', refreshToken: 'old-refresh');
+  const savedTokens = AuthTokens(
+    accessToken: 'old-access',
+    refreshToken: 'old-refresh',
+  );
   late MockRemote remote;
   late InMemoryTokenStorage tokens;
   late AuthRepositoryImpl repository;
@@ -33,7 +38,10 @@ void main() {
       when(() => remote.login('customer@demo.com', 'S3cret-pass'))
           .thenAnswer((_) async => session);
 
-      final user = await repository.login(email: 'customer@demo.com', password: 'S3cret-pass');
+      final user = await repository.login(
+        email: 'customer@demo.com',
+        password: 'S3cret-pass',
+      );
 
       expect(user.email, 'customer@demo.com');
       expect(user.role, UserRole.customer);
@@ -44,9 +52,9 @@ void main() {
     });
 
     test('sai mật khẩu: giữ lý do của BE và không lưu token', () async {
-      when(() => remote.login(any(), any())).thenThrow(
-        dioError(401, body: {'detail': 'Invalid email or password'}),
-      );
+      when(
+        () => remote.login(any(), any()),
+      ).thenThrow(dioError(401, body: {'detail': 'Invalid email or password'}));
 
       await expectLater(
         repository.login(email: 'customer@demo.com', password: 'wrong'),
@@ -62,13 +70,16 @@ void main() {
 
       await expectLater(
         repository.login(email: 'owner@demo.com', password: 'S3cret-pass'),
-        throwsA(const ServerFailure('Account is awaiting approval', statusCode: 403)),
+        throwsA(
+          const ServerFailure('Account is awaiting approval', statusCode: 403),
+        ),
       );
     });
 
     test('response thiếu token: UnknownFailure, không lưu gì', () async {
-      when(() => remote.login(any(), any()))
-          .thenAnswer((_) async => AuthSessionModel.fromJson(const {'user': {}}));
+      when(
+        () => remote.login(any(), any()),
+      ).thenAnswer((_) async => AuthSessionModel.fromJson(const {'user': {}}));
 
       await expectLater(
         repository.login(email: 'a@demo.com', password: 'x'),
@@ -78,9 +89,8 @@ void main() {
     });
 
     test('mất mạng thành NetworkFailure', () async {
-      when(() => remote.login(any(), any())).thenThrow(
-        dioError(null, type: DioExceptionType.connectionError),
-      );
+      when(() => remote.login(any(), any()))
+          .thenThrow(dioError(null, type: DioExceptionType.connectionError));
 
       await expectLater(
         repository.login(email: 'a@demo.com', password: 'x'),
@@ -111,44 +121,52 @@ void main() {
       expect((await tokens.read())?.accessToken, 'access-1');
     });
 
-    test('email trùng: 409 và lỗi validation theo field được giữ lại', () async {
-      when(
-        () => remote.registerCustomer(
-          fullName: any(named: 'fullName'),
-          email: any(named: 'email'),
-          phone: any(named: 'phone'),
-          password: any(named: 'password'),
-        ),
-      ).thenThrow(
-        dioError(400, body: {
-          'detail': 'Invalid request fields',
-          'errors': [
-            {'field': 'email', 'message': 'email is invalid'},
-          ],
-        }),
-      );
-
-      await expectLater(
-        repository.registerCustomer(
-          fullName: 'An',
-          email: 'bad',
-          phone: '0909000001',
-          password: 'S3cret-pass',
-        ),
-        throwsA(
-          const ServerFailure(
-            'Invalid request fields',
-            statusCode: 400,
-            fieldErrors: {'email': 'email is invalid'},
+    test(
+      'email trùng: 409 và lỗi validation theo field được giữ lại',
+      () async {
+        when(
+          () => remote.registerCustomer(
+            fullName: any(named: 'fullName'),
+            email: any(named: 'email'),
+            phone: any(named: 'phone'),
+            password: any(named: 'password'),
           ),
-        ),
-      );
-      expect(await tokens.read(), isNull);
-    });
+        ).thenThrow(
+          dioError(
+            400,
+            body: {
+              'detail': 'Invalid request fields',
+              'errors': [
+                {'field': 'email', 'message': 'email is invalid'},
+              ],
+            },
+          ),
+        );
+
+        await expectLater(
+          repository.registerCustomer(
+            fullName: 'An',
+            email: 'bad',
+            phone: '0909000001',
+            password: 'S3cret-pass',
+          ),
+          throwsA(
+            const ServerFailure(
+              'Invalid request fields',
+              statusCode: 400,
+              fieldErrors: {'email': 'email is invalid'},
+            ),
+          ),
+        );
+        expect(await tokens.read(), isNull);
+      },
+    );
   });
 
   group('registerCourtOwner', () {
-    const legal = [UploadDocument(name: 'licence.pdf', path: '/tmp/licence.pdf')];
+    const legal = [
+      UploadDocument(name: 'licence.pdf', path: '/tmp/licence.pdf'),
+    ];
 
     test('gửi hồ sơ nhưng không lưu token (chờ duyệt)', () async {
       when(
@@ -183,7 +201,9 @@ void main() {
           legalDocuments: any(named: 'legalDocuments'),
           courtImages: any(named: 'courtImages'),
         ),
-      ).thenThrow(dioError(503, body: {'detail': 'Document storage is unavailable'}));
+      ).thenThrow(
+        dioError(503, body: {'detail': 'Document storage is unavailable'}),
+      );
 
       await expectLater(
         repository.registerCourtOwner(
@@ -193,7 +213,12 @@ void main() {
           password: 'S3cret-pass',
           legalDocuments: legal,
         ),
-        throwsA(const ServerFailure('Document storage is unavailable', statusCode: 503)),
+        throwsA(
+          const ServerFailure(
+            'Document storage is unavailable',
+            statusCode: 503,
+          ),
+        ),
       );
     });
   });
@@ -207,7 +232,8 @@ void main() {
 
     test('có token và BE trả profile thì trả người dùng', () async {
       await tokens.save(savedTokens);
-      when(() => remote.fetchProfile()).thenAnswer((_) async => UserModel.fromJson(userJson()));
+      when(() => remote.fetchProfile())
+          .thenAnswer((_) async => UserModel.fromJson(userJson()));
 
       final user = await repository.restoreSession();
 
@@ -243,10 +269,14 @@ void main() {
 
     test('body sai hợp đồng thành UnknownFailure, giữ token', () async {
       await tokens.save(savedTokens);
-      when(() => remote.fetchProfile())
-          .thenAnswer((_) async => UserModel.fromJson(const {'email': 'x@demo.com'}));
+      when(() => remote.fetchProfile()).thenAnswer(
+        (_) async => UserModel.fromJson(const {'email': 'x@demo.com'}),
+      );
 
-      await expectLater(repository.restoreSession(), throwsA(const UnknownFailure()));
+      await expectLater(
+        repository.restoreSession(),
+        throwsA(const UnknownFailure()),
+      );
       expect(await tokens.read(), savedTokens);
     });
 
@@ -255,7 +285,10 @@ void main() {
       when(() => remote.fetchProfile())
           .thenThrow(dioError(null, type: DioExceptionType.connectionTimeout));
 
-      await expectLater(repository.restoreSession(), throwsA(const NetworkFailure()));
+      await expectLater(
+        repository.restoreSession(),
+        throwsA(const NetworkFailure()),
+      );
       expect(await tokens.read(), savedTokens);
     });
 
@@ -263,7 +296,10 @@ void main() {
       await tokens.save(savedTokens);
       when(() => remote.fetchProfile()).thenThrow(dioError(500));
 
-      await expectLater(repository.restoreSession(), throwsA(isA<ServerFailure>()));
+      await expectLater(
+        repository.restoreSession(),
+        throwsA(isA<ServerFailure>()),
+      );
       expect(await tokens.read(), savedTokens);
     });
   });
@@ -273,7 +309,10 @@ void main() {
       when(() => remote.updateProfile('New Name', '0911222333'))
           .thenAnswer((_) async => UserModel.fromJson(userJson()));
 
-      final user = await repository.updateProfile(fullName: 'New Name', phone: '0911222333');
+      final user = await repository.updateProfile(
+        fullName: 'New Name',
+        phone: '0911222333',
+      );
 
       expect(user.id, 7);
     });
@@ -285,7 +324,12 @@ void main() {
 
       await expectLater(
         repository.updateProfile(fullName: 'New Name', phone: '0911222333'),
-        throwsA(const ServerFailure('Phone number is already registered', statusCode: 409)),
+        throwsA(
+          const ServerFailure(
+            'Phone number is already registered',
+            statusCode: 409,
+          ),
+        ),
       );
     });
   });
@@ -294,6 +338,55 @@ void main() {
     test('thu hồi refresh token ở BE rồi xóa token cục bộ', () async {
       await tokens.save(savedTokens);
       when(() => remote.logout('old-refresh')).thenAnswer((_) async {});
+
+      await repository.logout();
+
+      verify(() => remote.logout('old-refresh')).called(1);
+      expect(await tokens.read(), isNull);
+    });
+
+    test('unregisters push while access token is still available', () async {
+      await tokens.save(savedTokens);
+      var tokenPresentDuringUnregister = false;
+      repository = AuthRepositoryImpl(
+        remote,
+        tokens,
+        beforeLogout: () async {
+          tokenPresentDuringUnregister = await tokens.read() != null;
+        },
+      );
+      when(() => remote.logout(any())).thenAnswer((_) async {});
+
+      await repository.logout();
+
+      expect(tokenPresentDuringUnregister, isTrue);
+      expect(await tokens.read(), isNull);
+      verify(() => remote.logout('old-refresh')).called(1);
+    });
+
+    test('unregister failure never prevents logout', () async {
+      await tokens.save(savedTokens);
+      repository = AuthRepositoryImpl(
+        remote,
+        tokens,
+        beforeLogout: () async => throw StateError('unregister failed'),
+      );
+      when(() => remote.logout(any())).thenAnswer((_) async {});
+
+      await repository.logout();
+
+      verify(() => remote.logout('old-refresh')).called(1);
+      expect(await tokens.read(), isNull);
+    });
+
+    test('unregister timeout never prevents logout', () async {
+      await tokens.save(savedTokens);
+      repository = AuthRepositoryImpl(
+        remote,
+        tokens,
+        beforeLogout: () => Completer<void>().future,
+      );
+      when(() => remote.logout(any())).thenAnswer((_) async {});
 
       await repository.logout();
 

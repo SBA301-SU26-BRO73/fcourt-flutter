@@ -53,6 +53,25 @@ void main() {
     },
   );
 
+  test(
+    'unregister(deleteRemote: false) clears cache without a request',
+    () async {
+      final adapter = FakeAdapter((_) => ResponseBody.fromString('', 204));
+      final store = _MemoryPushDeviceStore()..tokenCache = 'cached-token';
+      final registry = DeviceRegistry(
+        dio: Dio(BaseOptions(baseUrl: 'https://api.test'))
+          ..httpClientAdapter = adapter,
+        store: store,
+        appVersion: () async => '1.0.0',
+      );
+
+      await registry.unregister(deleteRemote: false);
+
+      expect(adapter.requests, isEmpty);
+      expect(store.tokenCache, isNull);
+    },
+  );
+
   test('preserves Dio errors and does not cache a rejected token', () async {
     final adapter = FakeAdapter(
       (_) => jsonResponse(503, {'error': 'unavailable'}),

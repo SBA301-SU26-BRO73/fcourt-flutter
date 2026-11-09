@@ -221,6 +221,7 @@ class AppDependencies {
         }
       },
       unregister: deviceRegistry.unregister,
+      clearLocal: () => deviceRegistry.unregister(deleteRemote: false),
     );
     final authDio = createDio(
       AppConfig(env: config.env, apiBaseUrl: config.authBaseUrl),
@@ -265,6 +266,7 @@ class AppDependencies {
       authRepository: AuthRepositoryImpl(
         AuthRemoteDataSource(dio),
         tokenStorage,
+        beforeLogout: deviceRegistry.unregister,
       ),
       catalogRepository: catalogRepository,
       sessionExpired: sessionExpired.stream,

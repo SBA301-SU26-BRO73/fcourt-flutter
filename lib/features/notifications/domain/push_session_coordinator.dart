@@ -7,11 +7,19 @@ class PushSessionCoordinator {
   PushSessionCoordinator({
     required PushRegister register,
     required PushUnregister unregister,
+    // Runs when the session ends. By then the access token is gone, so it
+    // must only drop the local cache and never call the server (it would 401).
+    // Explicit logout unregisters remotely beforehand (AuthRepositoryImpl
+    // beforeLogout); on session expiry stale endpoints are disabled by
+    // SNS/FCM once pushes to them fail.
+    PushUnregister? clearLocal,
   }) : _register = register,
-       _unregister = unregister;
+       _unregister = unregister,
+       _clearLocal = clearLocal;
 
   final PushRegister _register;
   final PushUnregister _unregister;
+  final PushUnregister? _clearLocal;
   bool _loggedIn = false;
   Future<void> _pending = Future<void>.value();
 
@@ -20,7 +28,7 @@ class PushSessionCoordinator {
   void onAuthenticationChanged(bool authenticated) {
     if (authenticated == _loggedIn) return;
     _loggedIn = authenticated;
-    _enqueue(authenticated ? _register : _unregister);
+    _enqueue(authenticated ? _register : (_clearLocal ?? _unregister));
   }
 
   void onTokenRefresh() {

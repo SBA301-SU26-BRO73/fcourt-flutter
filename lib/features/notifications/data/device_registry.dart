@@ -31,10 +31,12 @@ class DeviceRegistry {
     await _store.saveToken(token);
   }
 
-  Future<void> unregister() async {
+  Future<void> unregister({bool deleteRemote = true}) async {
     try {
-      final deviceId = await _store.deviceId();
-      await _dio.delete<void>('/devices/$deviceId');
+      if (deleteRemote) {
+        final deviceId = await _store.deviceId();
+        await _dio.delete<void>('/devices/$deviceId');
+      }
     } finally {
       await _store.clearToken();
     }

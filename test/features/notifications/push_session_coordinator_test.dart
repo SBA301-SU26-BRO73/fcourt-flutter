@@ -41,6 +41,27 @@ void main() {
   });
 
   test(
+    'session expiry clears locally without calling remote unregister',
+    () async {
+      var deletes = 0;
+      var localClears = 0;
+      final coordinator = PushSessionCoordinator(
+        register: () async {},
+        unregister: () async => deletes++,
+        clearLocal: () async => localClears++,
+      );
+
+      coordinator.onAuthenticationChanged(true);
+      await coordinator.settled;
+      coordinator.onAuthenticationChanged(false);
+      await coordinator.settled;
+
+      expect(deletes, 0);
+      expect(localClears, 1);
+    },
+  );
+
+  test(
     'swallows API failures so push does not block auth transitions',
     () async {
       final coordinator = PushSessionCoordinator(
