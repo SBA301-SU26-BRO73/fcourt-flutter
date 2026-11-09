@@ -13,8 +13,8 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(
     this._remote,
     this._tokens, {
-    Future<void> Function()? beforeLogout,
-  }) : _beforeLogout = beforeLogout;
+    this._beforeLogout,
+  });
 
   final AuthRemoteDataSource _remote;
   final TokenStorage _tokens;

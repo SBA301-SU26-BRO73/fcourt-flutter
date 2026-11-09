@@ -28,12 +28,17 @@ class PushService {
 
   Stream<PushPayload> get payloads => _payloads.stream;
 
+  // The replacement API (register()/onRegistered) yields a Firebase
+  // Installation ID for direct send, not the FCM registration token our
+  // backend (SNS) endpoints are created from, so getToken/onTokenRefresh stay.
+  // ignore: deprecated_member_use
   Future<String?> getToken() => _messaging.getToken();
 
   Future<void> initialize(PushSessionCoordinator coordinator) async {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     await _createChannel();
     await _messaging.requestPermission(alert: true, badge: true, sound: true);
+    // ignore: deprecated_member_use
     _tokenSubscription = _messaging.onTokenRefresh.listen((_) {
       coordinator.onTokenRefresh();
     });

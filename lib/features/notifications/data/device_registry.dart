@@ -4,12 +4,10 @@ import 'device_store.dart';
 
 class DeviceRegistry {
   const DeviceRegistry({
-    required Dio dio,
-    required PushDeviceStore store,
-    required Future<String> Function() appVersion,
-  }) : _dio = dio,
-       _store = store,
-       _appVersion = appVersion;
+    required this._dio,
+    required this._store,
+    required this._appVersion,
+  });
 
   final Dio _dio;
   final PushDeviceStore _store;

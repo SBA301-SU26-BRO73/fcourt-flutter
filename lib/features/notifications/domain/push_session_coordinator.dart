@@ -5,17 +5,15 @@ typedef PushUnregister = Future<void> Function();
 
 class PushSessionCoordinator {
   PushSessionCoordinator({
-    required PushRegister register,
-    required PushUnregister unregister,
+    required this._register,
+    required this._unregister,
     // Runs when the session ends. By then the access token is gone, so it
     // must only drop the local cache and never call the server (it would 401).
     // Explicit logout unregisters remotely beforehand (AuthRepositoryImpl
     // beforeLogout); on session expiry stale endpoints are disabled by
     // SNS/FCM once pushes to them fail.
-    PushUnregister? clearLocal,
-  }) : _register = register,
-       _unregister = unregister,
-       _clearLocal = clearLocal;
+    this._clearLocal,
+  });
 
   final PushRegister _register;
   final PushUnregister _unregister;
