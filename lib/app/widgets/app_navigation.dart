@@ -43,6 +43,17 @@ class AppNavigation extends StatelessWidget {
       unselectedLabelColor: colors.onSurfaceVariant,
       indicatorColor: colors.primary.withValues(alpha: .12),
       innerBlur: 8,
+      // Frosted tint: enough white (navy in dark mode) that icons and labels
+      // stay readable over cards, while content remains faintly visible.
+      settings: LiquidGlassSettings(
+        glassColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF102637).withValues(alpha: .62)
+            : Colors.white.withValues(alpha: .62),
+        blur: 12,
+        thickness: 22,
+        saturation: 1.2,
+        lightIntensity: .6,
+      ),
       indicatorSettings: LiquidGlassSettings.classicIndicator.copyWith(
         blur: 5,
         thickness: 26,
