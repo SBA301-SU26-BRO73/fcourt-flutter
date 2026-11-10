@@ -179,7 +179,7 @@ void main() {
     expect(
       tester
           .widget<OutlinedButton>(
-            find.widgetWithText(OutlinedButton, '10:00\nĐã đặt'),
+            find.widgetWithText(OutlinedButton, '10:00\nKhông trống'),
           )
           .onPressed,
       isNull,

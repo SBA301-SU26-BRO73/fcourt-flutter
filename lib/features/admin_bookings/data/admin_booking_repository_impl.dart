@@ -5,6 +5,7 @@ import '../domain/admin_booking.dart';
 import '../domain/admin_booking_query.dart';
 import '../domain/admin_booking_repository.dart';
 import '../domain/admin_booking_status.dart';
+import '../../../core/network/image_url.dart';
 
 class AdminBookingRepositoryImpl implements AdminBookingRepository {
   const AdminBookingRepositoryImpl(this.dio);
@@ -115,13 +116,7 @@ class AdminBookingRepositoryImpl implements AdminBookingRepository {
     }
     final receipt = optional('receiptImageUrl');
     final uri = receipt == null ? null : Uri.tryParse(receipt);
-    if (receipt != null &&
-        (uri == null ||
-            uri.scheme != 'https' ||
-            uri.host != 'res.cloudinary.com' ||
-            uri.userInfo.isNotEmpty ||
-            uri.hasPort ||
-            uri.fragment.isNotEmpty)) {
+    if (receipt != null && !isAllowedImageUrl(uri)) {
       throw const FormatException();
     }
     return AdminBooking(

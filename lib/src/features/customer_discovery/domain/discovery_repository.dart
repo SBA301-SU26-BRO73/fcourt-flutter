@@ -15,12 +15,18 @@ class Branch {
     this.distanceKm,
     this.latitude,
     this.longitude,
+    this.imageUrl,
+    this.averageRating = 0,
+    this.reviewCount = 0,
   });
 
   final int id;
   final String name, address, city;
   final String? district;
   final int courtCount;
+  final String? imageUrl;
+  final double averageRating;
+  final int reviewCount;
   final double? minPrice, maxPrice, distanceKm;
   final double? latitude, longitude;
   BranchLocation? get location => BranchLocation.parse(latitude, longitude);
@@ -49,7 +55,7 @@ class Court {
   final int id;
   final String name;
   final int courtTypeId;
-  final double defaultPricePerHour;
+  final double? defaultPricePerHour;
 }
 
 /// IDs match subscription-service/database/V2__seed_sample_data.sql.
@@ -63,7 +69,8 @@ enum DiscoverySport {
     'Pickleball',
     int.fromEnvironment('PICKLEBALL_TYPE_ID', defaultValue: 1),
   ),
-  tennis('Tennis', int.fromEnvironment('TENNIS_TYPE_ID', defaultValue: 3));
+  tennis('Tennis', int.fromEnvironment('TENNIS_TYPE_ID', defaultValue: 3)),
+  football('Bóng đá', int.fromEnvironment('FOOTBALL_TYPE_ID', defaultValue: 2));
 
   const DiscoverySport(this.label, this.typeId);
   final String label;
@@ -79,4 +86,9 @@ abstract interface class DiscoveryRepository {
   });
 
   Future<List<Court>> courtsOfBranch(int branchId);
+}
+
+/// Facility metadata for a branch detail opened directly or after a reload.
+abstract interface class BranchDetailRepository {
+  Future<Branch> branchById(int branchId);
 }

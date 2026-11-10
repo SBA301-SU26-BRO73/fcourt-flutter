@@ -49,7 +49,7 @@ class CourtArtwork extends StatelessWidget {
     width: double.infinity,
     decoration: const BoxDecoration(
       gradient: LinearGradient(
-        colors: [Color(0xFF4648D4), Color(0xFF006C49)],
+        colors: [Color(0xFF16BCA1), Color(0xFF2EADD2), Color(0xFF8582E3)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
@@ -123,7 +123,7 @@ class BranchCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const CourtArtwork(label: 'Ảnh sân chưa cập nhật'),
+          CourtArtwork(height: 112, label: 'FCOURT · ${branch.city}'),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -131,7 +131,8 @@ class BranchCard extends StatelessWidget {
               children: [
                 Text(
                   branch.name,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: Theme.of(context).textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 8),
                 Text(

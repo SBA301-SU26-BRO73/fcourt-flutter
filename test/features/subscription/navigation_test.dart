@@ -70,6 +70,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         if (user.role == UserRole.admin) {
+          await tester.ensureVisible(find.text('Gói dịch vụ'));
           await tester.tap(find.text('Gói dịch vụ'));
           await tester.pumpAndSettle();
           expect(find.text('Gói hiện tại'), findsOneWidget);

@@ -83,6 +83,7 @@ class _AdminRefundApprovalScreenState extends State<AdminRefundApprovalScreen> {
 
   Future<void> _open(RefundRequest refund) async {
     await showModalBottomSheet<void>(
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       isDismissible: false,

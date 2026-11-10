@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/error/failure.dart';
 import '../domain/refund.dart';
+import '../../../core/network/image_url.dart';
 
 class RefundRepositoryImpl implements RefundRepository {
   const RefundRepositoryImpl(this.dio);
@@ -95,11 +96,7 @@ class RefundRepositoryImpl implements RefundRepository {
     if (r['transferProofUrl'] != null) {
       if (r['transferProofUrl'] is! String) throw const FormatException();
       proof = Uri.tryParse(r['transferProofUrl'] as String);
-      if (proof == null ||
-          proof.scheme != 'https' ||
-          proof.host != 'res.cloudinary.com' ||
-          proof.userInfo.isNotEmpty ||
-          proof.hasPort) {
+      if (!isAllowedImageUrl(proof)) {
         throw const FormatException();
       }
     }

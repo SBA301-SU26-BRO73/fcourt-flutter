@@ -131,14 +131,22 @@ class AuthRemoteDataSource {
     List<UploadDocument> documents,
   ) async {
     for (final document in documents) {
+      final contentType = DioMediaType.parse(contentTypeOf(document.name));
+      final bytes = document.bytes;
       form.files.add(
         MapEntry(
           field,
-          await MultipartFile.fromFile(
-            document.path,
-            filename: document.name,
-            contentType: DioMediaType.parse(contentTypeOf(document.name)),
-          ),
+          bytes != null
+              ? MultipartFile.fromBytes(
+                  bytes,
+                  filename: document.name,
+                  contentType: contentType,
+                )
+              : await MultipartFile.fromFile(
+                  document.path,
+                  filename: document.name,
+                  contentType: contentType,
+                ),
         ),
       );
     }

@@ -29,7 +29,8 @@ class DiscoveryFilters {
     // Matches SCRUM-57 BigDecimal constraints; this is not a slider ceiling.
     final price = RegExp(r'^\d{1,10}(\.\d{1,2})?$');
     for (final entry in {'minPrice': minPrice, 'maxPrice': maxPrice}.entries) {
-      if (entry.value.trim().isNotEmpty && !price.hasMatch(entry.value.trim())) {
+      if (entry.value.trim().isNotEmpty &&
+          !price.hasMatch(entry.value.trim())) {
         errors[entry.key] = 'Giá không âm, tối đa 10 chữ số và 2 số thập phân';
       }
     }
@@ -46,7 +47,8 @@ class DiscoveryFilters {
         r'^((?:[01]\d|2[0-3]):[0-5]\d) *- *((?:[01]\d|2[0-3]):[0-5]\d)$',
       ).firstMatch(time);
       if (match == null || match[1]!.compareTo(match[2]!) >= 0) {
-        errors['timeSlot'] = 'Nhập HH:mm - HH:mm, giờ bắt đầu trước giờ kết thúc';
+        errors['timeSlot'] =
+            'Nhập HH:mm - HH:mm, giờ bắt đầu trước giờ kết thúc';
       }
     }
     return errors;

@@ -13,7 +13,11 @@ import '../helpers.dart';
 
 void main() {
   final destinations = <UserRole, Map<String, String>>{
-    UserRole.customer: {'Tìm sân': '/discover', 'Lịch sử đặt sân': '/bookings'},
+    UserRole.customer: {
+      'Tìm sân': '/discover',
+      'Lịch sử đặt sân': '/bookings',
+      'Lịch sử giao dịch': '/payments/history',
+    },
     UserRole.staff: {
       'Lịch hôm nay': '/staff/schedule',
       'Bán lẻ (POS)': '/staff/pos',
@@ -95,6 +99,7 @@ void main() {
           addTearDown(authBloc.close);
           addTearDown(router.dispose);
 
+          await tester.ensureVisible(find.text(destination.key));
           await tester.tap(find.text(destination.key));
           await tester.pumpAndSettle();
           expect(find.text(destination.value), findsOneWidget);

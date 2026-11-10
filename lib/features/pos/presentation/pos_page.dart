@@ -273,6 +273,7 @@ class _PosViewState extends State<_PosView> {
                       padding: const EdgeInsets.all(16),
                       child: FilledButton.icon(
                         onPressed: () => showModalBottomSheet<void>(
+                          useRootNavigator: true,
                           context: context,
                           isScrollControlled: true,
                           useSafeArea: true,

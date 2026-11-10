@@ -206,7 +206,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                         checkout.branchName,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      Text('${checkout.courtName} · ${checkout.date}'),
+                      Text('${checkout.courtName} · ${_displayDate(checkout.date)}'),
                       Text('Mã đơn: ${checkout.bookingCode}'),
                       const SizedBox(height: 12),
                       const Text('Thời gian giữ chỗ còn lại'),
@@ -356,4 +356,10 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
           icon: const Icon(Icons.copy),
         ),
       );
+}
+
+/// `2026-11-13` → `13/11/2026`; anything else is shown as received.
+String _displayDate(String iso) {
+  final date = DateTime.tryParse(iso);
+  return date == null ? iso : DateFormat('dd/MM/yyyy').format(date);
 }

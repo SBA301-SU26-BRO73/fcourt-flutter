@@ -26,7 +26,11 @@ void main() {
 
   tearDown(() => authBloc.close());
 
-  Future<void> pumpScreen(WidgetTester tester, Widget page, {AuthUser? signedIn}) async {
+  Future<void> pumpScreen(
+    WidgetTester tester,
+    Widget page, {
+    AuthUser? signedIn,
+  }) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -48,20 +52,44 @@ void main() {
   Finder field(String label) => find.widgetWithText(TextFormField, label);
 
   group('ProfilePage', () {
-    testWidgets('hiện email, vai trò và điền sẵn họ tên, số điện thoại hiện tại', (tester) async {
-      await pumpScreen(tester, const ProfilePage(), signedIn: customerUser);
+    testWidgets(
+      'hiện email, vai trò và điền sẵn họ tên, số điện thoại hiện tại',
+      (tester) async {
+        await pumpScreen(
+          tester,
+          const ProfilePage(editMode: true),
+          signedIn: customerUser,
+        );
 
-      expect(find.text('customer@demo.com'), findsOneWidget);
-      expect(find.text('Khách hàng'), findsOneWidget);
-      expect(tester.widget<TextFormField>(field('Họ và tên')).controller?.text, 'An Nguyen');
-      expect(tester.widget<TextFormField>(field('Số điện thoại')).controller?.text, '0909000001');
-    });
+        expect(find.text('customer@demo.com'), findsOneWidget);
+        expect(find.text('Khách hàng'), findsOneWidget);
+        expect(
+          tester.widget<TextFormField>(field('Họ và tên')).controller?.text,
+          'An Nguyen',
+        );
+        expect(
+          tester.widget<TextFormField>(field('Số điện thoại')).controller?.text,
+          '0909000001',
+        );
+      },
+    );
 
-    testWidgets('lưu thành công thì cập nhật phiên và báo đã lưu', (tester) async {
-      final updated = customerUser.copyWith(fullName: 'New Name', phone: '0911222333');
-      when(() => repository.updateProfile(fullName: 'New Name', phone: '0911222333'))
-          .thenAnswer((_) async => updated);
-      await pumpScreen(tester, const ProfilePage(), signedIn: customerUser);
+    testWidgets('lưu thành công thì cập nhật phiên và báo đã lưu', (
+      tester,
+    ) async {
+      final updated = customerUser.copyWith(
+        fullName: 'New Name',
+        phone: '0911222333',
+      );
+      when(
+        () =>
+            repository.updateProfile(fullName: 'New Name', phone: '0911222333'),
+      ).thenAnswer((_) async => updated);
+      await pumpScreen(
+        tester,
+        const ProfilePage(editMode: true),
+        signedIn: customerUser,
+      );
 
       await tester.enterText(field('Họ và tên'), 'New Name');
       await tester.enterText(field('Số điện thoại'), '0911222333');
@@ -73,37 +101,72 @@ void main() {
       expect(find.text('Đã cập nhật thông tin'), findsOneWidget);
     });
 
-    testWidgets('số điện thoại sai định dạng thì báo lỗi và không gọi BE', (tester) async {
-      await pumpScreen(tester, const ProfilePage(), signedIn: customerUser);
+    testWidgets('số điện thoại sai định dạng thì báo lỗi và không gọi BE', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        const ProfilePage(editMode: true),
+        signedIn: customerUser,
+      );
 
       await tester.enterText(field('Số điện thoại'), 'abc');
       await tester.tap(find.widgetWithText(FilledButton, 'Lưu thay đổi'));
       await tester.pump();
 
       expect(find.textContaining('Số điện thoại không hợp lệ'), findsOneWidget);
-      verifyNever(() => repository.updateProfile(fullName: any(named: 'fullName'), phone: any(named: 'phone')));
+      verifyNever(
+        () => repository.updateProfile(
+          fullName: any(named: 'fullName'),
+          phone: any(named: 'phone'),
+        ),
+      );
     });
 
-    testWidgets('số điện thoại đã có người dùng thì hiện thông báo tiếng Việt', (tester) async {
-      when(() => repository.updateProfile(fullName: any(named: 'fullName'), phone: any(named: 'phone')))
-          .thenThrow(const ServerFailure('Phone number is already registered', statusCode: 409));
-      await pumpScreen(tester, const ProfilePage(), signedIn: customerUser);
+    testWidgets(
+      'số điện thoại đã có người dùng thì hiện thông báo tiếng Việt',
+      (tester) async {
+        when(
+          () => repository.updateProfile(
+            fullName: any(named: 'fullName'),
+            phone: any(named: 'phone'),
+          ),
+        ).thenThrow(
+          const ServerFailure(
+            'Phone number is already registered',
+            statusCode: 409,
+          ),
+        );
+        await pumpScreen(
+          tester,
+          const ProfilePage(editMode: true),
+          signedIn: customerUser,
+        );
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Lưu thay đổi'));
-      await tester.pump();
-      await tester.pump();
+        await tester.tap(find.widgetWithText(FilledButton, 'Lưu thay đổi'));
+        await tester.pump();
+        await tester.pump();
 
-      expect(find.text('Số điện thoại này đã được đăng ký'), findsOneWidget);
-      expect(authBloc.state, const AuthState.authenticated(customerUser));
-    });
+        expect(find.text('Số điện thoại này đã được đăng ký'), findsOneWidget);
+        expect(authBloc.state, const AuthState.authenticated(customerUser));
+      },
+    );
 
-    testWidgets('đăng xuất thu hồi phiên và chuyển sang chưa đăng nhập', (tester) async {
+    testWidgets('đăng xuất thu hồi phiên và chuyển sang chưa đăng nhập', (
+      tester,
+    ) async {
       when(() => repository.logout()).thenAnswer((_) async {});
-      await pumpScreen(tester, const ProfilePage(), signedIn: customerUser);
+      await pumpScreen(
+        tester,
+        const ProfilePage(editMode: true),
+        signedIn: customerUser,
+      );
 
       await tester.tap(find.widgetWithText(OutlinedButton, 'Đăng xuất'));
       // Bloc xử lý sự kiện qua stream, cần một nhịp event loop thật; pump giả không đủ.
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
       await tester.pump();
 
       verify(() => repository.logout()).called(1);
@@ -118,7 +181,9 @@ void main() {
       (UserRole.admin, 'Quản lý cụm sân'),
       (UserRole.superAdmin, 'Quản trị hệ thống'),
     ]) {
-      testWidgets('vai trò ${role.name} thấy trang chủ "$title"', (tester) async {
+      testWidgets('vai trò ${role.name} thấy trang chủ "$title"', (
+        tester,
+      ) async {
         final user = AuthUser(
           id: 1,
           email: 'user@demo.com',
@@ -128,9 +193,18 @@ void main() {
         );
         await pumpScreen(tester, const HomePage(), signedIn: user);
 
-        expect(find.descendant(of: find.byType(AppBar), matching: find.text(title)), findsOneWidget);
+        expect(
+          find.descendant(of: find.byType(AppBar), matching: find.text(title)),
+          findsOneWidget,
+        );
         expect(find.text('Xin chào, Tên Người Dùng'), findsOneWidget);
-        expect(find.byTooltip('Tài khoản'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(AppBar),
+            matching: find.byTooltip('Tài khoản'),
+          ),
+          findsOneWidget,
+        );
       });
     }
 
@@ -141,7 +215,9 @@ void main() {
     });
 
     for (final user in [customerUser, adminUser]) {
-      testWidgets('vai trò ${user.role.name} không thấy nút quản lý danh mục', (tester) async {
+      testWidgets('vai trò ${user.role.name} không thấy nút quản lý danh mục', (
+        tester,
+      ) async {
         await pumpScreen(tester, const HomePage(), signedIn: user);
 
         expect(find.text('Quản lý danh mục'), findsNothing);

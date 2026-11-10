@@ -75,7 +75,10 @@ class _CustomerTransactionHistoryScreenState
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Lịch sử thanh toán')),
+    appBar: AppBar(
+      automaticallyImplyLeading: false,
+      title: const Text('Lịch sử thanh toán'),
+    ),
     body: RefreshIndicator(
       onRefresh: () => _load(reset: true),
       child: ListView(

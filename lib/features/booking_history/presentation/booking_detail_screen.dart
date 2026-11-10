@@ -17,6 +17,7 @@ class BookingDetailScreen extends StatefulWidget {
     this.cancellation,
     this.onRefund,
     this.onReview,
+    this.onPay,
   });
   final BookingRepository repository;
   final int id;
@@ -24,6 +25,9 @@ class BookingDetailScreen extends StatefulWidget {
   final CancellationRepository? cancellation;
   final ValueChanged<int>? onRefund;
   final Future<void> Function(int)? onReview;
+
+  /// Opens checkout again for an unpaid booking (transfer + receipt upload).
+  final ValueChanged<int>? onPay;
   @override
   State<BookingDetailScreen> createState() => _BookingDetailScreenState();
 }
@@ -131,11 +135,70 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     }
   }
 
+  /// Unpaid booking: the receipt has not been sent yet (once sent the booking
+  /// moves to AWAITING_CONFIRMATION; a rejected receipt cancels it).
+  bool _canPay(Booking b) =>
+      widget.onPay != null && b.status == 'PENDING_PAYMENT';
+
   @override
   Widget build(BuildContext context) {
     final b = _booking;
     return Scaffold(
       appBar: AppBar(title: const Text('Chi tiết đặt sân')),
+      bottomNavigationBar:
+          b == null ||
+              !(b.hasTicket && widget.onTicket != null ||
+                  _policy?.allowed == true ||
+                  _canPay(b) ||
+                  b.status == 'COMPLETED' && widget.onReview != null)
+          ? null
+          : SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_canPay(b))
+                      FilledButton.icon(
+                        key: const ValueKey('booking-pay'),
+                        onPressed: () => widget.onPay!(b.id),
+                        icon: const Icon(Icons.qr_code_2),
+                        label: const Text('Thanh toán · Gửi biên lai'),
+                      ),
+                    if (b.hasTicket && widget.onTicket != null)
+                      FilledButton.icon(
+                        onPressed: () => widget.onTicket!(b.id),
+                        icon: const Icon(Icons.qr_code),
+                        label: const Text('Xuất trình vé QR'),
+                      ),
+                    if (b.status == 'COMPLETED' && widget.onReview != null)
+                      OutlinedButton.icon(
+                        onPressed: _reviewing
+                            ? null
+                            : () async {
+                                setState(() => _reviewing = true);
+                                try {
+                                  await widget.onReview!(b.id);
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _reviewing = false);
+                                  }
+                                }
+                              },
+                        icon: const Icon(Icons.star_outline),
+                        label: const Text('Đánh giá sân'),
+                      ),
+                    if (_policy?.allowed == true)
+                      TextButton(
+                        onPressed: _cancel,
+                        child: const Text('Hủy đặt sân'),
+                      ),
+                  ],
+                ),
+              ),
+            ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -145,42 +208,89 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             TextButton(onPressed: _load, child: const Text('Thử lại')),
           ],
           if (b != null) ...[
-            Text(
-              b.branchName,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            Text(b.courtName),
-            if (b.status == 'COMPLETED' && widget.onReview != null)
-              OutlinedButton.icon(
-                onPressed: _reviewing ? null : () async {
-                  setState(() => _reviewing = true);
-                  try {
-                    await widget.onReview!(b.id);
-                  } finally {
-                    if (mounted) setState(() => _reviewing = false);
-                  }
-                },
-                icon: const Icon(Icons.star_outline),
-                label: const Text('Đánh giá sân'),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer
+                    .withValues(alpha: .45),
+                borderRadius: BorderRadius.circular(24),
               ),
-            Text('Mã đơn: ${b.code}'),
-            Text(b.label),
-            Text('${b.date} · ${b.slots.join(', ')}'),
-            Text(
-              NumberFormat.currency(
-                locale: 'vi_VN',
-                symbol: 'đ',
-                decimalDigits: 0,
-              ).format(b.amount),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    b.branchName,
+                    style: Theme.of(context).textTheme.headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    b.courtName,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    b.label,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Mã đơn: ${b.code}'),
+                ],
+              ),
             ),
+            const SizedBox(height: 24),
+            Text(
+              'Thông tin buổi chơi',
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.calendar_month_outlined),
+                    title: const Text('Ngày chơi'),
+                    subtitle: Text(
+                      DateFormat('dd/MM/yyyy').format(DateTime.parse(b.date)),
+                    ),
+                  ),
+                  const Divider(indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.schedule),
+                    title: const Text('Khung giờ'),
+                    subtitle: Text(b.slots.join(' · ')),
+                  ),
+                  const Divider(indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.payments_outlined),
+                    title: const Text('Tổng tiền'),
+                    trailing: Text(
+                      NumberFormat.currency(
+                        locale: 'vi_VN',
+                        symbol: 'đ',
+                        decimalDigits: 0,
+                      ).format(b.amount),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             Text(
               'Thanh toán: ${switch (b.paymentStatus) {
                 'CONFIRMED' => 'Đã thanh toán',
                 'REJECTED' => 'Bị từ chối',
+                'PENDING' when b.status == 'PENDING_PAYMENT' => 'Chưa gửi biên lai',
                 'PENDING' => 'Chờ duyệt',
                 _ => 'Chưa ghi nhận',
               }}',
             ),
+            const SizedBox(height: 20),
             if (b.address != null) ...[
               Text(b.address!),
               OutlinedButton.icon(
@@ -202,23 +312,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 label: Text('Liên hệ chủ sân: ${b.phone}'),
               ),
             if (_policy != null && !_policy!.allowed) Text(_policy!.reason),
-            if (_policy?.allowed == true)
-              OutlinedButton(
-                onPressed: _cancel,
-                child: const Text('Hủy đặt sân'),
-              ),
             if (b.status == 'CANCELLED' &&
                 b.paymentStatus == 'CONFIRMED' &&
                 widget.onRefund != null)
               FilledButton(
                 onPressed: () => widget.onRefund!(b.id),
                 child: const Text('Yêu cầu / theo dõi hoàn tiền'),
-              ),
-            if (b.hasTicket && widget.onTicket != null)
-              FilledButton.icon(
-                onPressed: () => widget.onTicket!(b.id),
-                icon: const Icon(Icons.qr_code),
-                label: const Text('Xuất trình vé QR'),
               ),
           ],
         ],

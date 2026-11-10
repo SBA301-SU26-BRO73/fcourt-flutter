@@ -12,6 +12,7 @@ class AppRoutes {
   static const resetPassword = '/reset-password';
   static const home = '/home';
   static const profile = '/profile';
+  static const settings = '/settings';
   static const catalog = '/catalog';
   static const superAdminOverview = '/super-admin/overview';
   static const discover = '/discover';
@@ -64,5 +65,15 @@ bool _isForbidden(String location, UserRole? role) => switch (location) {
   _ when location.startsWith('/super-admin') => role != UserRole.superAdmin,
   _ when location.startsWith('/admin') => role != UserRole.admin,
   _ when location.startsWith('/staff') => role != UserRole.staff,
+  _
+      when location == AppRoutes.discover ||
+          location == '/branches' ||
+          location.startsWith('/branches/') ||
+          location.startsWith('/courts/') ||
+          location == '/bookings' ||
+          location.startsWith('/bookings/') ||
+          location.startsWith('/booking/') ||
+          location.startsWith('/payments/') =>
+    role != UserRole.customer,
   _ => false,
 };

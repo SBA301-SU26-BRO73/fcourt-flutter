@@ -10,6 +10,7 @@ String vnd(num amount) => NumberFormat.currency(
 ).format(amount);
 Future<void> showReceipt(BuildContext context, PaymentTransaction entry) =>
     showModalBottomSheet<void>(
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -60,16 +61,20 @@ class TransactionTile extends StatelessWidget {
           Text(
             '${entry.code} · ${entry.bookingCode}\n${DateFormat('dd/MM/yyyy HH:mm').format(entry.occurredAt.toUtc().add(const Duration(hours: 7)))}',
           ),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 6,
+            runSpacing: 6,
             children: [
               Chip(
                 label: Text(entry.typeLabel),
                 visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               Chip(
                 label: Text(entry.label),
                 visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],
           ),

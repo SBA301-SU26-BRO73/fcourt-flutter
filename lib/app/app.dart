@@ -1,3 +1,5 @@
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -15,6 +17,7 @@ import '../features/notifications/domain/push_session_coordinator.dart';
 import 'app_dependencies.dart';
 import 'router.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_controller.dart';
 
 class FcourtApp extends StatefulWidget {
   const FcourtApp({super.key, required this.dependencies});
@@ -26,6 +29,7 @@ class FcourtApp extends StatefulWidget {
 }
 
 class _FcourtAppState extends State<FcourtApp> {
+  final _theme = ThemeController();
   late final AuthBloc _authBloc;
   late final AuthRefreshNotifier _refresh;
   late final GoRouter _router;
@@ -37,6 +41,7 @@ class _FcourtAppState extends State<FcourtApp> {
   @override
   void initState() {
     super.initState();
+    unawaited(_theme.restore());
     final repository = widget.dependencies.authRepository;
     _authBloc = AuthBloc(
       RestoreSession(repository),
@@ -91,6 +96,7 @@ class _FcourtAppState extends State<FcourtApp> {
     _pushPayloads?.cancel();
     unawaited(widget.dependencies.pushService?.dispose());
     unawaited(widget.dependencies.offline?.close());
+    _theme.dispose();
     _refresh.dispose();
     _router.dispose();
     _authBloc.close();
@@ -112,11 +118,25 @@ class _FcourtAppState extends State<FcourtApp> {
   Widget build(BuildContext context) {
     return BlocProvider.value(
       value: _authBloc,
-      child: MaterialApp.router(
-        title: 'FCOURT',
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        routerConfig: _router,
+      child: ThemeScope(
+        controller: _theme,
+        child: ListenableBuilder(
+          listenable: _theme,
+          builder: (context, _) => MaterialApp.router(
+            builder: (context, child) => LiquidGlassWidgets.wrap(
+              adaptiveQuality: true,
+              respectSystemAccessibility: true,
+              brightnessResolver: Theme.maybeBrightnessOf,
+              theme: const GlassThemeData.ios26(),
+              child: child ?? const SizedBox.shrink(),
+            ),
+            title: 'FCOURT',
+            themeMode: _theme.mode,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            routerConfig: _router,
+          ),
+        ),
       ),
     );
   }

@@ -14,9 +14,110 @@ import '../../../branch_gallery/presentation/branch_gallery_section.dart';
 import '../../domain/discovery_repository.dart';
 import '../widgets/discovery_widgets.dart';
 
-class BranchDetailScreen extends StatelessWidget {
+class BranchDetailScreen extends StatefulWidget {
   const BranchDetailScreen({
     super.key,
+    required this.branchId,
+    this.branch,
+    this.maps,
+    this.galleryRepository,
+    this.reviews,
+    this.discoveryRepository,
+  });
+  final int branchId;
+  final Branch? branch;
+  final BranchMapPlatform? maps;
+  final BranchImageRepository? galleryRepository;
+  final ReviewRepository? reviews;
+  final DiscoveryRepository? discoveryRepository;
+  @override
+  State<BranchDetailScreen> createState() => _BranchDetailScreenState();
+}
+
+class _BranchDetailScreenState extends State<BranchDetailScreen> {
+  Branch? _branch;
+  bool _loading = false;
+  String? _error;
+  int _revision = 0;
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(BranchDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.branchId != widget.branchId ||
+        oldWidget.branch != widget.branch) {
+      _load();
+    }
+  }
+
+  Future<void> _load() async {
+    final revision = ++_revision;
+    _branch = widget.branch?.id == widget.branchId ? widget.branch : null;
+    _error = null;
+    final repository = widget.discoveryRepository;
+    if (_branch != null || repository is! BranchDetailRepository) {
+      _loading = false;
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final result = await (repository as BranchDetailRepository).branchById(
+        widget.branchId,
+      );
+      if (mounted && revision == _revision) setState(() => _branch = result);
+    } catch (error) {
+      if (mounted && revision == _revision) {
+        setState(
+          () => _error = error is Failure
+              ? error.message
+              : 'Không tải được chi nhánh. Vui lòng thử lại.',
+        );
+      }
+    } finally {
+      if (mounted && revision == _revision) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading || _error != null) {
+      return Scaffold(
+        appBar: _branchAppBar(context),
+        body: Center(
+          child: _loading
+              ? const CircularProgressIndicator()
+              : DiscoveryMessage(message: _error!, onRetry: _load),
+        ),
+      );
+    }
+    return _BranchDetailContent(
+      branchId: widget.branchId,
+      branch: _branch,
+      maps: widget.maps,
+      galleryRepository: widget.galleryRepository,
+      reviews: widget.reviews,
+      discoveryRepository: widget.discoveryRepository,
+    );
+  }
+}
+
+AppBar _branchAppBar(BuildContext context) => AppBar(
+  title: const Text('Chi tiết chi nhánh'),
+  leading: BackButton(
+    onPressed: () => context.canPop() ? context.pop() : context.go('/discover'),
+  ),
+);
+
+String _courtPrice(Court court) => court.defaultPricePerHour == null
+    ? 'Giá theo khung giờ · Chọn sân để xem lịch'
+    : '${NumberFormat.decimalPattern('vi').format(court.defaultPricePerHour)} đ/giờ';
+
+class _BranchDetailContent extends StatelessWidget {
+  const _BranchDetailContent({
     required this.branchId,
     this.branch,
     this.maps,
@@ -38,7 +139,7 @@ class BranchDetailScreen extends StatelessWidget {
     final data = branch;
     if (data == null || data.id != branchId) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Chi tiết chi nhánh')),
+        appBar: _branchAppBar(context),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -57,7 +158,7 @@ class BranchDetailScreen extends StatelessWidget {
     }
     const artwork = CourtArtwork(height: 210, label: 'Ảnh sân chưa cập nhật');
     return Scaffold(
-      appBar: AppBar(title: const Text('Chi tiết chi nhánh')),
+      appBar: _branchAppBar(context),
       body: DefaultTabController(
         length: 2,
         child: Column(
@@ -102,6 +203,20 @@ class BranchDetailScreen extends StatelessWidget {
                                   .join(', '),
                             ),
                             const SizedBox(height: 16),
+                            Text(
+                              'Chọn sân trong chi nhánh',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 12),
+                            if (discoveryRepository != null)
+                              _BranchCourts(
+                                repository: discoveryRepository!,
+                                branchId: branchId,
+                                branch: data,
+                              )
+                            else
+                              const Text('Chi nhánh chưa có sân hoạt động.'),
+                            const SizedBox(height: 24),
                             if (maps != null) ...[
                               BranchMapCard(
                                 key: ValueKey(branchId),
@@ -158,20 +273,6 @@ class BranchDetailScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 24),
-                            Text(
-                              'Sân trong chi nhánh (${data.courtCount})',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 12),
-                            if (discoveryRepository != null)
-                              _BranchCourts(
-                                repository: discoveryRepository!,
-                                branchId: branchId,
-                                branch: data,
-                              )
-                            else
-                              const Text('Chi nhánh chưa có sân hoạt động.'),
-                            const SizedBox(height: 24),
                           ],
                         ),
                       ),
@@ -221,6 +322,7 @@ class BranchDetailScreen extends StatelessWidget {
                       );
                     } else if (courts.length > 1) {
                       showModalBottomSheet<void>(
+                        useRootNavigator: true,
                         context: context,
                         showDragHandle: true,
                         builder: (sheetContext) => SafeArea(
@@ -234,9 +336,7 @@ class BranchDetailScreen extends StatelessWidget {
                               for (final court in courts)
                                 ListTile(
                                   title: Text(court.name),
-                                  subtitle: Text(
-                                    '${NumberFormat.decimalPattern('vi').format(court.defaultPricePerHour)} đ/giờ',
-                                  ),
+                                  subtitle: Text(_courtPrice(court)),
                                   onTap: () {
                                     Navigator.pop(sheetContext);
                                     context.push(
@@ -325,9 +425,7 @@ class _BranchCourtsState extends State<_BranchCourts> {
               child: ListTile(
                 leading: const Icon(Icons.sports_tennis),
                 title: Text(court.name),
-                subtitle: Text(
-                  '${NumberFormat.decimalPattern('vi').format(court.defaultPricePerHour)} đ/giờ',
-                ),
+                subtitle: Text(_courtPrice(court)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push(
                   '/courts/${court.id}/slots?courtName=${Uri.encodeQueryComponent(court.name)}&branchName=${Uri.encodeQueryComponent(widget.branch.name)}',

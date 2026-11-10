@@ -117,6 +117,7 @@ class _SlotCell extends StatelessWidget {
       button: true,
       enabled: enabled,
       selected: selected,
+      onTap: enabled ? onTap : null,
       hint: slot.unavailableReason,
       label:
           '$time${slot.endMinute == 1440 ? ', kết thúc ngày tiếp theo' : ''}, '

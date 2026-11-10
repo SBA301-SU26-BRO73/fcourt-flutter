@@ -84,7 +84,7 @@ void main() {
     expect(
       () => RefundRepositoryImpl.parse({
         ...refundJson(),
-        'transferProofUrl': 'https://attacker.example/proof',
+        'transferProofUrl': 'http://attacker.example/proof',
       }),
       throwsFormatException,
     );

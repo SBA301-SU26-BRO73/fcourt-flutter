@@ -1,126 +1,438 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../app/widgets/account_actions.dart';
+import '../../../../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../domain/discovery_repository.dart';
+import '../discovery_cubit.dart';
 import '../widgets/discovery_widgets.dart';
 
-class CustomerHomeScreen extends StatefulWidget {
-  const CustomerHomeScreen({super.key});
+class CustomerHomeScreen extends StatelessWidget {
+  const CustomerHomeScreen({super.key, required this.repository});
+  final DiscoveryRepository repository;
   @override
-  State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
+  Widget build(BuildContext context) => BlocProvider(
+    create: (_) => DiscoveryCubit(repository)..refresh(),
+    child: const _DiscoveryLanding(),
+  );
 }
 
-class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+class _DiscoveryLanding extends StatefulWidget {
+  const _DiscoveryLanding();
+  @override
+  State<_DiscoveryLanding> createState() => _DiscoveryLandingState();
+}
+
+class _DiscoveryLandingState extends State<_DiscoveryLanding> {
   final _query = TextEditingController();
+  final _scroll = ScrollController();
+
   @override
   void dispose() {
     _query.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  void _search() => context.push(
-    Uri(
-      path: '/branches',
-      queryParameters: {'query': _query.text.trim()},
-    ).toString(),
-  );
+  void _search() {
+    FocusScope.of(context).unfocus();
+    _query.text = _query.text.trim();
+    context.read<DiscoveryCubit>().search(_query.text.trim());
+    context.read<DiscoveryCubit>().refresh();
+  }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('FCOURT'),
-      actions: [
-        IconButton(
-          onPressed: () => context.push('/health'),
-          tooltip: 'Kiểm tra kết nối',
-          icon: const Icon(Icons.wifi_tethering),
-        ),
-      ],
-    ),
-    body: SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Text(
-                'Ra sân. Hết mình.',
-                style: Theme.of(context).textTheme.headlineLarge
-                    ?.copyWith(fontWeight: FontWeight.w800),
+  Widget build(BuildContext context) {
+    final user = context.select((AuthBloc bloc) => bloc.state.user);
+    final colors = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+      body: Column(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF008C5E), Color(0xFF003D36)],
               ),
-              const SizedBox(height: 8),
-              const Text('Tìm sân yêu thích, kết nối đam mê thể thao.'),
-              const SizedBox(height: 24),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: const CourtArtwork(
-                  height: 210,
-                  label: 'MỖI TRẬN ĐẤU · MỘT KẾT NỐI MỚI',
-                ),
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _query,
-                maxLength: 200,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _search(),
-                decoration: InputDecoration(
-                  hintText: 'Tên sân hoặc địa chỉ',
-                  labelText: 'Bạn muốn chơi ở đâu?',
-                  counterText: '',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: IconButton(
-                    tooltip: 'Tìm sân',
-                    onPressed: _search,
-                    icon: const Icon(Icons.arrow_forward),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Khám phá theo môn',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              SportFilters(
-                onSelected: (sport) => context.push(
-                  Uri(
-                    path: '/branches',
-                    queryParameters: {if (sport != null) 'sport': sport.name},
-                  ).toString(),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.explore_outlined, size: 36),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Sân mới, trải nghiệm mới',
-                        style: Theme.of(context).textTheme.titleLarge,
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const ValueKey('discovery-search'),
+                        controller: _query,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) => _search(),
+                        decoration: InputDecoration(
+                          hintText: 'Tìm sân, địa điểm',
+                          fillColor: dark ? colors.surface : Colors.white,
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: IconButton(
+                            tooltip: 'Tìm sân',
+                            onPressed: _search,
+                            icon: const Icon(Icons.arrow_forward),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 12,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Khám phá chi nhánh và khoảng giá phù hợp cho buổi chơi tiếp theo.',
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () => context.push('/branches'),
-                        icon: const Icon(Icons.arrow_forward),
-                        label: const Text('Khám phá sân'),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const AccountActions(color: Colors.white),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
+          Expanded(
+            child: Stack(
+              children: [
+                BlocBuilder<DiscoveryCubit, DiscoveryState>(
+                  builder: (context, state) {
+                    final cubit = context.read<DiscoveryCubit>();
+                    return RefreshIndicator(
+                      onRefresh: cubit.refresh,
+                      child: CustomScrollView(
+                        controller: _scroll,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                            sliver: SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Xin chào, ${user?.displayName ?? 'bạn'}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  LayoutBuilder(
+                                    builder: (context, constraints) => Wrap(
+                                      spacing: 8,
+                                      runSpacing: 12,
+                                      children: [
+                                        for (final (sport, icon, tint) in [
+                                          (
+                                            DiscoverySport.tennis,
+                                            Icons.sports_tennis,
+                                            const Color(0xFF16A47B),
+                                          ),
+                                          (
+                                            DiscoverySport.badminton,
+                                            Icons.sports,
+                                            const Color(0xFFEF9B26),
+                                          ),
+                                          (
+                                            DiscoverySport.football,
+                                            Icons.sports_soccer,
+                                            const Color(0xFF4582DD),
+                                          ),
+                                          (
+                                            DiscoverySport.pickleball,
+                                            Icons.sports_tennis,
+                                            const Color(0xFF9062D8),
+                                          ),
+                                        ])
+                                          SizedBox(
+                                            width:
+                                                (constraints.maxWidth - 24) / 4,
+                                            child: Semantics(
+                                              selected: state.sport == sport,
+                                              button: true,
+                                              child: InkWell(
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
+                                                onTap: () => cubit.filter(
+                                                  state.sport == sport
+                                                      ? null
+                                                      : sport,
+                                                ),
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 8,
+                                                      ),
+                                                  child: Column(
+                                                    children: [
+                                                      Container(
+                                                        width: 52,
+                                                        height: 52,
+                                                        decoration: BoxDecoration(
+                                                          gradient: LinearGradient(
+                                                            colors: [
+                                                              tint.withValues(
+                                                                alpha: .12,
+                                                              ),
+                                                              tint.withValues(
+                                                                alpha: .3,
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                18,
+                                                              ),
+                                                          border:
+                                                              state.sport ==
+                                                                  sport
+                                                              ? Border.all(
+                                                                  color: tint,
+                                                                  width: 2,
+                                                                )
+                                                              : null,
+                                                        ),
+                                                        child: Icon(
+                                                          icon,
+                                                          size: 32,
+                                                          color: tint,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        'Đặt sân\n${sport.label}',
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          state.sport == null
+                                              ? 'Sân nổi bật'
+                                              : 'Sân ${state.sport!.label.toLowerCase()}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                        ),
+                                      ),
+                                      if (state.sport != null)
+                                        TextButton(
+                                          onPressed: () => cubit.filter(null),
+                                          child: const Text('Tất cả'),
+                                        ),
+                                    ],
+                                  ),
+                                  if (state.loading)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      child: LinearProgressIndicator(),
+                                    ),
+                                  if (state.error != null)
+                                    DiscoveryMessage(
+                                      message: state.error!,
+                                      onRetry: cubit.refresh,
+                                    ),
+                                  if (!state.loading &&
+                                      state.error == null &&
+                                      state.branches.isEmpty)
+                                    const DiscoveryMessage(
+                                      message: 'Chưa tìm thấy sân phù hợp. Thử từ khóa hoặc môn khác nhé.',
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            sliver: SliverLayoutBuilder(
+                              builder: (context, constraints) {
+                                final columns =
+                                    constraints.crossAxisExtent >= 900
+                                    ? 4
+                                    : constraints.crossAxisExtent >= 620
+                                    ? 3
+                                    : 2;
+                                final scale = MediaQuery.textScalerOf(context)
+                                    .scale(1);
+                                return SliverGrid(
+                                  delegate: SliverChildBuilderDelegate(
+                                    (context, index) => _VenueTile(
+                                      branch: state.branches[index],
+                                    ),
+                                    childCount: state.branches.length,
+                                  ),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: columns,
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 14,
+                                        mainAxisExtent:
+                                            285 + math.max(0, scale - 1) * 90,
+                                      ),
+                                );
+                              },
+                            ),
+                          ),
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(0, 24, 0, 24),
+                              child: Center(
+                                child: state.loadingMore
+                                    ? const CircularProgressIndicator()
+                                    : state.hasNext
+                                    ? OutlinedButton(
+                                        onPressed: cubit.loadMore,
+                                        child: const Text('Xem thêm sân'),
+                                      )
+                                    : const SizedBox(height: 16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VenueTile extends StatelessWidget {
+  const _VenueTile({required this.branch});
+  final Branch branch;
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/branches/${branch.id}', extra: branch),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 116,
+              width: double.infinity,
+              child: branch.imageUrl == null
+                  ? const CourtArtwork(height: 116, label: 'SportCourt')
+                  : Image.network(
+                      branch.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          const CourtArtwork(height: 116, label: 'SportCourt'),
+                    ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      branch.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      [
+                        branch.address,
+                        branch.city,
+                      ].where((s) => s.isNotEmpty).join(', '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.star_rounded,
+                          color: branch.reviewCount > 0
+                              ? const Color(0xFFFFB300)
+                              : colors.outline,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          branch.reviewCount > 0
+                              ? branch.averageRating.toStringAsFixed(1)
+                              : 'Mới',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          Icons.grid_view_rounded,
+                          size: 14,
+                          color: colors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${branch.courtCount} sân',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      branchPrice(branch),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: colors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    ),
-  );
+    );
+  }
 }

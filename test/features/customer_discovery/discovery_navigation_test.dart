@@ -92,7 +92,9 @@ void main() {
       router.go('/branches/999');
       await tester.pumpAndSettle();
       expect(find.text('Tìm chi nhánh'), findsOneWidget);
-      expect(discovery.queries, isEmpty);
+      expect(discovery.queries, [
+        '',
+      ]); // Home loads all venues; details do not trigger a fake lookup.
       await tester.tap(find.text('Tìm chi nhánh'));
       await tester.pumpAndSettle();
       expect(find.text('Sân Đúng'), findsOneWidget);
@@ -121,12 +123,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Tìm sân'));
-      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), '  Đường A  ');
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();
-      expect(discovery.queries.single, 'Đường A');
+      expect(discovery.queries.last, 'Đường A');
+      await tester.ensureVisible(find.text('Sân Đúng'));
       await tester.tap(find.text('Sân Đúng'));
       await tester.pumpAndSettle();
       expect(find.text('Sân Đúng'), findsOneWidget);
@@ -134,7 +135,10 @@ void main() {
       await tester.tap(find.text('Đặt sân ngay'));
       await tester.pumpAndSettle();
       expect(
-        find.textContaining('Chi nhánh chưa có sân hoạt động.'),
+        find.descendant(
+          of: find.byType(SnackBar),
+          matching: find.textContaining('Chi nhánh chưa có sân hoạt động.'),
+        ),
         findsOneWidget,
       );
       await tester.pageBack();
