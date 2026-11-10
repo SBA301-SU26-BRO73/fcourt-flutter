@@ -19,9 +19,14 @@ class FilePickerDocumentPicker implements DocumentPicker {
       type: FileType.custom,
       allowedExtensions: [..._images, if (allowPdf) 'pdf'],
     );
+    // Trình duyệt và một số content URI Android không có đường dẫn tệp:
+    // khi đó đọc nội dung để gửi multipart thay vì bỏ qua tệp.
     return [
       for (final file in files)
-        if (file.path != null) UploadDocument(name: file.name, path: file.path!),
+        if (file.path case final path?)
+          UploadDocument(name: file.name, path: path)
+        else
+          UploadDocument(name: file.name, bytes: await file.readAsBytes()),
     ];
   }
 }

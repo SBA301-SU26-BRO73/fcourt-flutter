@@ -369,39 +369,53 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                   const Text(
                     'Chụp hoặc chọn ảnh biên lai chuyển khoản. Ảnh sẽ được nén trước khi gửi (tối đa 5MB).',
                   ),
+                  const SizedBox(height: 16),
                   if (_image != null)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Image.memory(
-                        _image!.bytes,
-                        height: 240,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) =>
-                            const Text('Chưa xem trước được ảnh'),
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.memory(
+                          _image!.bytes,
+                          height: 240,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) =>
+                              const Text('Chưa xem trước được ảnh'),
+                        ),
                       ),
                     ),
-                  Wrap(
-                    spacing: 12,
+                  Row(
                     children: [
-                      OutlinedButton.icon(
-                        onPressed: _busy ? null : () => _pick(true),
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Chụp ảnh'),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _busy ? null : () => _pick(true),
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Chụp ảnh'),
+                        ),
                       ),
-                      OutlinedButton.icon(
-                        onPressed: _busy ? null : () => _pick(false),
-                        icon: const Icon(Icons.photo),
-                        label: const Text('Chọn ảnh'),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _busy ? null : () => _pick(false),
+                          icon: const Icon(Icons.photo),
+                          label: Text(
+                            _image == null ? 'Chọn ảnh' : 'Chọn ảnh khác',
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  if (_busy)
+                  const SizedBox(height: 16),
+                  if (_busy) ...[
                     LinearProgressIndicator(
                       value: _progress > 0 ? _progress : null,
                     ),
-                  FilledButton(
+                    const SizedBox(height: 12),
+                  ],
+                  FilledButton.icon(
                     onPressed: _busy || _image == null ? null : _upload,
-                    child: const Text('Gửi biên lai'),
+                    icon: const Icon(Icons.upload),
+                    label: const Text('Gửi biên lai'),
                   ),
                 ],
                 if (_error != null) ...[

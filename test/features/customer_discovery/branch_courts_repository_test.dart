@@ -7,6 +7,44 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../helpers/fake_adapter.dart';
 
 void main() {
+  test('courts with slot-based pricing remain selectable when hourly price is null', () async {
+    final dio = Dio()
+      ..httpClientAdapter = FakeAdapter(
+        (_) => jsonResponse(200, [
+          {
+            'id': 21,
+            'name': 'Sân số 1',
+            'courtTypeId': 6,
+            'defaultPricePerHour': null,
+          },
+        ]),
+      );
+    final courts = await DiscoveryRepositoryImpl(DiscoveryRemoteDataSource(dio))
+        .courtsOfBranch(1);
+    expect(courts.single.id, 21);
+    expect(courts.single.defaultPricePerHour, isNull);
+  });
+
+  test('invalid provided hourly prices are rejected while absent prices are supported', () async {
+    for (final price in [-1, 'invalid']) {
+      final dio = Dio()
+        ..httpClientAdapter = FakeAdapter(
+          (_) => jsonResponse(200, [
+            {
+              'id': 21,
+              'name': 'Sân số 1',
+              'courtTypeId': 6,
+              'defaultPricePerHour': price,
+            },
+          ]),
+        );
+      await expectLater(
+        DiscoveryRepositoryImpl(DiscoveryRemoteDataSource(dio))
+            .courtsOfBranch(1),
+        throwsA(isA<UnknownFailure>()),
+      );
+    }
+  });
   test(
     'loads public courts using expected endpoint and validates the list',
     () async {

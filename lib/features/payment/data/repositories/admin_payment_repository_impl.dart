@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../domain/entities/payment_checkout.dart';
 import '../../domain/entities/pending_payment.dart';
 import '../../domain/repositories/admin_payment_repository.dart';
+import '../../../../core/network/image_url.dart';
 
 class AdminPaymentRepositoryImpl implements AdminPaymentRepository {
   const AdminPaymentRepositoryImpl(this.dio);
@@ -51,10 +52,7 @@ class AdminPaymentRepositoryImpl implements AdminPaymentRepository {
         amount <= 0 ||
         amount != amount.roundToDouble() ||
         submitted == null ||
-        url == null ||
-        url.scheme != 'https' ||
-        url.host != 'res.cloudinary.com' ||
-        url.userInfo.isNotEmpty ||
+        !isAllowedImageUrl(url) ||
         (name != null && name is! String)) {
       throw const FormatException('Invalid receipt data');
     }
@@ -64,7 +62,7 @@ class AdminPaymentRepositoryImpl implements AdminPaymentRepository {
       bookingCode: code,
       customerName: name is String && name.isNotEmpty ? name : 'Khách đặt sân',
       amountVnd: amount.toInt(),
-      receiptUri: url,
+      receiptUri: url!,
       submittedAt: submitted.toLocal(),
     );
   }

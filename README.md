@@ -33,6 +33,18 @@ flutter test
 - Script `.github/scripts/retry-on-network-error.sh` chỉ chạy lại lệnh khi log có dấu hiệu lỗi tải (HTTP 429/5xx, hash native asset sai, Gradle không tải được). Test fail và lỗi analyze không bao giờ bị chạy lại; đừng thêm retry quanh test.
 - Required check giữ tên `analyze-and-test`, `android-build`, `signing-smoke`, `changes`. PR chỉ đổi tài liệu thì `analyze-and-test` được bỏ qua (tính là đạt).
 
+## Xem giao diện trên trình duyệt
+
+Ứng dụng có target web để rà giao diện và luồng với backend local:
+
+```bash
+flutter run -d chrome --web-hostname=127.0.0.1 --web-port=18100 --dart-define=API_BASE_URL=http://127.0.0.1:18080
+```
+
+Gateway cần cho phép origin `http://localhost:18100` hoặc `http://127.0.0.1:18100` đúng với URL trình duyệt đang mở. Các tính năng camera, lưu thư viện ảnh, push Firebase và offline native vẫn cần Android để kiểm chứng. Bản web không khởi tạo Firebase push.
+
+Trang Cài đặt mở từ Home hoặc Tài khoản, cho chọn Theo hệ thống / Sáng / Tối và lưu trên thiết bị. Kết quả kiểm chứng giao diện, luồng đặt sân và các giới hạn môi trường: [docs/validation/MOBILE_UI_UX_2026-11-10.md](docs/validation/MOBILE_UI_UX_2026-11-10.md).
+
 ## Cấu hình môi trường
 
 ### Firebase Cloud Messaging (Android)

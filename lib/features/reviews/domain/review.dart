@@ -1,3 +1,5 @@
+import '../../../core/network/image_url.dart';
+
 class CourtReview {
   const CourtReview({
     required this.id,
@@ -35,14 +37,10 @@ class ReviewPage {
   bool get hasMore => (page + 1) * size < total;
 }
 
-bool validReviewImageUrl(String value) {
-  final uri = Uri.tryParse(value);
-  return value.length <= 2048 &&
-      uri != null &&
-      uri.scheme == 'https' &&
-      uri.host.isNotEmpty &&
-      uri.userInfo.isEmpty;
-}
+/// HTTPS image (S3/CloudFront), or HTTP on a loopback host for local MinIO,
+/// matching discovery-service's ReviewImagePolicy.
+bool validReviewImageUrl(String value) =>
+    value.length <= 2048 && isAllowedImageUrl(Uri.tryParse(value));
 
 abstract interface class ReviewRepository {
   Stream<int> get changes;

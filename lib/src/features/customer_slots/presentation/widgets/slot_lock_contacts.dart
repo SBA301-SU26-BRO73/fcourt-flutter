@@ -47,6 +47,7 @@ class SlotLockContacts extends StatelessWidget {
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => showModalBottomSheet<void>(
+                useRootNavigator: true,
                 context: context,
                 isScrollControlled: true,
                 useSafeArea: true,

@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsAction, SemanticsActionEvent;
+
 import 'package:fcourt/src/features/customer_slots/domain/court_slot.dart';
 import 'package:fcourt/src/features/customer_slots/domain/slot_repository.dart';
 import 'package:fcourt/src/features/customer_slots/presentation/slot_picker_screen.dart';
@@ -31,6 +33,50 @@ class FakeSlots implements SlotRepository {
 }
 
 void main() {
+  testWidgets(
+    'assistive tap selects an available slot and unavailable slots have no tap action',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      final selected = <int>{};
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SlotGridPicker(
+              slots: [
+                makeSlot(1, SlotStatus.available),
+                makeSlot(2, SlotStatus.booked),
+              ],
+              selectedIds: selected,
+              onToggle: (id) {
+                selected.add(id);
+                return true;
+              },
+            ),
+          ),
+        ),
+      );
+      final available = tester.getSemantics(
+        find.byKey(const ValueKey('slot-1')),
+      );
+      final booked = tester.getSemantics(find.byKey(const ValueKey('slot-2')));
+      expect(
+        available.getSemanticsData().hasAction(SemanticsAction.tap),
+        isTrue,
+      );
+      expect(booked.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+      tester.binding.performSemanticsAction(
+        SemanticsActionEvent(
+          type: SemanticsAction.tap,
+          nodeId: available.id,
+          viewId: tester.view.viewId,
+        ),
+      );
+      await tester.pump();
+      expect(selected, {1});
+      semantics.dispose();
+    },
+  );
+
   testWidgets(
     'touch toggles only available slots, emits haptics and exposes readable states',
     (tester) async {

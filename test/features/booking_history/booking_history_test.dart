@@ -60,7 +60,74 @@ class Repository implements BookingRepository {
   Future<Booking> detail(int id) async => booking(id);
 }
 
+class _DateRepository extends Repository {
+  @override
+  Future<BookingPage> history(String status, {int page = 0}) async =>
+      BookingPage(
+        [
+          for (final (id, date) in [
+            (1, '2030-01-03'),
+            (2, '2030-01-08'),
+            (3, '2030-01-03'),
+          ])
+            Booking(
+              id: id,
+              code: 'BK$id',
+              branchName: 'Chi nhánh $id',
+              courtName: 'Sân $id',
+              date: date,
+              slots: const ['18:00–18:30'],
+              amount: 100000,
+              status: 'CONFIRMED',
+            ),
+        ],
+        0,
+        20,
+        3,
+      );
+}
+
+class _UnpaidRepository extends Repository {
+  _UnpaidRepository(this.status);
+  final String status;
+  @override
+  Future<Booking> detail(int id) async => Booking(
+    id: id,
+    code: 'BK$id',
+    branchName: 'Thủ Đức',
+    courtName: 'Sân $id',
+    date: '2099-12-01',
+    slots: const ['18:00–18:30'],
+    amount: 100000,
+    status: status,
+    paymentStatus: 'PENDING',
+  );
+}
+
 void main() {
+  testWidgets('bookings are grouped by date with the newest date first', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BookingHistoryScreen(
+          repository: _DateRepository(),
+          onDetail: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('03/01/2030'), findsOneWidget);
+    expect(find.text('08/01/2030'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('08/01/2030')).dy,
+      lessThan(tester.getTopLeft(find.text('03/01/2030')).dy),
+    );
+    await tester.pumpWidget(const SizedBox());
+  });
   test(
     'repository uses paginated authenticated API and parses booking contract',
     () async {
@@ -138,7 +205,7 @@ void main() {
     expect(find.textContaining('Còn '), findsOneWidget);
     await tester.tap(find.text('Xem thêm'));
     await tester.pumpAndSettle();
-    expect(repo.calls, ['UPCOMING:0', 'UPCOMING:1']);
+    expect(repo.calls, ['ALL:0', 'ALL:1']);
     await tester.tap(find.text('Thủ Đức · Sân 2'));
     expect(selected, 2);
     await tester.tap(find.text('Đã hủy'));
@@ -185,5 +252,44 @@ void main() {
     expect(find.text('Mã đơn: BK1'), findsOneWidget);
     await tester.tap(find.text('Xuất trình vé QR'));
     expect(ticket, 1);
+  });
+
+  testWidgets('unpaid booking can reopen checkout to send the receipt', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    int? paid;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BookingDetailScreen(
+          repository: _UnpaidRepository('PENDING_PAYMENT'),
+          id: 7,
+          onPay: (id) => paid = id,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Thanh toán: Chưa gửi biên lai'), findsOneWidget);
+    await tester.tap(find.text('Thanh toán · Gửi biên lai'));
+    expect(paid, 7);
+  });
+
+  testWidgets('receipt already sent waits for review without a pay action', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BookingDetailScreen(
+          repository: _UnpaidRepository('AWAITING_CONFIRMATION'),
+          id: 8,
+          onPay: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Thanh toán: Chờ duyệt'), findsOneWidget);
+    expect(find.text('Thanh toán · Gửi biên lai'), findsNothing);
   });
 }

@@ -30,6 +30,7 @@ class _StaffViewState extends State<_StaffView> {
   Future<void> _edit(StaffState state, [StaffMember? member]) async {
     final cubit = context.read<StaffCubit>();
     final saved = await showModalBottomSheet<bool>(
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       useSafeArea: true,

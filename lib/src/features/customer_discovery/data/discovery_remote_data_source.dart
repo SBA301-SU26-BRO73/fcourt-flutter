@@ -36,18 +36,46 @@ class DiscoveryRemoteDataSource {
             typeId <= 0 ||
             name is! String ||
             name.trim().isEmpty ||
-            price is! num ||
-            !price.isFinite ||
-            price < 0) {
+            price != null && (price is! num || !price.isFinite || price < 0)) {
           throw const FormatException('Invalid court item');
         }
         return Court(
           id: id,
           name: name,
           courtTypeId: typeId,
-          defaultPricePerHour: price.toDouble(),
+          defaultPricePerHour: (price as num?)?.toDouble(),
         );
       }),
+    );
+  }
+
+  Future<Branch> branchById(int branchId) async {
+    if (branchId <= 0) throw const FormatException('Invalid branch ID');
+    final response = await dio.get<Map<String, dynamic>>(
+      '/api/public/branches/$branchId',
+      options: Options(extra: {AuthInterceptor.skipAuthKey: true}),
+    );
+    final row = response.data;
+    if (row == null ||
+        row['id'] != branchId ||
+        row['name'] is! String ||
+        (row['name'] as String).trim().isEmpty ||
+        row['address'] is! String ||
+        row['city'] is! String) {
+      throw const FormatException('Invalid branch detail');
+    }
+    final location = BranchLocation.parse(row['latitude'], row['longitude']);
+    return Branch(
+      id: branchId,
+      name: row['name'] as String,
+      address: row['address'] as String,
+      city: row['city'] as String,
+      district: row['district'] as String?,
+      courtCount: (row['courtCount'] as num?)?.toInt() ?? 0,
+      minPrice: (row['minPrice'] as num?)?.toDouble(),
+      maxPrice: (row['maxPrice'] as num?)?.toDouble(),
+      latitude: location?.latitude,
+      longitude: location?.longitude,
     );
   }
 
@@ -98,6 +126,16 @@ class DiscoveryRemoteDataSource {
             distanceKm: (row['distanceKm'] as num?)?.toDouble(),
             latitude: location?.latitude,
             longitude: location?.longitude,
+            imageUrl:
+                row['imageUrl'] is String &&
+                    {
+                      'https',
+                      'http',
+                    }.contains(Uri.tryParse(row['imageUrl'] as String)?.scheme)
+                ? row['imageUrl'] as String
+                : null,
+            averageRating: (row['averageRating'] as num?)?.toDouble() ?? 0,
+            reviewCount: (row['reviewCount'] as num?)?.toInt() ?? 0,
           );
         }),
       ),

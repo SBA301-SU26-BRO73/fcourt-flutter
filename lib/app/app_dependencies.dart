@@ -207,7 +207,7 @@ class AppDependencies {
       tokenStorage,
       onSessionExpired: onSessionExpired,
     );
-    final pushService = PushService();
+    final pushService = kIsWeb ? null : PushService();
     final deviceRegistry = DeviceRegistry(
       dio: dio,
       store: SecurePushDeviceStore(),
@@ -215,7 +215,7 @@ class AppDependencies {
     );
     final pushSessionCoordinator = PushSessionCoordinator(
       register: () async {
-        final token = await pushService.getToken();
+        final token = await pushService?.getToken();
         if (token != null && token.isNotEmpty) {
           await deviceRegistry.register(token);
         }

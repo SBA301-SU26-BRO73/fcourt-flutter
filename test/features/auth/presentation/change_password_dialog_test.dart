@@ -36,9 +36,11 @@ void main() {
           providers: [
             BlocProvider.value(value: authBloc),
             BlocProvider(create: (_) => ProfileBloc(UpdateProfile(repository))),
-            BlocProvider(create: (_) => ChangePasswordBloc(ChangePassword(repository))),
+            BlocProvider(
+              create: (_) => ChangePasswordBloc(ChangePassword(repository)),
+            ),
           ],
-          child: const ProfilePage(),
+          child: const ProfilePage(editMode: true),
         ),
       ),
     );
@@ -50,18 +52,21 @@ void main() {
   Finder field(String label) => find.widgetWithText(TextFormField, label);
   Finder dialogButton() => find.widgetWithText(FilledButton, 'Đổi mật khẩu');
 
-  Future<void> fill(WidgetTester tester, {String confirm = 'new-pass-2'}) async {
+  Future<void> fill(
+    WidgetTester tester, {
+    String confirm = 'new-pass-2',
+  }) async {
     await tester.enterText(field('Mật khẩu hiện tại'), 'old-pass-1');
     await tester.enterText(field('Mật khẩu mới'), 'new-pass-2');
     await tester.enterText(field('Nhập lại mật khẩu mới'), confirm);
   }
 
   When<Future<dynamic>> stubChange() => when(
-        () => repository.changePassword(
-          currentPassword: any(named: 'currentPassword'),
-          newPassword: any(named: 'newPassword'),
-        ),
-      );
+    () => repository.changePassword(
+      currentPassword: any(named: 'currentPassword'),
+      newPassword: any(named: 'newPassword'),
+    ),
+  );
 
   testWidgets('mở hộp thoại từ trang tài khoản', (tester) async {
     await openDialog(tester);
@@ -71,7 +76,9 @@ void main() {
     expect(find.text('Hủy'), findsOneWidget);
   });
 
-  testWidgets('để trống hoặc nhập lại không khớp thì báo lỗi và không gọi BE', (tester) async {
+  testWidgets('để trống hoặc nhập lại không khớp thì báo lỗi và không gọi BE', (
+    tester,
+  ) async {
     await openDialog(tester);
 
     await tester.tap(dialogButton());
@@ -91,7 +98,9 @@ void main() {
     );
   });
 
-  testWidgets('mật khẩu mới quá ngắn thì báo ngay, không cần hỏi BE', (tester) async {
+  testWidgets('mật khẩu mới quá ngắn thì báo ngay, không cần hỏi BE', (
+    tester,
+  ) async {
     await openDialog(tester);
 
     await tester.enterText(field('Mật khẩu hiện tại'), 'old-pass-1');
@@ -103,39 +112,58 @@ void main() {
     expect(find.text('Mật khẩu tối thiểu 8 ký tự'), findsOneWidget);
   });
 
-  testWidgets('đổi thành công thì đóng hộp thoại, báo các thiết bị khác phải đăng nhập lại, vẫn đăng nhập ở đây', (tester) async {
-    stubChange().thenAnswer((_) async => customerUser);
-    await openDialog(tester);
+  testWidgets(
+    'đổi thành công thì đóng hộp thoại, báo các thiết bị khác phải đăng nhập lại, vẫn đăng nhập ở đây',
+    (tester) async {
+      stubChange().thenAnswer((_) async => customerUser);
+      await openDialog(tester);
 
-    await fill(tester);
-    await tester.tap(dialogButton());
-    await tester.pump();
-    await tester.pumpAndSettle();
+      await fill(tester);
+      await tester.tap(dialogButton());
+      await tester.pump();
+      await tester.pumpAndSettle();
 
-    verify(
-      () => repository.changePassword(currentPassword: 'old-pass-1', newPassword: 'new-pass-2'),
-    ).called(1);
-    expect(find.text('Hủy'), findsNothing);
-    expect(find.textContaining('Các thiết bị khác cần đăng nhập lại'), findsOneWidget);
-    expect(authBloc.state, const AuthState.authenticated(customerUser));
-  });
+      verify(
+        () => repository.changePassword(
+          currentPassword: 'old-pass-1',
+          newPassword: 'new-pass-2',
+        ),
+      ).called(1);
+      expect(find.text('Hủy'), findsNothing);
+      expect(
+        find.textContaining('Các thiết bị khác cần đăng nhập lại'),
+        findsOneWidget,
+      );
+      expect(authBloc.state, const AuthState.authenticated(customerUser));
+    },
+  );
 
-  testWidgets('sai mật khẩu hiện tại thì báo bằng tiếng Việt và hộp thoại vẫn mở', (tester) async {
-    stubChange().thenThrow(const ServerFailure('Current password is incorrect', statusCode: 400));
-    await openDialog(tester);
+  testWidgets(
+    'sai mật khẩu hiện tại thì báo bằng tiếng Việt và hộp thoại vẫn mở',
+    (tester) async {
+      stubChange().thenThrow(
+        const ServerFailure('Current password is incorrect', statusCode: 400),
+      );
+      await openDialog(tester);
 
-    await fill(tester);
-    await tester.tap(dialogButton());
-    await tester.pump();
-    await tester.pump();
+      await fill(tester);
+      await tester.tap(dialogButton());
+      await tester.pump();
+      await tester.pump();
 
-    expect(find.text('Mật khẩu hiện tại không đúng'), findsOneWidget);
-    expect(find.text('Hủy'), findsOneWidget);
-  });
+      expect(find.text('Mật khẩu hiện tại không đúng'), findsOneWidget);
+      expect(find.text('Hủy'), findsOneWidget);
+    },
+  );
 
-  testWidgets('mật khẩu mới trùng mật khẩu cũ thì hiện lý do của BE', (tester) async {
+  testWidgets('mật khẩu mới trùng mật khẩu cũ thì hiện lý do của BE', (
+    tester,
+  ) async {
     stubChange().thenThrow(
-      const ServerFailure('New password must differ from the current password', statusCode: 400),
+      const ServerFailure(
+        'New password must differ from the current password',
+        statusCode: 400,
+      ),
     );
     await openDialog(tester);
 
@@ -144,11 +172,16 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Mật khẩu mới phải khác mật khẩu hiện tại'), findsOneWidget);
+    expect(
+      find.text('Mật khẩu mới phải khác mật khẩu hiện tại'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('mở lại sau khi lỗi thì không hiện lỗi cũ', (tester) async {
-    stubChange().thenThrow(const ServerFailure('Current password is incorrect', statusCode: 400));
+    stubChange().thenThrow(
+      const ServerFailure('Current password is incorrect', statusCode: 400),
+    );
     await openDialog(tester);
     await fill(tester);
     await tester.tap(dialogButton());

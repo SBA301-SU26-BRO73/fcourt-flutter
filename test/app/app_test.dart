@@ -15,6 +15,7 @@ import '../features/auth/helpers.dart';
 import '../features/booking_history/booking_history_test.dart' show Repository;
 import '../features/catalog/catalog_harness.dart' show settle;
 import '../features/catalog/helpers.dart';
+
 import 'package:fcourt/src/features/customer_discovery/domain/discovery_repository.dart';
 
 class _FakeHealthRepository implements HealthRepository {
@@ -69,14 +70,17 @@ void main() {
   }
 
   testWidgets('khách hàng mở lịch sử đặt sân từ trang chủ', (tester) async {
-    when(() => repository.restoreSession()).thenAnswer((_) async => customerUser);
+    when(() => repository.restoreSession())
+        .thenAnswer((_) async => customerUser);
     await pumpApp(tester);
-    await tester.tap(find.text('Lịch sử đặt sân'));
+    await tester.tap(find.text('Đã đặt').hitTestable().first);
     await tester.pumpAndSettle();
-    expect(find.text('Sắp diễn ra'), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, 'Sắp diễn ra'), findsOneWidget);
     expect(find.text('Thủ Đức · Sân 1'), findsOneWidget);
-    expect(GoRouterState.of(tester.element(find.text('Thủ Đức · Sân 1')))
-        .uri.path, '/bookings');
+    expect(
+      GoRouterState.of(tester.element(find.text('Thủ Đức · Sân 1'))).uri.path,
+      '/bookings',
+    );
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -89,27 +93,33 @@ void main() {
     expect(find.text('Xin chào, An Nguyen'), findsNothing);
   });
 
-  testWidgets('đang khôi phục phiên thì hiện màn chờ, không nháy màn đăng nhập', (tester) async {
-    final completer = Completer<Never>();
-    when(() => repository.restoreSession()).thenAnswer((_) => completer.future);
-    await tester.pumpWidget(
-      FcourtApp(
-        dependencies: AppDependencies(
-          config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
-          healthRepository: _FakeHealthRepository(),
-          authRepository: repository,
-          catalogRepository: catalogRepository,
-          discoveryRepository: _FakeDiscoveryRepository(),
+  testWidgets(
+    'đang khôi phục phiên thì hiện màn chờ, không nháy màn đăng nhập',
+    (tester) async {
+      final completer = Completer<Never>();
+      when(() => repository.restoreSession())
+          .thenAnswer((_) => completer.future);
+      await tester.pumpWidget(
+        FcourtApp(
+          dependencies: AppDependencies(
+            config: const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://test'),
+            healthRepository: _FakeHealthRepository(),
+            authRepository: repository,
+            catalogRepository: catalogRepository,
+            discoveryRepository: _FakeDiscoveryRepository(),
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Đăng nhập'), findsNothing);
-  });
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Đăng nhập'), findsNothing);
+    },
+  );
 
-  testWidgets('có phiên cũ thì vào thẳng trang chủ theo vai trò', (tester) async {
+  testWidgets('có phiên cũ thì vào thẳng trang chủ theo vai trò', (
+    tester,
+  ) async {
     when(() => repository.restoreSession()).thenAnswer((_) async => adminUser);
 
     await pumpApp(tester);
@@ -118,7 +128,9 @@ void main() {
     expect(find.text('Xin chào, Chu San'), findsOneWidget);
   });
 
-  testWidgets('không hỏi được máy chủ khi khởi động thì về màn đăng nhập', (tester) async {
+  testWidgets('không hỏi được máy chủ khi khởi động thì về màn đăng nhập', (
+    tester,
+  ) async {
     when(() => repository.restoreSession()).thenThrow(const NetworkFailure());
 
     await pumpApp(tester);
@@ -126,24 +138,40 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Đăng nhập'), findsOneWidget);
   });
 
-  testWidgets('đăng nhập xong thì sang trang chủ và không quay lại được màn đăng nhập', (tester) async {
-    when(() => repository.restoreSession()).thenAnswer((_) async => null);
-    when(() => repository.login(email: 'customer@demo.com', password: 'S3cret-pass'))
+  testWidgets(
+    'đăng nhập xong thì sang trang chủ và không quay lại được màn đăng nhập',
+    (tester) async {
+      when(() => repository.restoreSession()).thenAnswer((_) async => null);
+      when(
+        () => repository.login(
+          email: 'customer@demo.com',
+          password: 'S3cret-pass',
+        ),
+      ).thenAnswer((_) async => customerUser);
+      await pumpApp(tester);
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Email'),
+        'customer@demo.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Mật khẩu'),
+        'S3cret-pass',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Đăng nhập'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sân nổi bật'), findsOneWidget);
+      expect(find.text('Xin chào, An Nguyen'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Đăng nhập'), findsNothing);
+    },
+  );
+
+  testWidgets('refresh token hết hạn thì đưa người dùng về màn đăng nhập', (
+    tester,
+  ) async {
+    when(() => repository.restoreSession())
         .thenAnswer((_) async => customerUser);
-    await pumpApp(tester);
-
-    await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'customer@demo.com');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Mật khẩu'), 'S3cret-pass');
-    await tester.tap(find.widgetWithText(FilledButton, 'Đăng nhập'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Đặt sân'), findsOneWidget);
-    expect(find.text('Xin chào, An Nguyen'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Đăng nhập'), findsNothing);
-  });
-
-  testWidgets('refresh token hết hạn thì đưa người dùng về màn đăng nhập', (tester) async {
-    when(() => repository.restoreSession()).thenAnswer((_) async => customerUser);
     await pumpApp(tester);
     expect(find.text('Xin chào, An Nguyen'), findsOneWidget);
 
@@ -154,8 +182,11 @@ void main() {
     expect(find.text('Xin chào, An Nguyen'), findsNothing);
   });
 
-  testWidgets('đăng xuất từ trang tài khoản đưa về màn đăng nhập', (tester) async {
-    when(() => repository.restoreSession()).thenAnswer((_) async => customerUser);
+  testWidgets('đăng xuất từ trang tài khoản đưa về màn đăng nhập', (
+    tester,
+  ) async {
+    when(() => repository.restoreSession())
+        .thenAnswer((_) async => customerUser);
     when(() => repository.logout()).thenAnswer((_) async {});
     await pumpApp(tester);
 
@@ -176,35 +207,54 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Quên mật khẩu'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Gửi link đặt lại'), findsOneWidget);
+    expect(
+      find.widgetWithText(FilledButton, 'Gửi link đặt lại'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('link đặt lại mật khẩu điền sẵn token khi chưa đăng nhập', (tester) async {
+  testWidgets('link đặt lại mật khẩu điền sẵn token khi chưa đăng nhập', (
+    tester,
+  ) async {
     when(() => repository.restoreSession()).thenAnswer((_) async => null);
     await pumpApp(tester);
 
-    GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/reset-password?token=abc123');
+    GoRouter.of(tester.element(find.byType(Scaffold).first))
+        .go('/reset-password?token=abc123');
     await tester.pumpAndSettle();
 
     expect(find.text('Đặt lại mật khẩu'), findsWidgets);
     expect(
-      tester.widget<TextFormField>(find.widgetWithText(TextFormField, 'Mã đặt lại mật khẩu')).controller?.text,
+      tester
+          .widget<TextFormField>(
+            find.widgetWithText(TextFormField, 'Mã đặt lại mật khẩu'),
+          )
+          .controller
+          ?.text,
       'abc123',
     );
   });
 
-  testWidgets('link đặt lại mật khẩu vẫn mở được khi đang đăng nhập sẵn', (tester) async {
-    when(() => repository.restoreSession()).thenAnswer((_) async => customerUser);
+  testWidgets('link đặt lại mật khẩu vẫn mở được khi đang đăng nhập sẵn', (
+    tester,
+  ) async {
+    when(() => repository.restoreSession())
+        .thenAnswer((_) async => customerUser);
     await pumpApp(tester);
 
-    GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/reset-password?token=abc123');
+    GoRouter.of(tester.element(find.byType(Scaffold).first))
+        .go('/reset-password?token=abc123');
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(TextFormField, 'Mã đặt lại mật khẩu'), findsOneWidget);
+    expect(
+      find.widgetWithText(TextFormField, 'Mã đặt lại mật khẩu'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('super admin mở được màn danh mục từ trang chủ', (tester) async {
-    when(() => repository.restoreSession()).thenAnswer((_) async => superAdminUser);
+    when(() => repository.restoreSession())
+        .thenAnswer((_) async => superAdminUser);
     when(() => catalogRepository.courtTypes(page: 0, size: 20))
         .thenAnswer((_) async => pageOf([badminton]));
     when(() => catalogRepository.plans(page: 0, size: 20))
@@ -219,17 +269,26 @@ void main() {
     verify(() => catalogRepository.courtTypes(page: 0, size: 20)).called(1);
   });
 
-  testWidgets('vai trò khác vào thẳng /catalog thì bị đưa về trang chủ và không gọi BE', (tester) async {
-    when(() => repository.restoreSession()).thenAnswer((_) async => adminUser);
-    await pumpApp(tester);
+  testWidgets(
+    'vai trò khác vào thẳng /catalog thì bị đưa về trang chủ và không gọi BE',
+    (tester) async {
+      when(() => repository.restoreSession())
+          .thenAnswer((_) async => adminUser);
+      await pumpApp(tester);
 
-    GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/catalog');
-    await tester.pumpAndSettle();
+      GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/catalog');
+      await tester.pumpAndSettle();
 
-    expect(find.text('Danh mục hệ thống'), findsNothing);
-    expect(find.text('Xin chào, Chu San'), findsOneWidget);
-    verifyNever(() => catalogRepository.courtTypes(page: any(named: 'page'), size: any(named: 'size')));
-  });
+      expect(find.text('Danh mục hệ thống'), findsNothing);
+      expect(find.text('Xin chào, Chu San'), findsOneWidget);
+      verifyNever(
+        () => catalogRepository.courtTypes(
+          page: any(named: 'page'),
+          size: any(named: 'size'),
+        ),
+      );
+    },
+  );
 
   testWidgets('từ màn đăng nhập mở được hai màn đăng ký', (tester) async {
     when(() => repository.restoreSession()).thenAnswer((_) async => null);
@@ -246,17 +305,24 @@ void main() {
     expect(find.text('Đăng ký chủ sân'), findsOneWidget);
   });
 
-  testWidgets('khách hàng mở được màn tìm sân và màn kiểm tra kết nối', (tester) async {
-    when(() => repository.restoreSession()).thenAnswer((_) async => customerUser);
+  testWidgets('khách hàng mở được màn tìm sân và cài đặt giao diện', (
+    tester,
+  ) async {
+    when(() => repository.restoreSession())
+        .thenAnswer((_) async => customerUser);
     await pumpApp(tester);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Tìm sân'));
-    await tester.pumpAndSettle();
-    expect(find.text('FCOURT'), findsOneWidget);
-    expect(find.text('Ra sân. Hết mình.'), findsOneWidget);
+    expect(find.text('Sân nổi bật'), findsOneWidget);
+    expect(find.byKey(const ValueKey('discovery-search')), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Kiểm tra kết nối'));
+    await tester.tap(find.byTooltip('Cài đặt'));
     await tester.pumpAndSettle();
-    expect(find.text('Máy chủ: ok'), findsOneWidget);
+    expect(find.text('Chế độ hiển thị'), findsOneWidget);
+    await tester.tap(find.text('Tối'));
+    await tester.pumpAndSettle();
+    expect(
+      Theme.of(tester.element(find.text('Chế độ hiển thị'))).brightness,
+      Brightness.dark,
+    );
   });
 }

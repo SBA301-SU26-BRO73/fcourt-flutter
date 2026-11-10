@@ -72,6 +72,7 @@ void main() {
       );
       await tester.pumpWidget(FcourtApp(dependencies: dependencies));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Quản lý đơn đặt sân'));
       await tester.tap(find.text('Quản lý đơn đặt sân'));
       await tester.pumpAndSettle();
       expect(find.byType(AdminBookingManagementScreen), findsOneWidget);

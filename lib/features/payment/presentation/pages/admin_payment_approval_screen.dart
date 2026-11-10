@@ -80,6 +80,7 @@ class _AdminPaymentApprovalScreenState
   Future<void> _review(PendingPayment payment) async {
     final generation = _generation;
     final result = await showModalBottomSheet<bool>(
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       isDismissible: false,
@@ -248,7 +249,9 @@ class _ApprovalSheetState extends State<_ApprovalSheet> {
                 symbol: '₫',
                 decimalDigits: 0,
               ).format(widget.payment.amountVnd),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
+            const SizedBox(height: 12),
             SizedBox(
               height: 280,
               child: InteractiveViewer(
@@ -289,6 +292,7 @@ class _ApprovalSheetState extends State<_ApprovalSheet> {
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             if (_busy) const LinearProgressIndicator(),
+            const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               child: FilledButton(
@@ -299,6 +303,7 @@ class _ApprovalSheetState extends State<_ApprovalSheet> {
                 child: const Text('Xác nhận nhận tiền'),
               ),
             ),
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
               child: FilledButton(

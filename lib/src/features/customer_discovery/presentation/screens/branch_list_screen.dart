@@ -7,7 +7,8 @@ import '../widgets/discovery_widgets.dart';
 import '../widgets/discovery_filter_sheet.dart';
 
 class BranchListScreen extends StatefulWidget {
-  const BranchListScreen({super.key});
+  const BranchListScreen({super.key, this.isTab = false});
+  final bool isTab;
   @override
   State<BranchListScreen> createState() => _BranchListScreenState();
 }
@@ -25,6 +26,7 @@ class _BranchListScreenState extends State<BranchListScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
+      automaticallyImplyLeading: false,
       title: const Text('Khám phá sân'),
       actions: [
         BlocBuilder<DiscoveryCubit, DiscoveryState>(
@@ -34,6 +36,7 @@ class _BranchListScreenState extends State<BranchListScreen> {
               'Bộ lọc (${state.filters.count + (state.sport == null ? 0 : 1)})',
             ),
             onPressed: () => showModalBottomSheet<void>(
+              useRootNavigator: true,
               context: context,
               isScrollControlled: true,
               useSafeArea: true,
@@ -64,14 +67,32 @@ class _BranchListScreenState extends State<BranchListScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (widget.isTab) ...[
+                              Text(
+                                'Tìm sân. Bắt nhịp cuộc chơi.',
+                                style: Theme.of(context).textTheme.headlineSmall
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Chọn môn yêu thích, khám phá sân phù hợp và đặt giờ chơi.',
+                              ),
+                              const SizedBox(height: 20),
+                            ],
                             TextField(
                               controller: _query,
                               maxLength: 200,
                               textInputAction: TextInputAction.search,
                               onChanged: cubit.search,
-                              onSubmitted: (_) => cubit.refresh(),
+                              onSubmitted: (value) {
+                                final query = value.trim();
+                                _query.text = query;
+                                cubit.search(query);
+                                cubit.refresh();
+                              },
                               decoration: InputDecoration(
                                 labelText: 'Tên sân hoặc địa chỉ',
+                                hintText: 'Bạn muốn chơi ở đâu?',
                                 counterText: '',
                                 prefixIcon: const Icon(Icons.search),
                                 suffixIcon: IconButton(
@@ -153,6 +174,7 @@ class _BranchListScreenState extends State<BranchListScreen> {
                               : const SizedBox.shrink(),
                         ),
                       ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 112)),
                   ],
                 ),
               );

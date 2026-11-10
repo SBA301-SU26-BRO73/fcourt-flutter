@@ -107,6 +107,7 @@ class _ScheduleBoardState extends State<ScheduleBoard>
     if (branchId == null) return;
     final recentGuests = _recentGuestsByBranch.putIfAbsent(branchId, () => {});
     final result = await showModalBottomSheet<bool>(
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -277,6 +278,7 @@ class _ScheduleBoardState extends State<ScheduleBoard>
                     ),
                   ),
                 if (state.data case final data?) ...[
+                  const SizedBox(height: 16),
                   Text(
                     'Chi nhánh #${data.branchId}',
                     style: Theme.of(context).textTheme.titleMedium,

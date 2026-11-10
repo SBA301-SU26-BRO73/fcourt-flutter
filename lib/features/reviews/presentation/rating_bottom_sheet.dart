@@ -12,6 +12,7 @@ Future<CourtReview?> showRatingBottomSheet(
   ReviewPhotoPicker? picker,
   ReviewPhotoUploader? uploader,
 }) => showModalBottomSheet<CourtReview>(
+  useRootNavigator: true,
   context: context,
   isScrollControlled: true,
   useSafeArea: true,

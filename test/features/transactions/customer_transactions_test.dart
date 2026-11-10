@@ -60,7 +60,7 @@ void main() {
         {'amount': 0.5},
         {'amount': -1},
         {'status': 'UNKNOWN'},
-        {'receiptImageUrl': 'https://attacker.example/bill'},
+        {'receiptImageUrl': 'https://user:pw@bucket.example/bill'},
         {'receiptImageUrl': 'http://res.cloudinary.com/bill'},
         {'occurredAt': 'invalid'},
       ]) {

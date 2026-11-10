@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/error/failure.dart';
 import '../domain/transaction.dart';
+import '../../../core/network/image_url.dart';
 
 class CustomerTransactionsImpl implements CustomerTransactions {
   const CustomerTransactionsImpl(this.dio);
@@ -74,11 +75,7 @@ class CustomerTransactionsImpl implements CustomerTransactions {
     if (url != null) {
       if (url is! String || url.length > 2000) throw const FormatException();
       receipt = Uri.tryParse(url);
-      if (receipt == null ||
-          receipt.scheme != 'https' ||
-          receipt.host != 'res.cloudinary.com' ||
-          receipt.userInfo.isNotEmpty ||
-          receipt.hasPort) {
+      if (!isAllowedImageUrl(receipt)) {
         throw const FormatException();
       }
     }

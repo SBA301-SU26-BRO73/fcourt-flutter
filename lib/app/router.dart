@@ -1,6 +1,15 @@
+import '../features/customer_hub/presentation/customer_hub_pages.dart';
+import '../features/auth/domain/entities/user_role.dart';
+import 'widgets/app_shell.dart';
+import 'booking_selection_adapter.dart';
+import '../features/booking/domain/entities/booking_hold.dart';
+import '../features/booking/domain/repositories/booking_creation_repository.dart';
+import '../features/booking/presentation/pages/booking_create_screen.dart';
+import '../features/settings/presentation/settings_page.dart';
 import '../src/features/customer_slots/data/stomp_slot_invalidations.dart';
 
 import 'dart:async';
+
 import '../features/reviews/presentation/rating_bottom_sheet.dart';
 
 import '../features/subscription/presentation/subscription_cubit.dart';
@@ -114,17 +123,23 @@ GoRouter createRouter(
     if (ratingOpen || reviews == null) return;
     ratingOpen = true;
     try {
-      final result = await showRatingBottomSheet(context,
-        repository: reviews, bookingId: bookingId,
-        picker: dependencies.reviewPhotoPicker, uploader: dependencies.reviewPhotoUploader);
+      final result = await showRatingBottomSheet(
+        context,
+        repository: reviews,
+        bookingId: bookingId,
+        picker: dependencies.reviewPhotoPicker,
+        uploader: dependencies.reviewPhotoUploader,
+      );
       if (context.mounted && result != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cảm ơn bạn đã đánh giá sân!')));
+          const SnackBar(content: Text('Cảm ơn bạn đã đánh giá sân!')),
+        );
       }
     } finally {
       ratingOpen = false;
     }
   }
+
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refreshListenable,
@@ -134,538 +149,679 @@ GoRouter createRouter(
       role: authBloc.state.role,
     ),
     routes: [
-      GoRoute(
-        path: '/admin/subscription',
-        builder: (context, state) {
-          final repository = dependencies.subscriptions;
-          if (repository == null) {
-            return const Scaffold(
-              body: Center(child: Text('Gói dịch vụ chưa khả dụng')),
-            );
-          }
-          return BlocProvider(
-            create: (_) => SubscriptionCubit(
-              repository,
-              dependencies.subscriptionCheckoutLauncher,
-            )..refresh(),
-            child: const SubscriptionScreen(),
-          );
-        },
-      ),
-      if (dependencies.offline != null)
-        GoRoute(
-          path: AppRoutes.offlineCheckIn,
-          builder: (_, _) => OfflineCheckInPage(
-            repository: OfflineOperations.cached(
-              dependencies.offline!.coordinator,
+      ShellRoute(
+        builder: (context, state, child) =>
+            AppShell(location: state.uri.path, child: child),
+        routes: [
+          GoRoute(path: '/activity', builder: (_, _) => const ActivityPage()),
+          GoRoute(
+            path: '/notifications',
+            builder: (_, _) => const NotificationsPage(),
+          ),
+          GoRoute(
+            path: '/notifications/:id',
+            builder: (_, state) => NotificationArticlePage(
+              index: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
             ),
-            syncPanel: OfflinePanel(runtime: dependencies.offline!),
-            onReconnect: () => authBloc.add(const AuthStarted()),
-            onLogin: () => authBloc.add(const AuthSessionExpired()),
           ),
-        ),
-      if (dependencies.pos != null)
-        GoRoute(
-          path: '/staff/pos',
-          builder: (_, _) => PosPage(
-            repository: dependencies.pos!,
-            journal: dependencies.posSaleStore?.call(),
+          GoRoute(
+            path: AppRoutes.settings,
+            builder: (_, _) => const SettingsPage(),
           ),
-        ),
-      if (dependencies.operations != null)
-        GoRoute(
-          path: '/staff/schedule',
-          builder: (_, _) => SchedulePage(
-            repository: dependencies.operations!,
-            counter: dependencies.counter,
-            offline: dependencies.offline,
+          GoRoute(
+            path: '/admin/subscription',
+            builder: (context, state) {
+              final repository = dependencies.subscriptions;
+              if (repository == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Gói dịch vụ chưa khả dụng')),
+                );
+              }
+              return BlocProvider(
+                create: (_) => SubscriptionCubit(
+                  repository,
+                  dependencies.subscriptionCheckoutLauncher,
+                )..refresh(),
+                child: const SubscriptionScreen(),
+              );
+            },
           ),
-        ),
-      if (dependencies.staffRepository != null)
-        GoRoute(
-          path: AppRoutes.staff,
-          builder: (_, _) =>
-              StaffPage(repository: dependencies.staffRepository!),
-        ),
-      GoRoute(
-        path: AppRoutes.splash,
-        builder: (context, state) => const SplashPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.login,
-        builder: (context, state) => BlocProvider(
-          create: (_) => LoginBloc(Login(repository)),
-          child: const LoginPage(),
-        ),
-      ),
-      GoRoute(
-        path: AppRoutes.registerCustomer,
-        builder: (context, state) => BlocProvider(
-          create: (_) => RegisterBloc(
-            RegisterCustomer(repository),
-            RegisterCourtOwner(repository),
-          ),
-          child: const RegisterCustomerPage(),
-        ),
-      ),
-      GoRoute(
-        path: AppRoutes.registerOwner,
-        builder: (context, state) => BlocProvider(
-          create: (_) => RegisterBloc(
-            RegisterCustomer(repository),
-            RegisterCourtOwner(repository),
-          ),
-          child: RegisterOwnerPage(picker: dependencies.documentPicker),
-        ),
-      ),
-      GoRoute(
-        path: AppRoutes.forgotPassword,
-        builder: (context, state) => BlocProvider(
-          create: (_) => ForgotPasswordBloc(RequestPasswordReset(repository)),
-          child: const ForgotPasswordPage(),
-        ),
-      ),
-      GoRoute(
-        path: AppRoutes.resetPassword,
-        builder: (context, state) => BlocProvider(
-          create: (_) => ResetPasswordBloc(ResetPassword(repository)),
-          child: ResetPasswordPage(
-            initialToken: state.uri.queryParameters['token'],
-          ),
-        ),
-      ),
-      GoRoute(
-        path: '/booking/summary',
-        builder: (context, state) {
-          final arguments = state.extra;
-          final bookingRepository = dependencies.bookingRepository;
-          if (arguments is! BookingSummaryArguments ||
-              bookingRepository == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Đặt sân')),
-              body: const Center(
-                child: Text('Vui lòng chọn sân và khung giờ trước khi đặt.'),
+          if (dependencies.offline != null)
+            GoRoute(
+              path: AppRoutes.offlineCheckIn,
+              builder: (_, _) => OfflineCheckInPage(
+                repository: OfflineOperations.cached(
+                  dependencies.offline!.coordinator,
+                ),
+                syncPanel: OfflinePanel(runtime: dependencies.offline!),
+                onReconnect: () => authBloc.add(const AuthStarted()),
+                onLogin: () => authBloc.add(const AuthSessionExpired()),
               ),
-            );
-          }
-          return BookingSummaryScreen(
-            repository: bookingRepository,
-            arguments: arguments,
-          );
-        },
-      ),
-      GoRoute(
-        path: '/admin/branches/:branchId/payments',
-        builder: (context, state) {
-          final id = int.tryParse(state.pathParameters['branchId'] ?? '');
-          final repository = dependencies.adminPaymentRepository;
-          if (id == null || id <= 0 || repository == null) {
-            return const Scaffold(
-              body: Center(child: Text('Vui lòng chọn chi nhánh hợp lệ.')),
-            );
-          }
-          return AdminPaymentApprovalScreen(
-            repository: repository,
-            branchId: id,
-            onRefunds: dependencies.adminRefunds == null
-                ? null
-                : () => context.push('/admin/branches/$id/refunds'),
-            onLedger: dependencies.adminTransactions == null
-                ? null
-                : () => context.push('/admin/branches/$id/transactions'),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/admin/branches/:branchId/refunds',
-        builder: (context, state) {
-          final id = int.tryParse(state.pathParameters['branchId'] ?? '');
-          final repository = dependencies.adminRefunds;
-          final picker = dependencies.receiptPicker;
-          if (id == null || id <= 0 || repository == null || picker == null) {
-            return const Scaffold(
-              body: Center(child: Text('Vui lòng chọn chi nhánh hợp lệ')),
-            );
-          }
-          return AdminRefundApprovalScreen(
-            repository: repository,
-            picker: picker,
-            branchId: id,
-          );
-        },
-      ),
-      GoRoute(
-        path: '/bookings/:id/refund',
-        builder: (context, state) {
-          final id = int.tryParse(state.pathParameters['id'] ?? '');
-          final repository = dependencies.refundRepository;
-          if (id == null || id <= 0 || repository == null) {
-            return const Scaffold(
-              body: Center(child: Text('Vui lòng chọn đơn hợp lệ')),
-            );
-          }
-          return CustomerRefundScreen(repository: repository, bookingId: id);
-        },
-      ),
-      GoRoute(
-        path: '/admin/branches/:branchId/transactions',
-        builder: (context, state) {
-          final id = int.tryParse(state.pathParameters['branchId'] ?? '');
-          final repository = dependencies.adminTransactions;
-          if (id == null || id <= 0 || repository == null) {
-            return const Scaffold(
-              body: Center(child: Text('Vui lòng chọn chi nhánh hợp lệ')),
-            );
-          }
-          return AdminTransactionHistoryScreen(
-            repository: repository,
-            branchId: id,
-            exporter: dependencies.ledgerExporter,
-            revenueReports: dependencies.adminFacility?.revenueReportRepository,
-            fileOpener: dependencies.adminFacility?.reportFileOpener,
-          );
-        },
-      ),
-      GoRoute(
-        path: '/payments/history',
-        builder: (context, state) {
-          final repository = dependencies.customerTransactions;
-          if (repository == null) {
-            return const Scaffold(
-              body: Center(child: Text('Lịch sử thanh toán chưa khả dụng')),
-            );
-          }
-          return CustomerTransactionHistoryScreen(repository: repository);
-        },
-      ),
-      GoRoute(
-        path: '/bookings',
-        builder: (context, state) {
-          final repository = dependencies.bookingHistoryRepository;
-          if (repository == null) {
-            return const Scaffold(
-              body: Center(child: Text('Lịch sử đặt sân chưa khả dụng')),
-            );
-          }
-          return BookingHistoryScreen(
-            onReview: dependencies.reviews == null ? null : (id) => rate(context, id),
-            repository: repository,
-            onDetail: (id) => context.push('/bookings/$id'),
-            onTransactions: dependencies.customerTransactions == null
-                ? null
-                : () => context.push('/payments/history'),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/bookings/:id',
-        builder: (context, state) {
-          final repository = dependencies.bookingHistoryRepository;
-          final id = int.tryParse(state.pathParameters['id'] ?? '');
-          if (repository == null || id == null || id <= 0) {
-            return const Scaffold(
-              body: Center(child: Text('Đơn đặt sân không hợp lệ')),
-            );
-          }
-          return BookingDetailScreen(
-            onReview: dependencies.reviews == null ? null : (id) => rate(context, id),
-            repository: repository,
-            id: id,
-            cancellation: dependencies.cancellationRepository,
-            onRefund: dependencies.refundRepository == null
-                ? null
-                : (id) => context.push('/bookings/$id/refund'),
-            onTicket:
-                dependencies.ticketRepository == null ||
-                    dependencies.ticketSaver == null
-                ? null
-                : (id) => showDialog<void>(
-                    context: context,
-                    builder: (_) => Dialog.fullscreen(
-                      child: BookingSuccessScreen(
-                        repository: dependencies.ticketRepository!,
-                        saver: dependencies.ticketSaver!,
-                        arguments: CheckoutArguments(bookingId: id),
-                      ),
+            ),
+          if (dependencies.pos != null)
+            GoRoute(
+              path: '/staff/pos',
+              builder: (_, _) => PosPage(
+                repository: dependencies.pos!,
+                journal: dependencies.posSaleStore?.call(),
+              ),
+            ),
+          if (dependencies.operations != null)
+            GoRoute(
+              path: '/staff/schedule',
+              builder: (_, _) => SchedulePage(
+                repository: dependencies.operations!,
+                counter: dependencies.counter,
+                offline: dependencies.offline,
+              ),
+            ),
+          if (dependencies.staffRepository != null)
+            GoRoute(
+              path: AppRoutes.staff,
+              builder: (_, _) =>
+                  StaffPage(repository: dependencies.staffRepository!),
+            ),
+          GoRoute(
+            path: AppRoutes.splash,
+            builder: (context, state) => const SplashPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.login,
+            builder: (context, state) => BlocProvider(
+              create: (_) => LoginBloc(Login(repository)),
+              child: const LoginPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.registerCustomer,
+            builder: (context, state) => BlocProvider(
+              create: (_) => RegisterBloc(
+                RegisterCustomer(repository),
+                RegisterCourtOwner(repository),
+              ),
+              child: const RegisterCustomerPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.registerOwner,
+            builder: (context, state) => BlocProvider(
+              create: (_) => RegisterBloc(
+                RegisterCustomer(repository),
+                RegisterCourtOwner(repository),
+              ),
+              child: RegisterOwnerPage(picker: dependencies.documentPicker),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.forgotPassword,
+            builder: (context, state) => BlocProvider(
+              create: (_) =>
+                  ForgotPasswordBloc(RequestPasswordReset(repository)),
+              child: const ForgotPasswordPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.resetPassword,
+            builder: (context, state) => BlocProvider(
+              create: (_) => ResetPasswordBloc(ResetPassword(repository)),
+              child: ResetPasswordPage(
+                initialToken: state.uri.queryParameters['token'],
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/booking/confirm',
+            builder: (context, state) {
+              final checkout = state.extra;
+              final creator = dependencies.bookingRepository;
+              if (checkout is! BookingCheckout ||
+                  creator is! BookingCreationRepository) {
+                return const Scaffold(
+                  body: Center(
+                    child: Text(
+                      'Vui lòng chọn sân và khung giờ trước khi đặt.',
                     ),
                   ),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/payments/checkout',
-        builder: (context, state) {
-          final arguments = state.extra;
-          final paymentRepository = dependencies.paymentRepository;
-          final saver = dependencies.qrSaver;
-          if (arguments is! CheckoutArguments ||
-              paymentRepository == null ||
-              saver == null) {
-            return const Scaffold(
-              body: Center(
-                child: Text('Vui lòng chọn đơn đặt sân trước khi thanh toán.'),
-              ),
-            );
-          }
-          return PaymentCheckoutScreen(
-            repository: paymentRepository,
-            saver: saver,
-            arguments: arguments,
-            promos: dependencies.promos,
-            onFreeConfirmed: () => context.go('/payments/ticket', extra: arguments),
-            onUploadReceipt: () =>
-                context.push('/payments/receipt', extra: arguments),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/payments/ticket',
-        builder: (context, state) {
-          final args = state.extra;
-          final repository = dependencies.ticketRepository;
-          final saver = dependencies.ticketSaver;
-          if (args is! CheckoutArguments ||
-              repository == null ||
-              saver == null) {
-            return const Scaffold(
-              body: Center(child: Text('Vui lòng chọn vé đặt sân.')),
-            );
-          }
-          return BookingSuccessScreen(
-            repository: repository,
-            saver: saver,
-            arguments: args,
-            onHistory:
-                dependencies.onBookingHistory ??
-                (dependencies.bookingHistoryRepository == null
-                    ? null
-                    : () => context.go('/bookings')),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/payments/receipt',
-        builder: (context, state) {
-          final args = state.extra;
-          final repository = dependencies.receiptRepository;
-          final picker = dependencies.receiptPicker;
-          if (args is! CheckoutArguments ||
-              repository == null ||
-              picker == null) {
-            return const Scaffold(
-              body: Center(child: Text('Vui lòng chọn đơn đặt sân.')),
-            );
-          }
-          return PaymentWaitingScreen(
-            repository: repository,
-            picker: picker,
-            arguments: args,
-            onConfirmed: () => context.go('/payments/ticket', extra: args),
-            onSupport: () => context.go('/bookings/${args.bookingId}'),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/admin/bookings',
-        builder: (context, state) {
-          final repository = dependencies.adminBookings;
-          final facility = dependencies.adminFacility;
-          if (repository == null || facility == null) {
-            return const Scaffold(
-              body: Center(child: Text('Quản lý đơn đặt sân chưa khả dụng')),
-            );
-          }
-          return BlocProvider(
-            create: (_) => AdminBookingCubit(
-              repository,
-              facility.branchRepository,
-              facility.courtRepository,
-            )..initialize(),
-            child: const AdminBookingManagementScreen(),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/admin/vouchers',
-        builder: (context, state) {
-          final repository = dependencies.vouchers;
-          final facility = dependencies.adminFacility;
-          if (repository == null || facility == null) {
-            return const Scaffold(
-              body: Center(child: Text('Quản lý voucher chưa khả dụng')),
-            );
-          }
-          return BlocProvider(
-            create: (_) =>
-                VoucherCubit(repository, facility.branchRepository)
-                  ..initialize(),
-            child: VoucherManagementScreen(usages: dependencies.voucherUsages),
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.home,
-        builder: (context, state) => const HomePage(),
-      ),
-      GoRoute(
-        path: AppRoutes.catalog,
-        builder: (context, state) => MultiBlocProvider(
-          providers: [
-            BlocProvider(
-              create: (_) => CatalogListBloc<CourtType>(
-                load: ListCourtTypes(catalog).call,
-                delete: DeleteCourtType(catalog).call,
-                idOf: (courtType) => courtType.id,
-                deletedMessage: 'Đã xóa loại sân',
-              )..add(const CatalogRefreshed()),
-            ),
-            BlocProvider(
-              create: (_) => CatalogListBloc<SubscriptionPlan>(
-                load: ListSubscriptionPlans(catalog).call,
-                delete: DeleteSubscriptionPlan(catalog).call,
-                idOf: (plan) => plan.id,
-                deletedMessage: 'Đã xóa gói dịch vụ',
-              )..add(const CatalogRefreshed()),
-            ),
-          ],
-          child: CatalogPage(
-            saveCourtType: SaveCourtType(catalog),
-            saveSubscriptionPlan: SaveSubscriptionPlan(catalog),
+                );
+              }
+              return BookingCreateScreen(
+                repository: creator as BookingCreationRepository,
+                checkout: checkout,
+                onCreated: (arguments) =>
+                    context.replace('/payments/checkout', extra: arguments),
+                onHistory: () => context.go('/bookings'),
+              );
+            },
           ),
-        ),
-      ),
-      GoRoute(
-        path: AppRoutes.profile,
-        builder: (context, state) => MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (_) => ProfileBloc(UpdateProfile(repository))),
-            BlocProvider(
-              create: (_) => ChangePasswordBloc(ChangePassword(repository)),
-            ),
-          ],
-          child: const ProfilePage(),
-        ),
-      ),
-      GoRoute(
-        name: 'courtSlots',
-        path: '/courts/:courtId/slots',
-        builder: (context, state) {
-          final courtId = int.tryParse(state.pathParameters['courtId'] ?? '');
-          final repository = dependencies.slotRepository;
-          if (courtId == null || courtId <= 0 || repository == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Lịch sân trống')),
-              body: const Center(
-                child: Text('Vui lòng chọn sân hợp lệ để xem lịch.'),
+          GoRoute(
+            path: '/booking/summary',
+            builder: (context, state) {
+              final arguments = state.extra;
+              final bookingRepository = dependencies.bookingRepository;
+              if (arguments is! BookingSummaryArguments ||
+                  bookingRepository == null) {
+                return Scaffold(
+                  appBar: AppBar(title: const Text('Đặt sân')),
+                  body: const Center(
+                    child: Text(
+                      'Vui lòng chọn sân và khung giờ trước khi đặt.',
+                    ),
+                  ),
+                );
+              }
+              return BookingSummaryScreen(
+                repository: bookingRepository,
+                arguments: arguments,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/admin/branches/:branchId/payments',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['branchId'] ?? '');
+              final repository = dependencies.adminPaymentRepository;
+              if (id == null || id <= 0 || repository == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Vui lòng chọn chi nhánh hợp lệ.')),
+                );
+              }
+              return AdminPaymentApprovalScreen(
+                repository: repository,
+                branchId: id,
+                onRefunds: dependencies.adminRefunds == null
+                    ? null
+                    : () => context.push('/admin/branches/$id/refunds'),
+                onLedger: dependencies.adminTransactions == null
+                    ? null
+                    : () => context.push('/admin/branches/$id/transactions'),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/admin/branches/:branchId/refunds',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['branchId'] ?? '');
+              final repository = dependencies.adminRefunds;
+              final picker = dependencies.receiptPicker;
+              if (id == null ||
+                  id <= 0 ||
+                  repository == null ||
+                  picker == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Vui lòng chọn chi nhánh hợp lệ')),
+                );
+              }
+              return AdminRefundApprovalScreen(
+                repository: repository,
+                picker: picker,
+                branchId: id,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/bookings/:id/refund',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              final repository = dependencies.refundRepository;
+              if (id == null || id <= 0 || repository == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Vui lòng chọn đơn hợp lệ')),
+                );
+              }
+              return CustomerRefundScreen(
+                repository: repository,
+                bookingId: id,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/admin/branches/:branchId/transactions',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['branchId'] ?? '');
+              final repository = dependencies.adminTransactions;
+              if (id == null || id <= 0 || repository == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Vui lòng chọn chi nhánh hợp lệ')),
+                );
+              }
+              return AdminTransactionHistoryScreen(
+                repository: repository,
+                branchId: id,
+                exporter: dependencies.ledgerExporter,
+                revenueReports:
+                    dependencies.adminFacility?.revenueReportRepository,
+                fileOpener: dependencies.adminFacility?.reportFileOpener,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/payments/history',
+            builder: (context, state) {
+              final repository = dependencies.customerTransactions;
+              if (repository == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Lịch sử thanh toán chưa khả dụng')),
+                );
+              }
+              return CustomerTransactionHistoryScreen(repository: repository);
+            },
+          ),
+          GoRoute(
+            path: '/bookings',
+            builder: (context, state) {
+              final repository = dependencies.bookingHistoryRepository;
+              if (repository == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Lịch sử đặt sân chưa khả dụng')),
+                );
+              }
+              return BookingHistoryScreen(
+                onReview: dependencies.reviews == null
+                    ? null
+                    : (id) => rate(context, id),
+                repository: repository,
+                onDetail: (id) => context.push('/bookings/$id'),
+                onTransactions: dependencies.customerTransactions == null
+                    ? null
+                    : () => context.push('/payments/history'),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/bookings/:id',
+            builder: (context, state) {
+              final repository = dependencies.bookingHistoryRepository;
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              if (repository == null || id == null || id <= 0) {
+                return const Scaffold(
+                  body: Center(child: Text('Đơn đặt sân không hợp lệ')),
+                );
+              }
+              return BookingDetailScreen(
+                onReview: dependencies.reviews == null
+                    ? null
+                    : (id) => rate(context, id),
+                repository: repository,
+                id: id,
+                cancellation: dependencies.cancellationRepository,
+                onRefund: dependencies.refundRepository == null
+                    ? null
+                    : (id) => context.push('/bookings/$id/refund'),
+                onPay:
+                    dependencies.paymentRepository == null ||
+                        dependencies.qrSaver == null
+                    ? null
+                    : (id) => context.push(
+                        '/payments/checkout',
+                        extra: CheckoutArguments(bookingId: id),
+                      ),
+                onTicket:
+                    dependencies.ticketRepository == null ||
+                        dependencies.ticketSaver == null
+                    ? null
+                    : (id) => showDialog<void>(
+                        context: context,
+                        builder: (_) => Dialog.fullscreen(
+                          child: BookingSuccessScreen(
+                            repository: dependencies.ticketRepository!,
+                            saver: dependencies.ticketSaver!,
+                            arguments: CheckoutArguments(bookingId: id),
+                          ),
+                        ),
+                      ),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/payments/checkout',
+            builder: (context, state) {
+              final arguments = state.extra;
+              final paymentRepository = dependencies.paymentRepository;
+              final saver = dependencies.qrSaver;
+              if (arguments is! CheckoutArguments ||
+                  paymentRepository == null ||
+                  saver == null) {
+                return const Scaffold(
+                  body: Center(
+                    child: Text(
+                      'Vui lòng chọn đơn đặt sân trước khi thanh toán.',
+                    ),
+                  ),
+                );
+              }
+              return PaymentCheckoutScreen(
+                repository: paymentRepository,
+                saver: saver,
+                arguments: arguments,
+                promos: dependencies.promos,
+                onFreeConfirmed: () =>
+                    context.go('/payments/ticket', extra: arguments),
+                onUploadReceipt: () =>
+                    context.push('/payments/receipt', extra: arguments),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/payments/ticket',
+            builder: (context, state) {
+              final args = state.extra;
+              final repository = dependencies.ticketRepository;
+              final saver = dependencies.ticketSaver;
+              if (args is! CheckoutArguments ||
+                  repository == null ||
+                  saver == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Vui lòng chọn vé đặt sân.')),
+                );
+              }
+              return BookingSuccessScreen(
+                repository: repository,
+                saver: saver,
+                arguments: args,
+                onHistory:
+                    dependencies.onBookingHistory ??
+                    (dependencies.bookingHistoryRepository == null
+                        ? null
+                        : () => context.go('/bookings')),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/payments/receipt',
+            builder: (context, state) {
+              final args = state.extra;
+              final repository = dependencies.receiptRepository;
+              final picker = dependencies.receiptPicker;
+              if (args is! CheckoutArguments ||
+                  repository == null ||
+                  picker == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Vui lòng chọn đơn đặt sân.')),
+                );
+              }
+              return PaymentWaitingScreen(
+                repository: repository,
+                picker: picker,
+                arguments: args,
+                onConfirmed: () => context.go('/payments/ticket', extra: args),
+                onSupport: () => context.go('/bookings/${args.bookingId}'),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/admin/bookings',
+            builder: (context, state) {
+              final repository = dependencies.adminBookings;
+              final facility = dependencies.adminFacility;
+              if (repository == null || facility == null) {
+                return const Scaffold(
+                  body: Center(
+                    child: Text('Quản lý đơn đặt sân chưa khả dụng'),
+                  ),
+                );
+              }
+              return BlocProvider(
+                create: (_) => AdminBookingCubit(
+                  repository,
+                  facility.branchRepository,
+                  facility.courtRepository,
+                )..initialize(),
+                child: const AdminBookingManagementScreen(),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/admin/vouchers',
+            builder: (context, state) {
+              final repository = dependencies.vouchers;
+              final facility = dependencies.adminFacility;
+              if (repository == null || facility == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Quản lý voucher chưa khả dụng')),
+                );
+              }
+              return BlocProvider(
+                create: (_) =>
+                    VoucherCubit(repository, facility.branchRepository)
+                      ..initialize(),
+                child: VoucherManagementScreen(
+                  usages: dependencies.voucherUsages,
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.home,
+            builder: (context, state) =>
+                authBloc.state.role == UserRole.customer
+                ? CustomerHomeScreen(
+                    repository: dependencies.discoveryRepository,
+                  )
+                : HomePage(
+                    discoveryRepository: dependencies.discoveryRepository,
+                  ),
+          ),
+          GoRoute(
+            path: AppRoutes.catalog,
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => CatalogListBloc<CourtType>(
+                    load: ListCourtTypes(catalog).call,
+                    delete: DeleteCourtType(catalog).call,
+                    idOf: (courtType) => courtType.id,
+                    deletedMessage: 'Đã xóa loại sân',
+                  )..add(const CatalogRefreshed()),
+                ),
+                BlocProvider(
+                  create: (_) => CatalogListBloc<SubscriptionPlan>(
+                    load: ListSubscriptionPlans(catalog).call,
+                    delete: DeleteSubscriptionPlan(catalog).call,
+                    idOf: (plan) => plan.id,
+                    deletedMessage: 'Đã xóa gói dịch vụ',
+                  )..add(const CatalogRefreshed()),
+                ),
+              ],
+              child: CatalogPage(
+                saveCourtType: SaveCourtType(catalog),
+                saveSubscriptionPlan: SaveSubscriptionPlan(catalog),
               ),
-            );
-          }
-          final dateText = state.uri.queryParameters['date'];
-          final parsed = dateText == null ? null : DateTime.tryParse(dateText);
-          const slotSocket = String.fromEnvironment('SLOT_WEBSOCKET_URL');
-          return SlotPickerScreen(
-            invalidations: slotSocket.isEmpty
-                ? null
-                : StompSlotInvalidations(slotSocket, courtId),
-            repository: repository,
-            courtId: courtId,
-            courtName: state.uri.queryParameters['courtName'],
-            branchName: state.uri.queryParameters['branchName'],
-            date: parsed != null && slotDateKey(parsed) == dateText
-                ? parsed
-                : null,
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.discover,
-        builder: (context, state) => const CustomerHomeScreen(),
-      ),
-      GoRoute(
-        path: '/branches',
-        builder: (context, state) {
-          final sportName = state.uri.queryParameters['sport'];
-          final sports = DiscoverySport.values.where(
-            (s) => s.name == sportName,
-          );
-          return BlocProvider(
-            create: (_) => DiscoveryCubit(
-              dependencies.discoveryRepository,
-              query: state.uri.queryParameters['query'] ?? '',
-              sport: sports.firstOrNull,
-            )..refresh(),
-            child: const BranchListScreen(),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/branches/:id',
-        builder: (context, state) => BranchDetailScreen(
-          discoveryRepository: dependencies.discoveryRepository,
-          reviews: dependencies.reviews,
-          maps: dependencies.branchMaps,
-          branchId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
-          branch: state.extra is Branch ? state.extra as Branch : null,
-          galleryRepository: dependencies.adminFacility?.branchImageRepository,
-        ),
-      ),
-      // Màn kiểm tra kết nối BE, dùng khi phát triển.
-      GoRoute(
-        path: AppRoutes.health,
-        builder: (context, state) => BlocProvider(
-          create: (_) =>
-              HealthBloc(GetHealthStatus(dependencies.healthRepository))
-                ..add(const HealthCheckRequested()),
-          child: HealthPage(config: dependencies.config),
-        ),
-      ),
-      ...adminFacilityRoutes(dependencies.adminFacility),
-      GoRoute(
-        path: AppRoutes.superAdminOverview,
-        builder: (context, state) {
-          final repository = dependencies.platformOverview;
-          if (repository == null) return const _UnavailableScreen();
-          return BlocProvider(
-            create: (_) => PlatformOverviewCubit(GetPlatformOverview(repository))
-              ..load(),
-            child: const SuperAdminOverviewScreen(),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/super-admin/owners/pending',
-        builder: (context, state) {
-          final repository = dependencies.courtOwnerApprovalRepository;
-          if (repository == null) return const _UnavailableScreen();
-          return BlocProvider(
-            create: (_) =>
-                PendingOwnersCubit(GetPendingOwners(repository))..load(),
-            child: PendingOwnersScreen(
-              onOpenOwner: (owner) => context.push<OwnerDecision>(
-                '/super-admin/owners/${owner.id}',
-              ),
             ),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/super-admin/owners/:ownerId',
-        builder: (context, state) {
-          final repository = dependencies.courtOwnerApprovalRepository;
-          final id = int.tryParse(state.pathParameters['ownerId'] ?? '');
-          if (repository == null || id == null || id <= 0) {
-            return const _UnavailableScreen();
-          }
-          return BlocProvider(
-            create: (_) => OwnerDetailCubit(
-              ownerId: id,
-              getOwnerDetail: GetOwnerDetail(repository),
-              approveOwner: ApproveOwner(repository),
-              rejectOwner: RejectOwner(repository),
-            )..load(),
-            child: const OwnerApprovalDetailScreen(),
-          );
-        },
+          ),
+          GoRoute(
+            path: AppRoutes.profile,
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => ProfileBloc(UpdateProfile(repository)),
+                ),
+                BlocProvider(
+                  create: (_) => ChangePasswordBloc(ChangePassword(repository)),
+                ),
+              ],
+              child: const ProfilePage(),
+            ),
+          ),
+          GoRoute(
+            path: '/profile/edit',
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => ProfileBloc(UpdateProfile(repository)),
+                ),
+                BlocProvider(
+                  create: (_) => ChangePasswordBloc(ChangePassword(repository)),
+                ),
+              ],
+              child: const ProfilePage(editMode: true),
+            ),
+          ),
+          GoRoute(
+            name: 'courtSlots',
+            path: '/courts/:courtId/slots',
+            builder: (context, state) {
+              final courtId = int.tryParse(
+                state.pathParameters['courtId'] ?? '',
+              );
+              final repository = dependencies.slotRepository;
+              if (courtId == null || courtId <= 0 || repository == null) {
+                return Scaffold(
+                  appBar: AppBar(title: const Text('Lịch sân trống')),
+                  body: const Center(
+                    child: Text('Vui lòng chọn sân hợp lệ để xem lịch.'),
+                  ),
+                );
+              }
+              final dateText = state.uri.queryParameters['date'];
+              final parsed = dateText == null
+                  ? null
+                  : DateTime.tryParse(dateText);
+              const slotSocket = String.fromEnvironment('SLOT_WEBSOCKET_URL');
+              return SlotPickerScreen(
+                invalidations: slotSocket.isEmpty
+                    ? null
+                    : StompSlotInvalidations(slotSocket, courtId),
+                repository: repository,
+                courtId: courtId,
+                courtName: state.uri.queryParameters['courtName'],
+                branchName: state.uri.queryParameters['branchName'],
+                onContinue:
+                    dependencies.bookingRepository is! BookingCreationRepository
+                    ? null
+                    : (selection) {
+                        try {
+                          final user = authBloc.state.user;
+                          context.push(
+                            '/booking/summary',
+                            extra: BookingSummaryArguments(
+                              selection: bookingSelectionFromSlots(
+                                selection,
+                                branchName:
+                                    state.uri.queryParameters['branchName'] ??
+                                    'Chi nhánh đã chọn',
+                                courtName:
+                                    state.uri.queryParameters['courtName'] ??
+                                    'Sân #$courtId',
+                              ),
+                              customerName: user?.fullName ?? '',
+                              phone: user?.phone ?? '',
+                              onHeld: (checkout) => context.push(
+                                '/booking/confirm',
+                                extra: checkout,
+                              ),
+                            ),
+                          );
+                        } on ArgumentError {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Vui lòng chọn các khung giờ liên tiếp với giá hợp lệ.',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                date: parsed != null && slotDateKey(parsed) == dateText
+                    ? parsed
+                    : null,
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.discover,
+            builder: (context, state) => CustomerHomeScreen(
+              repository: dependencies.discoveryRepository,
+            ),
+          ),
+          GoRoute(
+            path: '/branches',
+            builder: (context, state) {
+              final sportName = state.uri.queryParameters['sport'];
+              final sports = DiscoverySport.values.where(
+                (s) => s.name == sportName,
+              );
+              return BlocProvider(
+                create: (_) => DiscoveryCubit(
+                  dependencies.discoveryRepository,
+                  query: state.uri.queryParameters['query'] ?? '',
+                  sport: sports.firstOrNull,
+                )..refresh(),
+                child: const BranchListScreen(),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/branches/:id',
+            builder: (context, state) => BranchDetailScreen(
+              discoveryRepository: dependencies.discoveryRepository,
+              reviews: dependencies.reviews,
+              maps: dependencies.branchMaps,
+              branchId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
+              branch: state.extra is Branch ? state.extra as Branch : null,
+              galleryRepository:
+                  dependencies.adminFacility?.branchImageRepository,
+            ),
+          ),
+          // Màn kiểm tra kết nối BE, dùng khi phát triển.
+          GoRoute(
+            path: AppRoutes.health,
+            builder: (context, state) => BlocProvider(
+              create: (_) =>
+                  HealthBloc(GetHealthStatus(dependencies.healthRepository))
+                    ..add(const HealthCheckRequested()),
+              child: HealthPage(config: dependencies.config),
+            ),
+          ),
+          ...adminFacilityRoutes(dependencies.adminFacility),
+          GoRoute(
+            path: AppRoutes.superAdminOverview,
+            builder: (context, state) {
+              final repository = dependencies.platformOverview;
+              if (repository == null) return const _UnavailableScreen();
+              return BlocProvider(
+                create: (_) =>
+                    PlatformOverviewCubit(GetPlatformOverview(repository))
+                      ..load(),
+                child: const SuperAdminOverviewScreen(),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/super-admin/owners/pending',
+            builder: (context, state) {
+              final repository = dependencies.courtOwnerApprovalRepository;
+              if (repository == null) return const _UnavailableScreen();
+              return BlocProvider(
+                create: (_) =>
+                    PendingOwnersCubit(GetPendingOwners(repository))..load(),
+                child: PendingOwnersScreen(
+                  onOpenOwner: (owner) => context.push<OwnerDecision>(
+                    '/super-admin/owners/${owner.id}',
+                  ),
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/super-admin/owners/:ownerId',
+            builder: (context, state) {
+              final repository = dependencies.courtOwnerApprovalRepository;
+              final id = int.tryParse(state.pathParameters['ownerId'] ?? '');
+              if (repository == null || id == null || id <= 0) {
+                return const _UnavailableScreen();
+              }
+              return BlocProvider(
+                create: (_) => OwnerDetailCubit(
+                  ownerId: id,
+                  getOwnerDetail: GetOwnerDetail(repository),
+                  approveOwner: ApproveOwner(repository),
+                  rejectOwner: RejectOwner(repository),
+                )..load(),
+                child: const OwnerApprovalDetailScreen(),
+              );
+            },
+          ),
+        ],
       ),
     ],
   );

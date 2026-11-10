@@ -237,24 +237,28 @@ void main() {
       );
     });
 
-    testWidgets('lưới 2 cột có nhãn trạng thái và bộ lọc chi nhánh', (
-      tester,
-    ) async {
-      await _pump(tester, courtList());
+    testWidgets(
+      'lưới sân co giãn theo chiều rộng, có nhãn trạng thái và bộ lọc chi nhánh',
+      (tester) async {
+        await _pump(tester, courtList());
 
-      expect(find.text('FCourt Quận 7'), findsOneWidget);
-      expect(find.text('Hoạt động'), findsOneWidget);
-      expect(find.text('Bảo trì'), findsWidgets);
-      expect(find.text('Đang đóng'), findsOneWidget);
-      expect(find.text('Cầu lông'), findsNWidgets(3));
-      expect(find.text('120.000 đ/giờ'), findsNWidgets(3));
-      final grid = tester.widget<GridView>(find.byType(GridView));
-      expect(
-        (grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount)
-            .crossAxisCount,
-        2,
-      );
-    });
+        expect(find.text('FCourt Quận 7'), findsOneWidget);
+        expect(find.text('Hoạt động'), findsOneWidget);
+        expect(find.text('Bảo trì'), findsWidgets);
+        expect(find.text('Đang đóng'), findsOneWidget);
+        expect(find.text('Cầu lông'), findsNWidgets(3));
+        expect(find.text('120.000 đ/giờ'), findsNWidgets(3));
+        // Full-width cards on phones (badge + 3 actions fit on one line),
+        // more columns on wider screens.
+        final grid = tester.widget<GridView>(find.byType(GridView));
+        expect(
+          (grid.gridDelegate as SliverGridDelegateWithMaxCrossAxisExtent)
+              .maxCrossAxisExtent,
+          440,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('Switch bảo trì cập nhật nhãn và hiện SnackBar', (
       tester,

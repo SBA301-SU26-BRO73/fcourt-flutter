@@ -20,6 +20,7 @@ class CourtCalendarScreen extends StatelessWidget {
     final bloc = context.read<CourtCalendarBloc>();
     final count = bloc.state.selected.length;
     final details = await showModalBottomSheet<LockDetails>(
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -47,6 +48,7 @@ class CourtCalendarScreen extends StatelessWidget {
           );
         } else {
           showModalBottomSheet<void>(
+            useRootNavigator: true,
             context: context,
             isScrollControlled: true,
             useSafeArea: true,

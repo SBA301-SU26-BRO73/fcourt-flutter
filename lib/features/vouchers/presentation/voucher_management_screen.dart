@@ -62,6 +62,7 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
     if (branchId == null || _editing) return;
     setState(() => _editing = true);
     final saved = await showModalBottomSheet<Voucher>(
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       useSafeArea: true,

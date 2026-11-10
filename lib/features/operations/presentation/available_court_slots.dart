@@ -81,15 +81,20 @@ class _AvailableCourtSlotsState extends State<AvailableCourtSlots> {
                 .firstOrNull;
             final free = slot.available && session == null;
             final playing = session?.playing == true;
+            final start = _hhmm(slot.start);
+            final status = free
+                ? 'Trống'
+                : playing
+                ? 'Đang chơi'
+                : session != null
+                ? 'Đã đặt'
+                : widget.date == businessToday() && _ended(slot)
+                ? 'Đã qua'
+                : 'Không trống';
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Semantics(
-                label:
-                    '${slot.start} ${free
-                        ? 'Trống'
-                        : playing
-                        ? 'Đang chơi'
-                        : 'Đã có khách'}',
+                label: '$start $status',
                 child: OutlinedButton(
                   style: playing
                       ? OutlinedButton.styleFrom(
@@ -99,11 +104,8 @@ class _AvailableCourtSlotsState extends State<AvailableCourtSlots> {
                       : null,
                   onPressed: free ? () => widget.onSelected(slot) : null,
                   child: Text(
-                    '${slot.start}\n${free
-                        ? 'Trống'
-                        : playing
-                        ? 'Đang chơi · ${session!.name.isEmpty ? 'Khách vãng lai' : session.name}'
-                        : 'Đã đặt'}',
+                    '$start\n${playing ? '$status · ${session!.name.isEmpty ? 'Khách vãng lai' : session.name}' : status}',
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
@@ -113,4 +115,17 @@ class _AvailableCourtSlotsState extends State<AvailableCourtSlots> {
       );
     },
   );
+}
+
+/// `06:00:00` → `06:00`; values already in `HH:mm` are unchanged.
+String _hhmm(String time) => time.length > 5 ? time.substring(0, 5) : time;
+
+/// The slot has finished today (business date), so it can no longer be sold.
+bool _ended(AvailableSlot slot) {
+  // Business clock is Vietnam time (UTC+7), like businessToday().
+  final now = DateTime.now().toUtc().add(const Duration(hours: 7));
+  final current =
+      '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+  final end = _hhmm(slot.end);
+  return end != '00:00' && end.compareTo(current) <= 0;
 }

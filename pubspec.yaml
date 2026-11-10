@@ -68,6 +68,7 @@ dependencies:
   firebase_core: ^5.1.0
   firebase_messaging: ^17.0.1
   package_info_plus: ^10.2.2
+  liquid_glass_widgets: ^1.17.0
 
 dev_dependencies:
   flutter_test:

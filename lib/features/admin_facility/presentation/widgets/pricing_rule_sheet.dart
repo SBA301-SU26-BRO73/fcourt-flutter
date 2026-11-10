@@ -17,6 +17,7 @@ Future<PricingRuleDraft?> showPricingRuleSheet(
   required List<int> defaultDays,
   PricingRule? editing,
 }) => showModalBottomSheet<PricingRuleDraft>(
+  useRootNavigator: true,
   context: context,
   isScrollControlled: true,
   showDragHandle: true,

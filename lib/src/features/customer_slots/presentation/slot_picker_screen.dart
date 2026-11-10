@@ -81,6 +81,7 @@ class _SlotViewState extends State<_SlotView> with WidgetsBindingObserver {
       return;
     }
     showModalBottomSheet<void>(
+      useRootNavigator: true,
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
@@ -125,17 +126,21 @@ class _SlotViewState extends State<_SlotView> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      BlocListener<SlotPickerCubit, SlotPickerState>(
-        listenWhen: (before, now) =>
-            now.alert != null && !identical(before.alert, now.alert),
-        listener: (context, state) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.alert!.message)));
-        },
-        child: _buildScaffold(context),
-      );
+  Widget build(
+    BuildContext context,
+  ) => BlocListener<SlotPickerCubit, SlotPickerState>(
+    listenWhen: (before, now) =>
+        now.alert != null && !identical(before.alert, now.alert),
+    listener: (context, state) {
+      // The picker stays alive under summary/checkout; its own hold must not
+      // pop up there as "someone just held this slot".
+      if (ModalRoute.of(context)?.isCurrent == false) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(state.alert!.message)));
+    },
+    child: _buildScaffold(context),
+  );
 
   Widget _buildScaffold(
     BuildContext context,

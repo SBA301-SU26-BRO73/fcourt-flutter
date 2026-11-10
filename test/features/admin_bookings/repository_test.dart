@@ -108,7 +108,7 @@ void main() {
         {'date': '2026-11-06'},
         {'totalPrice': -1},
         {'createdAt': '2026-11-04T18:00:00'},
-        {'receiptImageUrl': 'https://evil.example/receipt.png'},
+        {'receiptImageUrl': 'https://bucket.example:8443/receipt.png'},
         {
           'receiptImageUrl':
               'https://res.cloudinary.com@evil.example/image.png',
