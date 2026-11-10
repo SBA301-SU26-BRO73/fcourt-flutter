@@ -301,7 +301,12 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
                           ),
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(0, 24, 0, 24),
+                              padding: EdgeInsets.fromLTRB(
+                                0,
+                                24,
+                                0,
+                                24 + MediaQuery.paddingOf(context).bottom,
+                              ),
                               child: Center(
                                 child: state.loadingMore
                                     ? const CircularProgressIndicator()

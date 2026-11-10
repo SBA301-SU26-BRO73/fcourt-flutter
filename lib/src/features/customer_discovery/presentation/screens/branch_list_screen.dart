@@ -160,6 +160,11 @@ class _BranchListScreenState extends State<BranchListScreen> {
                         },
                       ),
                     ),
+                    SliverPadding(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.paddingOf(context).bottom,
+                      ),
+                    ),
                     if (state.loadingMore || state.hasNext)
                       SliverToBoxAdapter(
                         child: Padding(

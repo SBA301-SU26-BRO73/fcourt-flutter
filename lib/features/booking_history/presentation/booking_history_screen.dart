@@ -199,7 +199,12 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
             child: RefreshIndicator(
               onRefresh: () => _load(reset: true),
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 128),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  4,
+                  20,
+                  32 + MediaQuery.paddingOf(context).bottom,
+                ),
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   Row(

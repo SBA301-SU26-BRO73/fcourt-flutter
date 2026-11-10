@@ -80,7 +80,12 @@ class NotificationsPage extends StatelessWidget {
       actions: const [AccountActions()],
     ),
     body: ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 128),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        16 + MediaQuery.paddingOf(context).bottom,
+      ),
       itemCount: _channels.length,
       separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
       itemBuilder: (context, index) {
