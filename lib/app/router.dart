@@ -545,6 +545,8 @@ GoRouter createRouter(
                 arguments: args,
                 onConfirmed: () => context.go('/payments/ticket', extra: args),
                 onSupport: () => context.go('/bookings/${args.bookingId}'),
+                onHome: () => context.go(AppRoutes.home),
+                onViewBooking: () => context.go('/bookings/${args.bookingId}'),
               );
             },
           ),

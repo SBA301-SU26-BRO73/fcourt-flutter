@@ -149,6 +149,37 @@ void main() {
     },
   );
   testWidgets(
+    'after sending the receipt the user leaves to home, not back to checkout',
+    (tester) async {
+      final session = Session();
+      var home = 0, booking = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PaymentWaitingScreen(
+            repository: Repo(session),
+            picker: Picker(),
+            arguments: args,
+            onConfirmed: () {},
+            onHome: () => home++,
+            onViewBooking: () => booking++,
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Về trang chủ'), findsNothing);
+      await tester.tap(find.text('Chọn ảnh'));
+      await tester.pump();
+      await tester.tap(find.text('Gửi biên lai'));
+      await tester.pump();
+      await tester.tap(find.text('Về trang chủ'));
+      await tester.tap(find.text('Xem đơn đặt sân'));
+      await tester.tap(find.byTooltip('Về trang chủ'));
+      expect(home, 2);
+      expect(booking, 1);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets(
     'polling is nonoverlapping, pauses in background and cancels on dispose',
     (tester) async {
       final session = Session()..result = pending;

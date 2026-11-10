@@ -18,12 +18,18 @@ class PaymentWaitingScreen extends StatefulWidget {
     required this.onConfirmed,
     this.onSupport,
     this.onRetryReceipt,
+    this.onHome,
+    this.onViewBooking,
   });
   final ReceiptRepository repository;
   final ReceiptPicker picker;
   final CheckoutArguments arguments;
   final VoidCallback onConfirmed;
   final VoidCallback? onSupport, onRetryReceipt;
+
+  /// Leaves the payment flow once the receipt is sent. Going back would reopen
+  /// the VietQR checkout, whose hold countdown then reads as an expired booking.
+  final VoidCallback? onHome, onViewBooking;
   @override
   State<PaymentWaitingScreen> createState() => _PaymentWaitingScreenState();
 }
@@ -278,8 +284,60 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
   @override
   Widget build(BuildContext context) {
     final pending = _receipt?.status == ReceiptStatus.pending;
+    final submitted = _receipt != null;
+    final leave = widget.onHome;
+    return PopScope(
+      canPop: !submitted || leave == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && submitted) leave?.call();
+      },
+      child: _scaffold(context, pending, submitted),
+    );
+  }
+
+  Widget _scaffold(BuildContext context, bool pending, bool submitted) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Biên lai thanh toán')),
+      appBar: AppBar(
+        title: const Text('Biên lai thanh toán'),
+        leading: submitted && widget.onHome != null
+            ? IconButton(
+                tooltip: 'Về trang chủ',
+                icon: const Icon(Icons.arrow_back),
+                onPressed: widget.onHome,
+              )
+            : null,
+      ),
+      bottomNavigationBar: submitted &&
+              (widget.onHome != null || widget.onViewBooking != null)
+          ? SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (widget.onHome != null)
+                      FilledButton.icon(
+                        key: const ValueKey('receipt-home'),
+                        onPressed: widget.onHome,
+                        icon: const Icon(Icons.home_outlined),
+                        label: const Text('Về trang chủ'),
+                      ),
+                    if (widget.onHome != null && widget.onViewBooking != null)
+                      const SizedBox(height: 10),
+                    if (widget.onViewBooking != null)
+                      OutlinedButton.icon(
+                        key: const ValueKey('receipt-booking'),
+                        onPressed: widget.onViewBooking,
+                        icon: const Icon(Icons.receipt_long_outlined),
+                        label: const Text('Xem đơn đặt sân'),
+                      ),
+                  ],
+                ),
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

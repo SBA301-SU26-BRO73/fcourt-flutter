@@ -31,6 +31,21 @@ Map<String, dynamic> pageJson(
 }) => {'items': items, 'page': page, 'size': 20, 'total': total};
 
 void main() {
+  test('a private S3 receipt key from booking-service lists without a link', () async {
+    final repository = AdminBookingRepositoryImpl(
+      Dio()
+        ..httpClientAdapter = FakeAdapter(
+          (_) => jsonResponse(
+            200,
+            pageJson([
+              {...bookingJson(), 'receiptImageUrl': 'receipts/d234ba80-fbf8.jpg'},
+            ]),
+          ),
+        ),
+    );
+    final page = await repository.search(const AdminBookingQuery(branchId: 1));
+    expect(page.items.single.receiptUri, isNull);
+  });
   test(
     'invalid requests skip HTTP and auth or upstream errors remain failures',
     () async {
@@ -114,6 +129,7 @@ void main() {
               'https://res.cloudinary.com@evil.example/image.png',
         },
         {'receiptImageUrl': 'http://res.cloudinary.com/image.png'},
+        {'receiptImageUrl': '../receipts/x.jpg'},
       ]) {
         final adapter = FakeAdapter(
           (_) => jsonResponse(
