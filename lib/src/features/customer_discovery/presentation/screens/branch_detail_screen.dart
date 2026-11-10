@@ -321,30 +321,89 @@ class _BranchDetailContent extends StatelessWidget {
                         '/courts/${courts.single.id}/slots?courtName=${Uri.encodeQueryComponent(courts.single.name)}&branchName=${Uri.encodeQueryComponent(data.name)}',
                       );
                     } else if (courts.length > 1) {
-                      showModalBottomSheet<void>(
-                        useRootNavigator: true,
+                      showDialog<void>(
                         context: context,
-                        showDragHandle: true,
-                        builder: (sheetContext) => SafeArea(
-                          child: ListView(
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.all(16),
-                            children: [
-                              const ListTile(
-                                title: Text('Chọn sân để xem lịch'),
-                              ),
-                              for (final court in courts)
-                                ListTile(
-                                  title: Text(court.name),
-                                  subtitle: Text(_courtPrice(court)),
-                                  onTap: () {
-                                    Navigator.pop(sheetContext);
-                                    context.push(
-                                      '/courts/${court.id}/slots?courtName=${Uri.encodeQueryComponent(court.name)}&branchName=${Uri.encodeQueryComponent(data.name)}',
-                                    );
-                                  },
+                        useRootNavigator: true,
+                        builder: (sheetContext) => Dialog(
+                          insetPadding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 48,
+                          ),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: 440,
+                              maxHeight: 560,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    24,
+                                    20,
+                                    8,
+                                    8,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'Chọn sân để xem lịch',
+                                          style: Theme.of(sheetContext)
+                                              .textTheme
+                                              .titleLarge,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Đóng',
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () =>
+                                            Navigator.pop(sheetContext),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                            ],
+                                const Divider(height: 1),
+                                Flexible(
+                                  child: ListView.separated(
+                                    shrinkWrap: true,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    itemCount: courts.length,
+                                    separatorBuilder: (_, _) => const Divider(
+                                      height: 1,
+                                      indent: 24,
+                                      endIndent: 24,
+                                    ),
+                                    itemBuilder: (_, index) {
+                                      final court = courts[index];
+                                      return ListTile(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 24,
+                                            ),
+                                        leading: const Icon(
+                                          Icons.stadium_outlined,
+                                        ),
+                                        title: Text(court.name),
+                                        subtitle: Text(_courtPrice(court)),
+                                        trailing: const Icon(
+                                          Icons.chevron_right,
+                                        ),
+                                        onTap: () {
+                                          Navigator.pop(sheetContext);
+                                          context.push(
+                                            '/courts/${court.id}/slots?courtName=${Uri.encodeQueryComponent(court.name)}&branchName=${Uri.encodeQueryComponent(data.name)}',
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
