@@ -31,7 +31,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
-    context.read<ForgotPasswordBloc>().add(ForgotPasswordSubmitted(_email.text));
+    context.read<ForgotPasswordBloc>().add(
+      ForgotPasswordSubmitted(_email.text),
+    );
   }
 
   @override
@@ -48,7 +50,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 padding: const EdgeInsets.all(24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
-                  child: sent ? _Sent(email: _email.text.trim()) : _form(state, fieldErrors),
+                  child: sent
+                      ? _Sent(email: _email.text.trim())
+                      : _form(state, fieldErrors),
                 ),
               ),
             ),
@@ -64,9 +68,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Nhập email đã đăng ký, chúng tôi sẽ gửi link để đặt lại mật khẩu.'),
+          const Text(
+            'Nhập email đã đăng ký, chúng tôi sẽ gửi link để đặt lại mật khẩu.',
+          ),
           const SizedBox(height: 16),
-          if (state.status == SubmissionStatus.failure && fieldErrors.isEmpty) ...[
+          if (state.status == SubmissionStatus.failure &&
+              fieldErrors.isEmpty) ...[
             ErrorBanner(AuthMessages.localize(state.message ?? '')),
             const SizedBox(height: 16),
           ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../app/widgets/fc_widgets.dart';
 import '../../domain/discovery_repository.dart';
 
 String branchPrice(Branch branch) => branch.minPrice == null
@@ -49,7 +50,7 @@ class CourtArtwork extends StatelessWidget {
     width: double.infinity,
     decoration: const BoxDecoration(
       gradient: LinearGradient(
-        colors: [Color(0xFF16BCA1), Color(0xFF2EADD2), Color(0xFF8582E3)],
+        colors: [Color(0xFF12B89B), Color(0xFF1F9FCB), Color(0xFF7F7BE6)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
@@ -65,6 +66,7 @@ class CourtArtwork extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
+              letterSpacing: .3,
             ),
           ),
         ),
@@ -115,10 +117,12 @@ class BranchCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 16),
-    clipBehavior: Clip.antiAlias,
-    child: InkWell(
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: FrostedCard(
+      padding: EdgeInsets.zero,
+      clip: true,
+      strong: true,
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,10 +135,9 @@ class BranchCard extends StatelessWidget {
               children: [
                 Text(
                   branch.name,
-                  style: Theme.of(context).textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   [
                     branch.address,
@@ -200,25 +203,16 @@ class DiscoveryMessage extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 24),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.sports_tennis,
-          size: 40,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 12),
-        Text(message, textAlign: TextAlign.center),
-        if (onRetry != null)
-          TextButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Thử lại'),
-          ),
-      ],
+  Widget build(BuildContext context) => Center(
+    child: EmptyState(
+      message: message,
+      action: onRetry == null
+          ? null
+          : TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Thử lại'),
+            ),
     ),
   );
 }

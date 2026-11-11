@@ -1,4 +1,5 @@
 import '../../../app/widgets/account_actions.dart';
+import '../../../app/widgets/fc_widgets.dart';
 
 import 'dart:async';
 
@@ -107,67 +108,56 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
     return Scaffold(
       body: Column(
         children: [
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF5540BB), Color(0xFF6B58D9)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 12, 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Đã đặt',
-                            style: Theme.of(context).textTheme.headlineLarge
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                          ),
-                        ),
-                        const AccountActions(color: Colors.white),
-                      ],
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Gap.screen, 8, 8, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Đã đặt',
+                      style: Theme.of(context).textTheme.headlineLarge,
                     ),
-                    const SizedBox(height: 14),
-                    const Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Lịch sân của bạn, sẵn sàng cho buổi chơi tiếp theo.',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 20),
-                        Icon(
-                          Icons.confirmation_number_outlined,
-                          color: Colors.white70,
-                          size: 54,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                  const AccountActions(),
+                ],
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(Gap.screen, 12, Gap.screen, 4),
+            child: HeroPanel(
+              padding: const EdgeInsets.fromLTRB(20, 18, 18, 18),
+              radius: Radii.card,
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Lịch sân của bạn, sẵn sàng cho buổi chơi tiếp theo.',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Icon(
+                    Icons.confirmation_number_outlined,
+                    color: Colors.white.withValues(alpha: .85),
+                    size: 44,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: Gap.screen),
               child: Row(
                 children: [
                   for (int i = 0; i < filters.length; i++)
@@ -232,26 +222,13 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                     ),
                   ],
                   if (!_loading && _items.isEmpty && _error == null)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 48),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.event_note_outlined,
-                            size: 72,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 18),
-                          Text(
-                            'Chưa có đơn đặt sân',
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+                    const EmptyState(
+                      icon: Icons.event_note_outlined,
+                      message: 'Chưa có đơn đặt sân',
                     ),
                   for (final day in days.entries) ...[
                     Padding(
-                      padding: const EdgeInsets.only(top: 24, bottom: 12),
+                      padding: const EdgeInsets.only(top: 16, bottom: 12),
                       child: Text(
                         '${day.key == today ? 'Hôm nay · ' : ''}${DateFormat('dd/MM/yyyy').format(DateTime.parse(day.key))}',
                         style: TextStyle(
@@ -261,25 +238,20 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                       ),
                     ),
                     for (final booking in day.value)
-                      InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () async {
-                          await widget.onDetail(booking.id);
-                          if (mounted) await _load(reset: true);
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: FrostedCard(
+                          onTap: () async {
+                            await widget.onDetail(booking.id);
+                            if (mounted) await _load(reset: true);
+                          },
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  CircleAvatar(
-                                    backgroundColor: colors.primaryContainer,
-                                    foregroundColor: colors.primary,
-                                    child: const Icon(Icons.sports_tennis),
-                                  ),
+                                  const IconBadge(Icons.sports_tennis),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
@@ -320,27 +292,20 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                                 runSpacing: 8,
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: booking.status == 'CANCELLED'
-                                          ? colors.errorContainer
-                                          : colors.primaryContainer,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      booking.label,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: booking.status == 'CANCELLED'
-                                            ? colors.onErrorContainer
-                                            : colors.onPrimaryContainer,
-                                      ),
-                                    ),
+                                  StatusPill(
+                                    booking.label,
+                                    color: switch (booking.status) {
+                                      'CANCELLED' => context.fc.danger,
+                                      'COMPLETED' => context.fc.success,
+                                      'CONFIRMED' => colors.primary,
+                                      _ => context.fc.warning,
+                                    },
+                                    icon: switch (booking.status) {
+                                      'CANCELLED' => Icons.cancel_outlined,
+                                      'COMPLETED' => Icons.check_circle_outline,
+                                      'CONFIRMED' => Icons.event_available,
+                                      _ => Icons.schedule,
+                                    },
                                   ),
                                   Text(
                                     NumberFormat.currency(
@@ -373,8 +338,6 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                                     ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
-                              const Divider(),
                             ],
                           ),
                         ),

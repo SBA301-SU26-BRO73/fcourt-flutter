@@ -35,13 +35,13 @@ class _RegisterCustomerPageState extends State<RegisterCustomerPage> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     context.read<RegisterBloc>().add(
-          CustomerRegistrationSubmitted(
-            fullName: _fullName.text,
-            email: _email.text,
-            phone: _phone.text,
-            password: _password.text,
-          ),
-        );
+      CustomerRegistrationSubmitted(
+        fullName: _fullName.text,
+        email: _email.text,
+        phone: _phone.text,
+        password: _password.text,
+      ),
+    );
   }
 
   @override
@@ -71,7 +71,9 @@ class _RegisterCustomerPageState extends State<RegisterCustomerPage> {
                       children: [
                         if (state.status == SubmissionStatus.failure &&
                             fieldErrors.isEmpty) ...[
-                          ErrorBanner(AuthMessages.localize(state.message ?? '')),
+                          ErrorBanner(
+                            AuthMessages.localize(state.message ?? ''),
+                          ),
                           const SizedBox(height: 16),
                         ],
                         AuthTextField(
@@ -122,7 +124,9 @@ class _RegisterCustomerPageState extends State<RegisterCustomerPage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Text('Đăng ký'),
                         ),

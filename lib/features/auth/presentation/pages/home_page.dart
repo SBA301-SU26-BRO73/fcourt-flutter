@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/auth_redirect.dart';
+import '../../../../app/widgets/fc_widgets.dart';
 import '../../../../src/features/customer_discovery/domain/discovery_repository.dart';
 import '../../../../src/features/customer_discovery/presentation/widgets/venue_feed.dart';
 import '../../../../src/features/customer_discovery/presentation/widgets/discovery_widgets.dart';
@@ -24,7 +25,9 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.select((AuthBloc bloc) => bloc.state.user);
     if (user == null) return const SizedBox.shrink();
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final fc = context.fc;
     final entries = _entries(user.role);
     return Scaffold(
       appBar: AppBar(
@@ -48,131 +51,119 @@ class HomePage extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1040),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(
+                Gap.screen,
+                Gap.sm,
+                Gap.screen,
+                Gap.screen,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(
-                        backgroundColor: colors.primaryContainer,
-                        foregroundColor: colors.onPrimaryContainer,
-                        child: const Icon(Icons.sports_tennis),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: fc.brand,
+                          border: Border.all(color: fc.hairline, width: 2),
+                          boxShadow: fc.shadowSmall,
+                        ),
+                        child: Text(
+                          user.displayName.trim().isEmpty
+                              ? 'F'
+                              : user.displayName.trim()[0].toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: Gap.md),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Xin chào, ${user.displayName}',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700),
+                              style: theme.textTheme.titleMedium,
                             ),
+                            const SizedBox(height: 2),
                             Text(
                               user.role.label,
-                              style: TextStyle(color: colors.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        'FCOURT',
-                        style: TextStyle(
-                          color: colors.primary,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF008C78),
-                          Color(0xFF0783A4),
-                          Color(0xFF626AC9),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.bolt_rounded,
-                              color: Color(0xFFA7F3D0),
-                              size: 18,
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                user.role == UserRole.customer
-                                    ? 'SẴN SÀNG CHO TRẬN ĐẤU TIẾP THEO'
-                                    : 'KHÔNG GIAN LÀM VIỆC CỦA BẠN',
-                                style: const TextStyle(
-                                  color: Color(0xFFA7F3D0),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1,
-                                ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          switch (user.role) {
-                            UserRole.customer => 'Ra sân. Hết mình.',
-                            UserRole.staff => 'Sẵn sàng cho ca làm mới.',
-                            UserRole.admin => 'Quản lý sân, dễ dàng hơn.',
-                            UserRole.superAdmin => 'Kết nối toàn bộ hệ thống.',
-                          },
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            height: 1.2,
+                      ),
+                      const SizedBox(width: Gap.sm),
+                      StatusPill('FCOURT', color: colors.primary),
+                    ],
+                  ),
+                  const SizedBox(height: Gap.xl),
+                  SizedBox(
+                    width: double.infinity,
+                    child: HeroPanel(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Eyebrow(
+                            user.role == UserRole.customer
+                                ? 'SẴN SÀNG CHO TRẬN ĐẤU TIẾP THEO'
+                                : 'KHÔNG GIAN LÀM VIỆC CỦA BẠN',
+                            icon: Icons.bolt_rounded,
+                            color: fc.onBrandMuted,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          switch (user.role) {
-                            UserRole.customer => 'Khám phá sân phù hợp, chọn giờ yêu thích và đặt lịch cho buổi chơi của bạn.',
-                            UserRole.staff => 'Theo dõi lịch sân, nhận khách và xử lý đơn bán lẻ tại một nơi.',
-                            UserRole.admin => 'Theo dõi hoạt động, quản lý đơn đặt và phát triển cụm sân của bạn.',
-                            UserRole.superAdmin => 'Duyệt chủ sân, quản lý danh mục và theo dõi số liệu nền tảng.',
-                          },
-                          style: const TextStyle(
-                            color: Color(0xFFD1FAE5),
-                            height: 1.6,
+                          const SizedBox(height: Gap.lg),
+                          Text(
+                            switch (user.role) {
+                              UserRole.customer => 'Ra sân. Hết mình.',
+                              UserRole.staff => 'Sẵn sàng cho ca làm mới.',
+                              UserRole.admin => 'Quản lý sân, dễ dàng hơn.',
+                              UserRole.superAdmin =>
+                                'Kết nối toàn bộ hệ thống.',
+                            },
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        FilledButton.icon(
-                          key: user.role == UserRole.superAdmin
-                              ? const ValueKey('home-super-admin-overview')
-                              : null,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF064E3B),
+                          const SizedBox(height: Gap.md),
+                          Text(
+                            switch (user.role) {
+                              UserRole.customer => 'Khám phá sân phù hợp, chọn giờ yêu thích và đặt lịch cho buổi chơi của bạn.',
+                              UserRole.staff => 'Theo dõi lịch sân, nhận khách và xử lý đơn bán lẻ tại một nơi.',
+                              UserRole.admin => 'Theo dõi hoạt động, quản lý đơn đặt và phát triển cụm sân của bạn.',
+                              UserRole.superAdmin => 'Duyệt chủ sân, quản lý danh mục và theo dõi số liệu nền tảng.',
+                            },
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: fc.onBrandMuted,
+                              height: 1.6,
+                            ),
                           ),
-                          onPressed: () => context.push(entries.first.route),
-                          icon: Icon(entries.first.icon),
-                          label: Text(entries.first.title),
-                        ),
-                      ],
+                          const SizedBox(height: Gap.screen),
+                          FilledButton.icon(
+                            key: user.role == UserRole.superAdmin
+                                ? const ValueKey('home-super-admin-overview')
+                                : null,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF06443F),
+                            ),
+                            onPressed: () => context.push(entries.first.route),
+                            icon: Icon(entries.first.icon),
+                            label: Text(entries.first.title),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: Gap.xl),
                   if (user.role == UserRole.customer) ...[
                     TextField(
                       maxLength: 200,
@@ -184,22 +175,15 @@ class HomePage extends StatelessWidget {
                         ).toString(),
                       ),
                       decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
+                        prefixIcon: Icon(Icons.search_rounded),
                         labelText: 'Bạn muốn chơi ở đâu?',
                         hintText: 'Tên sân hoặc địa chỉ',
                         counterText: '',
                       ),
                     ),
-                    const SizedBox(height: 28),
-                  ],
-                  if (user.role == UserRole.customer) ...[
-                    const SizedBox(height: 28),
-                    Text(
-                      'Khám phá theo môn',
-                      style: Theme.of(context).textTheme.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Gap.xxl),
+                    const SectionHeader('Khám phá theo môn'),
+                    const SizedBox(height: Gap.md),
                     if (discoveryRepository != null)
                       VenueFeed(repository: discoveryRepository!)
                     else
@@ -213,23 +197,17 @@ class HomePage extends StatelessWidget {
                           ).toString(),
                         ),
                       ),
+                    const SizedBox(height: Gap.xxl),
                   ],
-                  const SizedBox(height: 24),
-                  Text(
+                  SectionHeader(
                     user.role == UserRole.customer
                         ? 'Buổi chơi của bạn'
                         : 'Quản lý công việc',
-                    style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    user.role == UserRole.customer
+                    subtitle: user.role == UserRole.customer
                         ? 'Đặt lịch, ra sân và tận hưởng trận đấu.'
                         : 'Mọi công việc trong một không gian.',
-                    style: TextStyle(color: colors.onSurfaceVariant),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Gap.lg),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final columns = constraints.maxWidth >= 720
@@ -239,14 +217,26 @@ class HomePage extends StatelessWidget {
                           : 1;
                       final width =
                           (constraints.maxWidth - (columns - 1) * 12) / columns;
+                      final tints = [
+                        colors.primary,
+                        colors.secondary,
+                        colors.tertiary,
+                        fc.warning,
+                        fc.success,
+                        fc.info,
+                      ];
+                      final rest = entries.skip(1).toList();
                       return Wrap(
                         spacing: 12,
                         runSpacing: 12,
                         children: [
-                          for (final entry in entries.skip(1))
+                          for (final (index, entry) in rest.indexed)
                             SizedBox(
                               width: width,
-                              child: _ActionCard(entry: entry),
+                              child: _ActionCard(
+                                entry: entry,
+                                tint: tints[index % tints.length],
+                              ),
                             ),
                         ],
                       );
@@ -371,60 +361,59 @@ List<_Entry> _entries(UserRole role) => switch (role) {
 };
 
 class _ActionCard extends StatelessWidget {
-  const _ActionCard({required this.entry});
+  const _ActionCard({required this.entry, required this.tint});
   final _Entry entry;
+  final Color tint;
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        backgroundColor: colors.surface,
-        foregroundColor: colors.onSurface,
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.all(18),
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final fc = context.fc;
+    // A real button (not a bare card) so it is announced and focusable as one.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Radii.card),
+        boxShadow: fc.shadow,
       ),
-      onPressed: () => context.push(entry.route),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: colors.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(entry.icon, color: colors.onPrimaryContainer, size: 23),
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: fc.frostedFill,
+          foregroundColor: colors.onSurface,
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.all(Gap.lg),
+          side: BorderSide(color: fc.hairline),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Radii.card),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
+        ),
+        onPressed: () => context.push(entry.route),
+        child: Row(
+          children: [
+            IconBadge(entry.icon, color: tint),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(entry.title, style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 4),
+                  Text(
+                    entry.subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  entry.subtitle,
-                  style: TextStyle(
-                    color: colors.onSurfaceVariant,
-                    fontSize: 12,
-                    height: 1.5,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 6),
-          Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 13,
-            color: colors.onSurfaceVariant,
-          ),
-        ],
+            const SizedBox(width: 6),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: colors.onSurfaceVariant,
+            ),
+          ],
+        ),
       ),
     );
   }

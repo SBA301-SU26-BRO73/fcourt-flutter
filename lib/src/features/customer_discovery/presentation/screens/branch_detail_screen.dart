@@ -1,3 +1,5 @@
+import '../../../../../app/widgets/fc_widgets.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -180,7 +182,7 @@ class _BranchDetailContent extends StatelessWidget {
                           padding: const EdgeInsets.all(20),
                           children: [
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.circular(Radii.xl),
                               child: galleryRepository == null
                                   ? artwork
                                   : BranchGallerySection(
@@ -192,8 +194,7 @@ class _BranchDetailContent extends StatelessWidget {
                             const SizedBox(height: 20),
                             Text(
                               data.name,
-                              style: Theme.of(context).textTheme.headlineMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              style: Theme.of(context).textTheme.headlineMedium,
                             ),
                             const SizedBox(height: 8),
                             Text(
@@ -201,8 +202,13 @@ class _BranchDetailContent extends StatelessWidget {
                                   .whereType<String>()
                                   .where((s) => s.isNotEmpty)
                                   .join(', '),
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 24),
                             Text(
                               'Chọn sân trong chi nhánh',
                               style: Theme.of(context).textTheme.titleLarge,
@@ -480,14 +486,22 @@ class _BranchCourtsState extends State<_BranchCourts> {
       return Column(
         children: [
           for (final court in courts)
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.sports_tennis),
-                title: Text(court.name),
-                subtitle: Text(_courtPrice(court)),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push(
-                  '/courts/${court.id}/slots?courtName=${Uri.encodeQueryComponent(court.name)}&branchName=${Uri.encodeQueryComponent(widget.branch.name)}',
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  leading: const IconBadge(Icons.sports_tennis, size: 42),
+                  title: Text(court.name),
+                  subtitle: Text(_courtPrice(court)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push(
+                    '/courts/${court.id}/slots?courtName=${Uri.encodeQueryComponent(court.name)}&branchName=${Uri.encodeQueryComponent(widget.branch.name)}',
+                  ),
                 ),
               ),
             ),

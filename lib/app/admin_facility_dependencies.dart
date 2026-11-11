@@ -62,6 +62,7 @@ class AdminFacilityDependencies {
   /// SCRUM-77: tải báo cáo doanh thu; `null` thì ẩn nút xuất.
   final RevenueReportRepository? revenueReportRepository;
   final ReportFileOpener reportFileOpener;
+
   /// Ảnh chi nhánh (SCRUM-47/48): chủ sân thêm/xóa, khách chỉ đọc qua endpoint công khai.
   final BranchImageRepository? branchImageRepository;
   final BranchImagePicker? branchImagePicker;

@@ -1,4 +1,5 @@
 import '../../../app/widgets/account_actions.dart';
+import '../../../app/widgets/fc_widgets.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,20 +31,15 @@ class SettingsPage extends StatelessWidget {
               children: [
                 Text(
                   'Theo cách của bạn',
-                  style: Theme.of(context).textTheme.headlineMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
-                const Text('Tùy chỉnh giao diện và quản lý tài khoản FCOURT.'),
-                const SizedBox(height: 28),
                 Text(
-                  'GIAO DIỆN',
-                  style: TextStyle(
-                    color: colors.primary,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.4,
-                  ),
+                  'Tùy chỉnh giao diện và quản lý tài khoản FCOURT.',
+                  style: TextStyle(color: colors.onSurfaceVariant),
                 ),
+                const SizedBox(height: 28),
+                const Eyebrow('GIAO DIỆN'),
                 const SizedBox(height: 12),
                 Card(
                   child: Padding(
@@ -84,19 +80,26 @@ class SettingsPage extends StatelessWidget {
                               selected: theme.mode == mode,
                               child: ListTile(
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(Radii.md),
+                                  side: BorderSide(
+                                    color: theme.mode == mode
+                                        ? colors.primary.withValues(alpha: .45)
+                                        : Colors.transparent,
+                                  ),
                                 ),
                                 tileColor: theme.mode == mode
-                                    ? colors.primaryContainer
+                                    ? colors.primary.withValues(alpha: .1)
                                     : null,
                                 leading: Icon(icon),
                                 title: Text(title),
                                 subtitle: Text(subtitle),
                                 trailing: Icon(
                                   theme.mode == mode
-                                      ? Icons.radio_button_checked
-                                      : Icons.radio_button_off,
-                                  color: colors.primary,
+                                      ? Icons.check_circle_rounded
+                                      : Icons.circle_outlined,
+                                  color: theme.mode == mode
+                                      ? colors.primary
+                                      : colors.outline,
                                 ),
                                 onTap: () async {
                                   final saved = await theme.select(mode);
@@ -118,14 +121,7 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text(
-                  'TÀI KHOẢN',
-                  style: TextStyle(
-                    color: colors.primary,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.4,
-                  ),
-                ),
+                const Eyebrow('TÀI KHOẢN'),
                 const SizedBox(height: 12),
                 Card(
                   child: Column(
@@ -151,7 +147,12 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 28),
-                const Center(child: Text('FCOURT · Ra sân. Hết mình.')),
+                Center(
+                  child: Text(
+                    'FCOURT · Ra sân. Hết mình.',
+                    style: TextStyle(color: colors.onSurfaceVariant),
+                  ),
+                ),
               ],
             ),
           ),

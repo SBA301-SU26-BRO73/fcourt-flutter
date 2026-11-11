@@ -25,6 +25,7 @@ import '../features/transactions/presentation/admin_transaction_history_screen.d
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'fc_route.dart';
 
 import '../features/auth/domain/usecases/change_password.dart';
 import '../features/auth/domain/usecases/login.dart';
@@ -153,22 +154,22 @@ GoRouter createRouter(
         builder: (context, state, child) =>
             AppShell(location: state.uri.path, child: child),
         routes: [
-          GoRoute(path: '/activity', builder: (_, _) => const ActivityPage()),
-          GoRoute(
+          FcRoute(path: '/activity', builder: (_, _) => const ActivityPage()),
+          FcRoute(
             path: '/notifications',
             builder: (_, _) => const NotificationsPage(),
           ),
-          GoRoute(
+          FcRoute(
             path: '/notifications/:id',
             builder: (_, state) => NotificationArticlePage(
               index: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
             ),
           ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.settings,
             builder: (_, _) => const SettingsPage(),
           ),
-          GoRoute(
+          FcRoute(
             path: '/admin/subscription',
             builder: (context, state) {
               final repository = dependencies.subscriptions;
@@ -187,7 +188,7 @@ GoRouter createRouter(
             },
           ),
           if (dependencies.offline != null)
-            GoRoute(
+            FcRoute(
               path: AppRoutes.offlineCheckIn,
               builder: (_, _) => OfflineCheckInPage(
                 repository: OfflineOperations.cached(
@@ -199,7 +200,7 @@ GoRouter createRouter(
               ),
             ),
           if (dependencies.pos != null)
-            GoRoute(
+            FcRoute(
               path: '/staff/pos',
               builder: (_, _) => PosPage(
                 repository: dependencies.pos!,
@@ -207,7 +208,7 @@ GoRouter createRouter(
               ),
             ),
           if (dependencies.operations != null)
-            GoRoute(
+            FcRoute(
               path: '/staff/schedule',
               builder: (_, _) => SchedulePage(
                 repository: dependencies.operations!,
@@ -216,23 +217,23 @@ GoRouter createRouter(
               ),
             ),
           if (dependencies.staffRepository != null)
-            GoRoute(
+            FcRoute(
               path: AppRoutes.staff,
               builder: (_, _) =>
                   StaffPage(repository: dependencies.staffRepository!),
             ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.splash,
             builder: (context, state) => const SplashPage(),
           ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.login,
             builder: (context, state) => BlocProvider(
               create: (_) => LoginBloc(Login(repository)),
               child: const LoginPage(),
             ),
           ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.registerCustomer,
             builder: (context, state) => BlocProvider(
               create: (_) => RegisterBloc(
@@ -242,7 +243,7 @@ GoRouter createRouter(
               child: const RegisterCustomerPage(),
             ),
           ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.registerOwner,
             builder: (context, state) => BlocProvider(
               create: (_) => RegisterBloc(
@@ -252,7 +253,7 @@ GoRouter createRouter(
               child: RegisterOwnerPage(picker: dependencies.documentPicker),
             ),
           ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.forgotPassword,
             builder: (context, state) => BlocProvider(
               create: (_) =>
@@ -260,7 +261,7 @@ GoRouter createRouter(
               child: const ForgotPasswordPage(),
             ),
           ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.resetPassword,
             builder: (context, state) => BlocProvider(
               create: (_) => ResetPasswordBloc(ResetPassword(repository)),
@@ -269,7 +270,7 @@ GoRouter createRouter(
               ),
             ),
           ),
-          GoRoute(
+          FcRoute(
             path: '/booking/confirm',
             builder: (context, state) {
               final checkout = state.extra;
@@ -293,7 +294,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/booking/summary',
             builder: (context, state) {
               final arguments = state.extra;
@@ -315,7 +316,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/admin/branches/:branchId/payments',
             builder: (context, state) {
               final id = int.tryParse(state.pathParameters['branchId'] ?? '');
@@ -337,7 +338,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/admin/branches/:branchId/refunds',
             builder: (context, state) {
               final id = int.tryParse(state.pathParameters['branchId'] ?? '');
@@ -358,7 +359,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/bookings/:id/refund',
             builder: (context, state) {
               final id = int.tryParse(state.pathParameters['id'] ?? '');
@@ -374,7 +375,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/admin/branches/:branchId/transactions',
             builder: (context, state) {
               final id = int.tryParse(state.pathParameters['branchId'] ?? '');
@@ -394,7 +395,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/payments/history',
             builder: (context, state) {
               final repository = dependencies.customerTransactions;
@@ -406,7 +407,7 @@ GoRouter createRouter(
               return CustomerTransactionHistoryScreen(repository: repository);
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/bookings',
             builder: (context, state) {
               final repository = dependencies.bookingHistoryRepository;
@@ -427,7 +428,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/bookings/:id',
             builder: (context, state) {
               final repository = dependencies.bookingHistoryRepository;
@@ -472,7 +473,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/payments/checkout',
             builder: (context, state) {
               final arguments = state.extra;
@@ -501,7 +502,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/payments/ticket',
             builder: (context, state) {
               final args = state.extra;
@@ -526,7 +527,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/payments/receipt',
             builder: (context, state) {
               final args = state.extra;
@@ -550,7 +551,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/admin/bookings',
             builder: (context, state) {
               final repository = dependencies.adminBookings;
@@ -572,7 +573,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/admin/vouchers',
             builder: (context, state) {
               final repository = dependencies.vouchers;
@@ -592,7 +593,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.home,
             builder: (context, state) =>
                 authBloc.state.role == UserRole.customer
@@ -603,7 +604,7 @@ GoRouter createRouter(
                     discoveryRepository: dependencies.discoveryRepository,
                   ),
           ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.catalog,
             builder: (context, state) => MultiBlocProvider(
               providers: [
@@ -630,7 +631,7 @@ GoRouter createRouter(
               ),
             ),
           ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.profile,
             builder: (context, state) => MultiBlocProvider(
               providers: [
@@ -644,7 +645,7 @@ GoRouter createRouter(
               child: const ProfilePage(),
             ),
           ),
-          GoRoute(
+          FcRoute(
             path: '/profile/edit',
             builder: (context, state) => MultiBlocProvider(
               providers: [
@@ -658,7 +659,7 @@ GoRouter createRouter(
               child: const ProfilePage(editMode: true),
             ),
           ),
-          GoRoute(
+          FcRoute(
             name: 'courtSlots',
             path: '/courts/:courtId/slots',
             builder: (context, state) {
@@ -729,13 +730,13 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.discover,
             builder: (context, state) => CustomerHomeScreen(
               repository: dependencies.discoveryRepository,
             ),
           ),
-          GoRoute(
+          FcRoute(
             path: '/branches',
             builder: (context, state) {
               final sportName = state.uri.queryParameters['sport'];
@@ -752,7 +753,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/branches/:id',
             builder: (context, state) => BranchDetailScreen(
               discoveryRepository: dependencies.discoveryRepository,
@@ -765,7 +766,7 @@ GoRouter createRouter(
             ),
           ),
           // Màn kiểm tra kết nối BE, dùng khi phát triển.
-          GoRoute(
+          FcRoute(
             path: AppRoutes.health,
             builder: (context, state) => BlocProvider(
               create: (_) =>
@@ -775,7 +776,7 @@ GoRouter createRouter(
             ),
           ),
           ...adminFacilityRoutes(dependencies.adminFacility),
-          GoRoute(
+          FcRoute(
             path: AppRoutes.superAdminOverview,
             builder: (context, state) {
               final repository = dependencies.platformOverview;
@@ -788,7 +789,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/super-admin/owners/pending',
             builder: (context, state) {
               final repository = dependencies.courtOwnerApprovalRepository;
@@ -804,7 +805,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          FcRoute(
             path: '/super-admin/owners/:ownerId',
             builder: (context, state) {
               final repository = dependencies.courtOwnerApprovalRepository;

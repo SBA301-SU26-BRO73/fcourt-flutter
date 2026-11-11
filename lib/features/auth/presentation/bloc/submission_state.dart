@@ -13,20 +13,21 @@ class SubmissionState extends Equatable {
     this.fieldErrors = const {},
   });
 
-  const SubmissionState.submitting() : this(status: SubmissionStatus.submitting);
+  const SubmissionState.submitting()
+    : this(status: SubmissionStatus.submitting);
 
   const SubmissionState.success([AuthUser? user])
-      : this(status: SubmissionStatus.success, user: user);
+    : this(status: SubmissionStatus.success, user: user);
 
   /// [fieldErrors] là lỗi validation của BE theo tên field, hiển thị ngay dưới ô nhập.
   const SubmissionState.failure(
     String message, {
     Map<String, String> fieldErrors = const {},
   }) : this(
-          status: SubmissionStatus.failure,
-          message: message,
-          fieldErrors: fieldErrors,
-        );
+         status: SubmissionStatus.failure,
+         message: message,
+         fieldErrors: fieldErrors,
+       );
 
   final SubmissionStatus status;
 

@@ -14,6 +14,7 @@ class AuthTextField extends StatefulWidget {
     this.autofillHints,
     this.onChanged,
     this.onSubmitted,
+    this.icon,
   });
 
   final TextEditingController controller;
@@ -26,6 +27,9 @@ class AuthTextField extends StatefulWidget {
   final Iterable<String>? autofillHints;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
+
+  /// Optional leading icon.
+  final IconData? icon;
 
   @override
   State<AuthTextField> createState() => _AuthTextFieldState();
@@ -47,13 +51,17 @@ class _AuthTextFieldState extends State<AuthTextField> {
       onFieldSubmitted: widget.onSubmitted,
       decoration: InputDecoration(
         labelText: widget.label,
-        border: const OutlineInputBorder(),
+        prefixIcon: widget.icon == null ? null : Icon(widget.icon),
         errorText: widget.serverError,
         errorMaxLines: 3,
         suffixIcon: widget.obscure
             ? IconButton(
                 tooltip: _hidden ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
-                icon: Icon(_hidden ? Icons.visibility : Icons.visibility_off),
+                icon: Icon(
+                  _hidden
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                ),
                 onPressed: () => setState(() => _hidden = !_hidden),
               )
             : null,

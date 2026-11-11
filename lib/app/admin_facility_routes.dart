@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'fc_route.dart';
 
 import '../features/admin_dashboard/domain/usecases/analytics_usecases.dart';
 import '../features/admin_dashboard/domain/usecases/get_dashboard_stats.dart';
@@ -47,7 +48,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
   final imagePicker = deps.branchImagePicker;
   return [
     if (images != null && imagePicker != null)
-      GoRoute(
+      FcRoute(
         path: '/admin/branches/:branchId/images',
         builder: (context, state) => _withId(
           state.pathParameters['branchId'],
@@ -61,7 +62,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
           ),
         ),
       ),
-    GoRoute(
+    FcRoute(
       path: '/admin/dashboard',
       builder: (context, state) => BlocProvider(
         create: (_) => DashboardBloc(
@@ -76,7 +77,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         ),
       ),
     ),
-    GoRoute(
+    FcRoute(
       path: '/admin/analytics',
       builder: (context, state) => BlocProvider(
         create: (_) => AnalyticsBloc(
@@ -87,7 +88,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         child: const AnalyticsScreen(),
       ),
     ),
-    GoRoute(
+    FcRoute(
       path: '/admin/branches',
       builder: (context, state) => BlocProvider(
         create: (_) =>
@@ -106,7 +107,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         ),
       ),
     ),
-    GoRoute(
+    FcRoute(
       path: '/admin/branches/new',
       builder: (context, state) => BlocProvider(
         create: (_) => BranchFormBloc(
@@ -116,7 +117,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         child: const BranchFormScreen(),
       ),
     ),
-    GoRoute(
+    FcRoute(
       path: '/admin/branches/:branchId/edit',
       builder: (context, state) => _withId(
         state.pathParameters['branchId'],
@@ -130,7 +131,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         ),
       ),
     ),
-    GoRoute(
+    FcRoute(
       path: '/admin/branches/:branchId/courts',
       builder: (context, state) => _withId(
         state.pathParameters['branchId'],
@@ -175,7 +176,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         ),
       ),
     ),
-    GoRoute(
+    FcRoute(
       path: '/admin/courts/new',
       builder: (context, state) => _withId(
         state.uri.queryParameters['branchId'],
@@ -190,7 +191,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         ),
       ),
     ),
-    GoRoute(
+    FcRoute(
       path: '/admin/courts/:courtId/edit',
       builder: (context, state) => _withId(
         state.pathParameters['courtId'],
@@ -205,7 +206,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         ),
       ),
     ),
-    GoRoute(
+    FcRoute(
       path: '/admin/courts/:courtId/pricing',
       builder: (context, state) => _withId(
         state.pathParameters['courtId'],
@@ -222,7 +223,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         ),
       ),
     ),
-    GoRoute(
+    FcRoute(
       path: '/admin/courts/:courtId/slot-template',
       builder: (context, state) => _withId(
         state.pathParameters['courtId'],
@@ -239,7 +240,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
     ),
     if (deps.courtLockRepository != null &&
         deps.courtCalendarRepository != null)
-      GoRoute(
+      FcRoute(
         path: '/admin/courts/:courtId/calendar',
         builder: (context, state) => _withId(
           state.pathParameters['courtId'],
@@ -260,7 +261,7 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
         ),
       ),
     if (deps.courtLockRepository != null)
-      GoRoute(
+      FcRoute(
         path: '/admin/branches/:branchId/out-of-service',
         builder: (context, state) => _withId(
           state.pathParameters['branchId'],

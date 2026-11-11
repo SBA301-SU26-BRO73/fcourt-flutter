@@ -14,7 +14,10 @@ sealed class ResetPasswordEvent extends Equatable {
 }
 
 class ResetPasswordSubmitted extends ResetPasswordEvent {
-  const ResetPasswordSubmitted({required this.token, required this.newPassword});
+  const ResetPasswordSubmitted({
+    required this.token,
+    required this.newPassword,
+  });
 
   final String token;
   final String newPassword;

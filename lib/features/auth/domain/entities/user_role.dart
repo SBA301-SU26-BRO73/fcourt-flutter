@@ -12,7 +12,7 @@ enum UserRole {
 
   /// Vai trò lạ (BE thêm role mới) rơi về [customer], là quyền thấp nhất.
   static UserRole fromApi(String? value) => UserRole.values.firstWhere(
-        (role) => role.apiValue == value,
-        orElse: () => UserRole.customer,
-      );
+    (role) => role.apiValue == value,
+    orElse: () => UserRole.customer,
+  );
 }

@@ -24,7 +24,8 @@ class ForgotPasswordSubmitted extends ForgotPasswordEvent {
 
 /// Thành công nghĩa là BE đã nhận yêu cầu, không cho biết email có được đăng ký hay không.
 class ForgotPasswordBloc extends Bloc<ForgotPasswordEvent, SubmissionState> {
-  ForgotPasswordBloc(this._requestPasswordReset) : super(const SubmissionState()) {
+  ForgotPasswordBloc(this._requestPasswordReset)
+    : super(const SubmissionState()) {
     on<ForgotPasswordSubmitted>(_onSubmitted);
   }
 

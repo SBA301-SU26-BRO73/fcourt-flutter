@@ -51,20 +51,20 @@ class OwnerRegistrationSubmitted extends RegisterEvent {
 
   @override
   List<Object?> get props => [
-        fullName,
-        email,
-        phone,
-        password,
-        legalDocuments,
-        courtImages,
-      ];
+    fullName,
+    email,
+    phone,
+    password,
+    legalDocuments,
+    courtImages,
+  ];
 }
 
 /// Đăng ký khách hàng (thành công thì có `user`, đã đăng nhập) và chủ sân (thành công
 /// không có `user`, phải chờ super admin duyệt).
 class RegisterBloc extends Bloc<RegisterEvent, SubmissionState> {
   RegisterBloc(this._registerCustomer, this._registerCourtOwner)
-      : super(const SubmissionState()) {
+    : super(const SubmissionState()) {
     on<CustomerRegistrationSubmitted>(_onCustomer);
     on<OwnerRegistrationSubmitted>(_onOwner);
   }

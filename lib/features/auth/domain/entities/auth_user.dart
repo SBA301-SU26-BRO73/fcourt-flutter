@@ -24,13 +24,13 @@ class AuthUser extends Equatable {
       (fullName == null || fullName!.trim().isEmpty) ? email : fullName!;
 
   AuthUser copyWith({String? fullName, String? phone}) => AuthUser(
-        id: id,
-        email: email,
-        role: role,
-        status: status,
-        fullName: fullName ?? this.fullName,
-        phone: phone ?? this.phone,
-      );
+    id: id,
+    email: email,
+    role: role,
+    status: status,
+    fullName: fullName ?? this.fullName,
+    phone: phone ?? this.phone,
+  );
 
   @override
   List<Object?> get props => [id, email, role, status, fullName, phone];

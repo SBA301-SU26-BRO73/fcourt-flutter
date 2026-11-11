@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../app/widgets/account_actions.dart';
+import '../../../../../app/widgets/fc_widgets.dart';
 import '../../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/discovery_repository.dart';
 import '../discovery_cubit.dart';
@@ -49,24 +50,26 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
     final user = context.select((AuthBloc bloc) => bloc.state.user);
     final colors = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final fc = context.fc;
+    final pill = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(Radii.pill),
+      borderSide: BorderSide(color: fc.hairline),
+    );
     return Scaffold(
       body: Column(
         children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF008C5E), Color(0xFF003D36)],
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
-                child: Row(
-                  children: [
-                    Expanded(
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Gap.screen, 10, 8, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(Radii.pill),
+                        boxShadow: fc.shadowSmall,
+                      ),
                       child: TextField(
                         key: const ValueKey('discovery-search'),
                         controller: _query,
@@ -75,22 +78,30 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
                         decoration: InputDecoration(
                           hintText: 'Tìm sân, địa điểm',
                           fillColor: dark ? colors.surface : Colors.white,
-                          prefixIcon: const Icon(Icons.search),
+                          prefixIcon: const Icon(Icons.search_rounded),
                           suffixIcon: IconButton(
                             tooltip: 'Tìm sân',
                             onPressed: _search,
-                            icon: const Icon(Icons.arrow_forward),
+                            icon: const Icon(Icons.arrow_forward_rounded),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             vertical: 14,
                             horizontal: 12,
                           ),
+                          border: pill,
+                          enabledBorder: pill,
+                          focusedBorder: pill.copyWith(
+                            borderSide: BorderSide(
+                              color: colors.primary,
+                              width: 1.8,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    const AccountActions(color: Colors.white),
-                  ],
-                ),
+                  ),
+                  const AccountActions(),
+                ],
               ),
             ),
           ),
@@ -107,7 +118,12 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         slivers: [
                           SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                            padding: const EdgeInsets.fromLTRB(
+                              Gap.screen,
+                              8,
+                              Gap.screen,
+                              8,
+                            ),
                             sliver: SliverToBoxAdapter(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,12 +132,20 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
                                     'Xin chào, ${user?.displayName ?? 'bạn'}',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.bodyLarge
+                                        ?.copyWith(
+                                          color: colors.onSurfaceVariant,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Hôm nay ra sân nào?',
                                     style: Theme.of(context)
                                         .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                        .headlineMedium,
                                   ),
-                                  const SizedBox(height: 20),
+                                  const SizedBox(height: 18),
                                   LayoutBuilder(
                                     builder: (context, constraints) => Wrap(
                                       spacing: 8,
@@ -170,37 +194,78 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
                                                       ),
                                                   child: Column(
                                                     children: [
-                                                      Container(
-                                                        width: 52,
-                                                        height: 52,
+                                                      AnimatedContainer(
+                                                        duration:
+                                                            const Duration(
+                                                              milliseconds: 200,
+                                                            ),
+                                                        curve:
+                                                            Curves.easeOutCubic,
+                                                        width: 60,
+                                                        height: 60,
                                                         decoration: BoxDecoration(
                                                           gradient: LinearGradient(
-                                                            colors: [
-                                                              tint.withValues(
-                                                                alpha: .12,
-                                                              ),
-                                                              tint.withValues(
-                                                                alpha: .3,
-                                                              ),
-                                                            ],
+                                                            begin: Alignment
+                                                                .topLeft,
+                                                            end: Alignment
+                                                                .bottomRight,
+                                                            colors:
+                                                                state.sport ==
+                                                                    sport
+                                                                ? [
+                                                                    tint.withValues(
+                                                                      alpha:
+                                                                          .85,
+                                                                    ),
+                                                                    tint,
+                                                                  ]
+                                                                : [
+                                                                    tint.withValues(
+                                                                      alpha: .1,
+                                                                    ),
+                                                                    tint.withValues(
+                                                                      alpha:
+                                                                          .26,
+                                                                    ),
+                                                                  ],
                                                           ),
                                                           borderRadius:
                                                               BorderRadius.circular(
-                                                                18,
+                                                                20,
                                                               ),
-                                                          border:
+                                                          border: Border.all(
+                                                            color: fc.hairline,
+                                                            width: 1.5,
+                                                          ),
+                                                          boxShadow:
                                                               state.sport ==
                                                                   sport
-                                                              ? Border.all(
-                                                                  color: tint,
-                                                                  width: 2,
-                                                                )
+                                                              ? [
+                                                                  BoxShadow(
+                                                                    color: tint
+                                                                        .withValues(
+                                                                          alpha:
+                                                                              .4,
+                                                                        ),
+                                                                    blurRadius:
+                                                                        16,
+                                                                    offset:
+                                                                        const Offset(
+                                                                          0,
+                                                                          8,
+                                                                        ),
+                                                                  ),
+                                                                ]
                                                               : null,
                                                         ),
                                                         child: Icon(
                                                           icon,
-                                                          size: 32,
-                                                          color: tint,
+                                                          size: 30,
+                                                          color:
+                                                              state.sport ==
+                                                                  sport
+                                                              ? Colors.white
+                                                              : tint,
                                                         ),
                                                       ),
                                                       const SizedBox(height: 8),
@@ -339,104 +404,104 @@ class _VenueTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push('/branches/${branch.id}', extra: branch),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 116,
-              width: double.infinity,
-              child: branch.imageUrl == null
-                  ? const CourtArtwork(height: 116, label: 'SportCourt')
-                  : Image.network(
-                      branch.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          const CourtArtwork(height: 116, label: 'SportCourt'),
+    return FrostedCard(
+      padding: EdgeInsets.zero,
+      clip: true,
+      strong: true,
+      onTap: () => context.push('/branches/${branch.id}', extra: branch),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 116,
+            width: double.infinity,
+            child: branch.imageUrl == null
+                ? const CourtArtwork(height: 116, label: 'SportCourt')
+                : Image.network(
+                    branch.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        const CourtArtwork(height: 116, label: 'SportCourt'),
+                  ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    branch.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      height: 1.3,
                     ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      branch.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        height: 1.3,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    [
+                      branch.address,
+                      branch.city,
+                    ].where((s) => s.isNotEmpty).join(', '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.star_rounded,
+                        color: branch.reviewCount > 0
+                            ? const Color(0xFFFFB300)
+                            : colors.outline,
+                        size: 18,
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      [
-                        branch.address,
-                        branch.city,
-                      ].where((s) => s.isNotEmpty).join(', '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
+                      const SizedBox(width: 3),
+                      Text(
+                        branch.reviewCount > 0
+                            ? branch.averageRating.toStringAsFixed(1)
+                            : 'Mới',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        Icons.grid_view_rounded,
+                        size: 14,
                         color: colors.onSurfaceVariant,
                       ),
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.star_rounded,
-                          color: branch.reviewCount > 0
-                              ? const Color(0xFFFFB300)
-                              : colors.outline,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          branch.reviewCount > 0
-                              ? branch.averageRating.toStringAsFixed(1)
-                              : 'Mới',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        const Spacer(),
-                        Icon(
-                          Icons.grid_view_rounded,
-                          size: 14,
+                      const SizedBox(width: 3),
+                      Text(
+                        '${branch.courtCount} sân',
+                        style: TextStyle(
+                          fontSize: 12,
                           color: colors.onSurfaceVariant,
                         ),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${branch.courtCount} sân',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      branchPrice(branch),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: colors.primary,
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    branchPrice(branch),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: colors.primary,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
