@@ -11,11 +11,10 @@ class RegisterCustomer {
     required String email,
     required String phone,
     required String password,
-  }) =>
-      _repository.registerCustomer(
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        password: password,
-      );
+  }) => _repository.registerCustomer(
+    fullName: fullName.trim(),
+    email: email.trim(),
+    phone: phone.trim(),
+    password: password,
+  );
 }

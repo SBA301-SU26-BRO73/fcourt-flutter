@@ -50,3 +50,6 @@ app.*.map.json
 
 # Python release tooling
 __pycache__/
+
+# Rendered design previews
+/tool/preview/out/

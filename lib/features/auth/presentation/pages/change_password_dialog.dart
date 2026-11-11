@@ -20,10 +20,8 @@ class ChangePasswordDialog extends StatefulWidget {
     return showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => BlocProvider.value(
-        value: bloc,
-        child: const ChangePasswordDialog(),
-      ),
+      builder: (_) =>
+          BlocProvider.value(value: bloc, child: const ChangePasswordDialog()),
     );
   }
 
@@ -48,8 +46,11 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     context.read<ChangePasswordBloc>().add(
-          ChangePasswordSubmitted(currentPassword: _current.text, newPassword: _new.text),
-        );
+      ChangePasswordSubmitted(
+        currentPassword: _current.text,
+        newPassword: _new.text,
+      ),
+    );
   }
 
   @override
@@ -57,12 +58,15 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     return BlocConsumer<ChangePasswordBloc, SubmissionState>(
       listenWhen: (previous, current) => previous.status != current.status,
       listener: (context, state) {
-        if (state.status == SubmissionStatus.success) Navigator.of(context).pop(true);
+        if (state.status == SubmissionStatus.success) {
+          Navigator.of(context).pop(true);
+        }
       },
       builder: (context, state) {
         final fieldErrors = AuthMessages.localizeAll(state.fieldErrors);
         final knownFields = {'currentPassword', 'newPassword'};
-        final showBanner = state.status == SubmissionStatus.failure &&
+        final showBanner =
+            state.status == SubmissionStatus.failure &&
             !fieldErrors.keys.any(knownFields.contains);
         return AlertDialog(
           title: const Text('Đổi mật khẩu'),
@@ -107,7 +111,9 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
           ),
           actions: [
             TextButton(
-              onPressed: state.isSubmitting ? null : () => Navigator.of(context).pop(false),
+              onPressed: state.isSubmitting
+                  ? null
+                  : () => Navigator.of(context).pop(false),
               child: const Text('Hủy'),
             ),
             FilledButton(

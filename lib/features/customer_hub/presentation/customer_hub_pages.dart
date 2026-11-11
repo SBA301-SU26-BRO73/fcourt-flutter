@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/widgets/account_actions.dart';
+import '../../../app/widgets/fc_widgets.dart';
 
 class ActivityPage extends StatelessWidget {
   const ActivityPage({super.key});
@@ -12,32 +13,11 @@ class ActivityPage extends StatelessWidget {
       title: const Text('Hoạt động'),
       actions: const [AccountActions()],
     ),
-    body: Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 100,
-              color: Theme.of(context).colorScheme.primary
-                  .withValues(alpha: .25),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Hiện vẫn chưa có hoạt động nào',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Hoạt động sẽ xuất hiện tại đây khi bạn sử dụng SportCourt.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+    body: const Center(
+      child: EmptyState(
+        icon: Icons.receipt_long_outlined,
+        title: 'Hiện vẫn chưa có hoạt động nào',
+        message: 'Hoạt động sẽ xuất hiện tại đây khi bạn sử dụng SportCourt.',
       ),
     ),
   );
@@ -80,28 +60,46 @@ class NotificationsPage extends StatelessWidget {
       actions: const [AccountActions()],
     ),
     body: ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 128),
+      padding: EdgeInsets.fromLTRB(
+        Gap.screen,
+        Gap.sm,
+        Gap.screen,
+        Gap.lg + MediaQuery.paddingOf(context).bottom,
+      ),
       itemCount: _channels.length,
-      separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
+      separatorBuilder: (_, _) => const SizedBox(height: Gap.md),
       itemBuilder: (context, index) {
         final c = _channels[index];
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 14,
-            horizontal: 4,
-          ),
-          leading: CircleAvatar(
-            radius: 26,
-            backgroundColor: c.$4.withValues(alpha: .12),
-            child: Icon(c.$3, color: c.$4),
-          ),
-          title: Text(
-            c.$1,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-          subtitle: Text(c.$2, maxLines: 2, overflow: TextOverflow.ellipsis),
-          trailing: const Icon(Icons.chevron_right),
+        final theme = Theme.of(context);
+        return FrostedCard(
           onTap: () => context.push('/notifications/$index'),
+          child: Row(
+            children: [
+              IconBadge(c.$3, color: c.$4, size: 52),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(c.$1, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 3),
+                    Text(
+                      c.$2,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
         );
       },
     ),
@@ -120,12 +118,20 @@ class NotificationArticlePage extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         children: [
           Container(
-            height: 156,
+            height: 168,
             decoration: BoxDecoration(
-              color: c.$4.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  c.$4.withValues(alpha: .1),
+                  c.$4.withValues(alpha: .3),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(Radii.xl),
+              border: Border.all(color: context.fc.hairline),
             ),
-            child: Icon(c.$3, size: 72, color: c.$4),
+            child: Icon(c.$3, size: 76, color: c.$4),
           ),
           const SizedBox(height: 28),
           Text(

@@ -82,7 +82,12 @@ class _CustomerTransactionHistoryScreenState
     body: RefreshIndicator(
       onRefresh: () => _load(reset: true),
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          16 + MediaQuery.paddingOf(context).bottom,
+        ),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           if (_error != null) ...[

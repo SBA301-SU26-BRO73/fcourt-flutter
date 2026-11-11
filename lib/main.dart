@@ -11,7 +11,14 @@ import 'features/offline/data/offline_runtime.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  if (!kIsWeb) await Firebase.initializeApp();
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+    } catch (_) {
+      // iOS dev builds have no GoogleService-Info.plist: run without push
+      // instead of crashing on launch.
+    }
+  }
   await initializeOfflineWorker();
   final dependencies = AppDependencies.create(AppConfig.fromEnvironment());
   runApp(FcourtApp(dependencies: dependencies));

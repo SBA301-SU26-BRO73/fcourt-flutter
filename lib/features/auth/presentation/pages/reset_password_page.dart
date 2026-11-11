@@ -25,8 +25,9 @@ class ResetPasswordPage extends StatefulWidget {
 
 class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _token =
-      TextEditingController(text: widget.initialToken ?? '');
+  late final TextEditingController _token = TextEditingController(
+    text: widget.initialToken ?? '',
+  );
   final _password = TextEditingController();
   final _confirm = TextEditingController();
 
@@ -48,8 +49,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     context.read<ResetPasswordBloc>().add(
-          ResetPasswordSubmitted(token: _token.text, newPassword: _password.text),
-        );
+      ResetPasswordSubmitted(token: _token.text, newPassword: _password.text),
+    );
   }
 
   Future<void> _onReset() async {
@@ -85,7 +86,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       builder: (context, state) {
         final fieldErrors = AuthMessages.localizeAll(state.fieldErrors);
         final knownFields = {'token', 'newPassword'};
-        final showBanner = state.status == SubmissionStatus.failure &&
+        final showBanner =
+            state.status == SubmissionStatus.failure &&
             !fieldErrors.keys.any(knownFields.contains);
         return Scaffold(
           appBar: AppBar(title: const Text('Đặt lại mật khẩu')),
@@ -101,7 +103,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (showBanner) ...[
-                          ErrorBanner(AuthMessages.localize(state.message ?? '')),
+                          ErrorBanner(
+                            AuthMessages.localize(state.message ?? ''),
+                          ),
                           const SizedBox(height: 16),
                         ],
                         AuthTextField(
@@ -134,7 +138,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           label: 'Nhập lại mật khẩu mới',
                           obscure: true,
                           textInputAction: TextInputAction.done,
-                          validator: AuthValidators.confirmPassword(() => _password.text),
+                          validator: AuthValidators.confirmPassword(
+                            () => _password.text,
+                          ),
                           onSubmitted: (_) => _submit(),
                         ),
                         const SizedBox(height: 24),
@@ -144,7 +150,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Text('Đặt lại mật khẩu'),
                         ),

@@ -5,5 +5,6 @@ class RequestPasswordReset {
 
   final AuthRepository _repository;
 
-  Future<void> call(String email) => _repository.requestPasswordReset(email.trim());
+  Future<void> call(String email) =>
+      _repository.requestPasswordReset(email.trim());
 }

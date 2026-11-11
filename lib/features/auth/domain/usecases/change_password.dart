@@ -9,9 +9,8 @@ class ChangePassword {
   Future<AuthUser> call({
     required String currentPassword,
     required String newPassword,
-  }) =>
-      _repository.changePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      );
+  }) => _repository.changePassword(
+    currentPassword: currentPassword,
+    newPassword: newPassword,
+  );
 }

@@ -32,3 +32,9 @@
 ## Chưa kiểm chứng
 
 Camera/thư viện ảnh Android và upload ảnh đánh giá qua UI (cần một đơn COMPLETED). API ảnh đánh giá đã trả 201 với MinIO. Emulator Android không truy cập được `127.0.0.1:9000`; khi chạy app trên emulator cần đặt `STORAGE_PUBLIC_BASE_URL`/`STORAGE_S3_PRESIGN_ENDPOINT` về `http://10.0.2.2:9000`.
+
+## Bổ sung: sau khi gửi biên lai
+
+- Đơn đã gửi biên lai không bị hủy. Backend chỉ tự hủy đơn `PENDING_PAYMENT` khi hết giờ giữ chỗ; đơn đã gửi là `AWAITING_CONFIRMATION`. Lỗi nằm ở app: nút back quay lại màn VietQR, đồng hồ giữ chỗ chạy hết thì hiện "Phiên giữ chỗ đã hết hạn". Giờ màn đã gửi có **Về trang chủ** và **Xem đơn đặt sân**; nút back (cả back hệ thống) về trang chủ thay vì màn thanh toán.
+- Quản lý đơn của admin báo "dữ liệu không hợp lệ" vì booking-service trả `receiptImageUrl` là key S3 riêng tư (`receipts/<uuid>.jpg`), không phải URL. App coi key này là "không có link xem" (biên lai vẫn xem ở Duyệt biên lai); URL tuyệt đối không an toàn vẫn bị chặn. Nên sửa thêm phía backend để trả URL đã ký hoặc bỏ trường này.
+- Kiểm chứng trên Chrome: đặt → gửi biên lai → Về trang chủ đi tới `/home`, đơn vẫn "Chờ duyệt"; `/admin/bookings` hiện danh sách, không còn lỗi. `flutter test`: 1034 pass.

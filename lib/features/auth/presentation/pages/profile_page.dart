@@ -1,4 +1,5 @@
 import '../../../../app/widgets/account_actions.dart';
+import '../../../../app/widgets/fc_widgets.dart';
 import '../../domain/entities/user_role.dart';
 
 import 'package:flutter/material.dart';
@@ -71,7 +72,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _hub(BuildContext context) {
     final user = context.watch<AuthBloc>().state.user;
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
         leading: const AccountBackButton(),
@@ -85,20 +87,34 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(Gap.screen, Gap.sm, Gap.screen, 32),
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: colors.primaryContainer.withValues(alpha: .45),
-              borderRadius: BorderRadius.circular(24),
-            ),
+          HeroPanel(
+            padding: const EdgeInsets.all(Gap.screen),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 26,
-                  backgroundColor: colors.primary,
-                  child: Icon(Icons.person, color: colors.onPrimary, size: 32),
+                Container(
+                  width: 60,
+                  height: 60,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: .22),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: .55),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Text(
+                    (user?.displayName.trim().isNotEmpty ?? false)
+                        ? user!.displayName.trim()[0].toUpperCase()
+                        : 'F',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -107,61 +123,82 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       Text(
                         user?.displayName ?? 'Tài khoản',
-                        style: Theme.of(context).textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
-                      const SizedBox(height: 5),
-                      Text(user?.email ?? '', overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 4),
+                      Text(
+                        user?.email ?? '',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: context.fc.onBrandMuted),
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                FilledButton.tonal(
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF06443F),
+                    minimumSize: const Size(48, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                  ),
                   onPressed: () => context.push('/profile/edit'),
                   child: const Text('Hồ sơ'),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 32),
-          Text(
-            'Tổng quát',
-            style: Theme.of(context).textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 12),
-          if (user?.role == UserRole.customer) ...[
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Lịch sử đặt sân'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.go('/bookings'),
+          const SizedBox(height: Gap.xxl),
+          const SectionHeader('Tổng quát'),
+          const SizedBox(height: Gap.md),
+          FrostedCard(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              children: [
+                if (user?.role == UserRole.customer) ...[
+                  ListTile(
+                    leading: const Icon(Icons.confirmation_number_outlined),
+                    title: const Text('Lịch sử đặt sân'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.go('/bookings'),
+                  ),
+                  const Divider(indent: 56, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.receipt_long_outlined),
+                    title: const Text('Lịch sử giao dịch'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push('/payments/history'),
+                  ),
+                  const Divider(indent: 56, endIndent: 16),
+                ],
+                ListTile(
+                  leading: const Icon(Icons.palette_outlined),
+                  title: const Text('Cài đặt'),
+                  subtitle: const Text('Giao diện sáng, tối và theo hệ thống'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push('/settings'),
+                ),
+                const Divider(indent: 56, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.lock_outline_rounded),
+                  title: const Text('Đổi mật khẩu'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: _changePassword,
+                ),
+              ],
             ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Lịch sử giao dịch'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/payments/history'),
-            ),
-          ],
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Cài đặt'),
-            subtitle: const Text('Giao diện sáng, tối và theo hệ thống'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/settings'),
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Đổi mật khẩu'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _changePassword,
-          ),
-          const SizedBox(height: 28),
+          const SizedBox(height: Gap.xl),
           OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: colors.error,
+              side: BorderSide(color: colors.error.withValues(alpha: .35)),
+            ),
             onPressed: () =>
                 context.read<AuthBloc>().add(const AuthLogoutRequested()),
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout_rounded),
             label: const Text('Đăng xuất'),
           ),
         ],

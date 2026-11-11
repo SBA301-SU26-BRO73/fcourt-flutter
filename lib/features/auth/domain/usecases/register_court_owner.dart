@@ -13,13 +13,12 @@ class RegisterCourtOwner {
     required String password,
     required List<UploadDocument> legalDocuments,
     List<UploadDocument> courtImages = const [],
-  }) =>
-      _repository.registerCourtOwner(
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        password: password,
-        legalDocuments: legalDocuments,
-        courtImages: courtImages,
-      );
+  }) => _repository.registerCourtOwner(
+    fullName: fullName.trim(),
+    email: email.trim(),
+    phone: phone.trim(),
+    password: password,
+    legalDocuments: legalDocuments,
+    courtImages: courtImages,
+  );
 }

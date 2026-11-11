@@ -115,10 +115,19 @@ class AdminBookingRepositoryImpl implements AdminBookingRepository {
       throw const FormatException();
     }
     final receipt = optional('receiptImageUrl');
-    final uri = receipt == null ? null : Uri.tryParse(receipt);
-    if (receipt != null && !isAllowedImageUrl(uri)) {
+    final parsed = receipt == null ? null : Uri.tryParse(receipt);
+    // booking-service stores the private S3 object key (`receipts/<uuid>.jpg`);
+    // only payment-service can presign it, so a key is "no viewable link" here
+    // (the receipt stays reachable from the payment review screen).
+    final storageKey =
+        receipt != null &&
+        parsed != null &&
+        !parsed.hasScheme &&
+        RegExp(r'^receipts/[A-Za-z0-9._-]+$').hasMatch(receipt);
+    if (receipt != null && !storageKey && !isAllowedImageUrl(parsed)) {
       throw const FormatException();
     }
+    final uri = storageKey ? null : parsed;
     return AdminBooking(
       id: id('id'),
       code: text('bookingCode'),

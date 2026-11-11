@@ -12,13 +12,13 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        id: (json['id'] as num).toInt(),
-        email: json['email'] as String,
-        role: json['role'] as String?,
-        status: (json['status'] as String?) ?? '',
-        fullName: json['fullName'] as String?,
-        phone: json['phone'] as String?,
-      );
+    id: (json['id'] as num).toInt(),
+    email: json['email'] as String,
+    role: json['role'] as String?,
+    status: (json['status'] as String?) ?? '',
+    fullName: json['fullName'] as String?,
+    phone: json['phone'] as String?,
+  );
 
   final int id;
   final String email;
@@ -28,11 +28,11 @@ class UserModel {
   final String? phone;
 
   AuthUser toEntity() => AuthUser(
-        id: id,
-        email: email,
-        role: UserRole.fromApi(role),
-        status: status,
-        fullName: fullName,
-        phone: phone,
-      );
+    id: id,
+    email: email,
+    role: UserRole.fromApi(role),
+    status: status,
+    fullName: fullName,
+    phone: phone,
+  );
 }

@@ -10,11 +10,7 @@ import '../datasources/auth_remote_data_source.dart';
 import '../models/auth_session_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(
-    this._remote,
-    this._tokens, {
-    this._beforeLogout,
-  });
+  AuthRepositoryImpl(this._remote, this._tokens, {this._beforeLogout});
 
   final AuthRemoteDataSource _remote;
   final TokenStorage _tokens;

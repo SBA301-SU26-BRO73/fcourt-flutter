@@ -206,7 +206,9 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                         checkout.branchName,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      Text('${checkout.courtName} · ${_displayDate(checkout.date)}'),
+                      Text(
+                        '${checkout.courtName} · ${_displayDate(checkout.date)}',
+                      ),
                       Text('Mã đơn: ${checkout.bookingCode}'),
                       const SizedBox(height: 12),
                       const Text('Thời gian giữ chỗ còn lại'),
@@ -219,9 +221,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                       const SizedBox(height: 16),
                       if (widget.promos != null) ...[
                         PromoCodeInput(
-                          key: ValueKey(
-                            'promo-$_generation',
-                          ),
+                          key: ValueKey('promo-$_generation'),
                           initialCode:
                               state.retryCode ?? widget.arguments.promoCode,
                           applied: state.promo?.applied ?? false,
@@ -296,16 +296,8 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                         ),
                       ],
                       const SizedBox(height: 16),
-                      if (widget.onUploadReceipt != null &&
-                          state.transferAllowed)
-                        FilledButton(
-                          onPressed: widget.onUploadReceipt,
-                          child: const Text(
-                            'Tôi đã chuyển khoản · Gửi biên lai',
-                          ),
-                        ),
-                      if (state.transferAllowed)
-                        FilledButton.icon(
+                      if (state.transferAllowed) ...[
+                        OutlinedButton.icon(
                           onPressed: _saving ? null : () => _save(checkout),
                           icon: Icon(
                             _saving ? Icons.hourglass_top : Icons.download,
@@ -316,6 +308,17 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                                 : 'Lưu mã QR vào thư viện ảnh',
                           ),
                         ),
+                        if (widget.onUploadReceipt != null) ...[
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            onPressed: widget.onUploadReceipt,
+                            icon: const Icon(Icons.receipt_long),
+                            label: const Text(
+                              'Tôi đã chuyển khoản · Gửi biên lai',
+                            ),
+                          ),
+                        ],
+                      ],
                       if (checkout.amountVnd == 0 && !state.blocked) ...[
                         const Text(
                           'Đơn được giảm còn 0 đồng, không cần chuyển khoản.',

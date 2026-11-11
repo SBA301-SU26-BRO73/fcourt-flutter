@@ -45,7 +45,11 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
     super.dispose();
   }
 
-  Future<void> _pick(List<UploadDocument> target, int max, bool allowPdf) async {
+  Future<void> _pick(
+    List<UploadDocument> target,
+    int max,
+    bool allowPdf,
+  ) async {
     final picked = await widget.picker.pick(allowPdf: allowPdf);
     if (!mounted) return;
     setState(() {
@@ -62,15 +66,15 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
     setState(() => _legalMissing = _legal.isEmpty);
     if (!formValid || _legal.isEmpty) return;
     context.read<RegisterBloc>().add(
-          OwnerRegistrationSubmitted(
-            fullName: _fullName.text,
-            email: _email.text,
-            phone: _phone.text,
-            password: _password.text,
-            legalDocuments: List.unmodifiable(_legal),
-            courtImages: List.unmodifiable(_images),
-          ),
-        );
+      OwnerRegistrationSubmitted(
+        fullName: _fullName.text,
+        email: _email.text,
+        phone: _phone.text,
+        password: _password.text,
+        legalDocuments: List.unmodifiable(_legal),
+        courtImages: List.unmodifiable(_images),
+      ),
+    );
   }
 
   Future<void> _showSubmitted() async {
@@ -103,8 +107,16 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
       },
       builder: (context, state) {
         final fieldErrors = AuthMessages.localizeAll(state.fieldErrors);
-        final knownFields = {'fullName', 'email', 'phone', 'password', 'legalDocuments', 'courtImages'};
-        final showBanner = state.status == SubmissionStatus.failure &&
+        final knownFields = {
+          'fullName',
+          'email',
+          'phone',
+          'password',
+          'legalDocuments',
+          'courtImages',
+        };
+        final showBanner =
+            state.status == SubmissionStatus.failure &&
             !fieldErrors.keys.any(knownFields.contains);
         return Scaffold(
           appBar: AppBar(title: const Text('Đăng ký chủ sân')),
@@ -120,7 +132,9 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (showBanner) ...[
-                          ErrorBanner(AuthMessages.localize(state.message ?? '')),
+                          ErrorBanner(
+                            AuthMessages.localize(state.message ?? ''),
+                          ),
                           const SizedBox(height: 16),
                         ],
                         AuthTextField(
@@ -204,7 +218,9 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Text('Gửi hồ sơ đăng ký'),
                         ),
@@ -268,7 +284,9 @@ class _DocumentSection extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               error!,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
             ),
           ),
         Align(

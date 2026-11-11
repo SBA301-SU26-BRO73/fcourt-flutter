@@ -10,17 +10,20 @@ class ErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: scheme.errorContainer,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
           Icon(Icons.error_outline, color: scheme.onErrorContainer),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
-            child: Text(message, style: TextStyle(color: scheme.onErrorContainer)),
+            child: Text(
+              message,
+              style: TextStyle(color: scheme.onErrorContainer),
+            ),
           ),
         ],
       ),

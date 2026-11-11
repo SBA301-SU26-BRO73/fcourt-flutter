@@ -80,10 +80,17 @@ void main() {
       expect(venues.requests, [null]);
       expect(find.text('Sân hiển thị khi chọn tất cả'), findsOneWidget);
       expect(find.byType(GlassTabBar), findsOneWidget);
-      // Content ends above the glass bar: nothing is drawn under the tabs.
+      // Customer content scrolls under the floating pill (no opaque strip),
+      // and lists get the pill's height as bottom padding.
       expect(
         tester.widget<GlassScaffold>(find.byType(GlassScaffold)).extendBody,
-        isFalse,
+        isTrue,
+      );
+      expect(
+        MediaQuery.paddingOf(
+          tester.element(find.byType(CustomScrollView)),
+        ).bottom,
+        greaterThanOrEqualTo(96),
       );
       expect(find.byType(BackButton), findsNothing);
       expect(find.byKey(const ValueKey('discovery-scroll-hint')), findsNothing);
