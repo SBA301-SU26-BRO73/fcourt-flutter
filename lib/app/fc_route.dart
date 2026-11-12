@@ -24,9 +24,8 @@ class FcRoute extends GoRoute {
                       ),
                       transitionsBuilder: (_, animation, _, child) =>
                           FadeTransition(
-                            opacity: CurveTween(
-                              curve: Curves.easeOutCubic,
-                            ).animate(animation),
+                            opacity: CurveTween(curve: Curves.easeOutCubic)
+                                .animate(animation),
                             child: child,
                           ),
                       child: AppBackdrop(child: builder(context, state)),
@@ -44,7 +43,6 @@ class FcRoute extends GoRoute {
     '/home',
     '/discover',
     '/bookings',
-    '/activity',
     '/notifications',
     '/staff/schedule',
     '/admin/bookings',

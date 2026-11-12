@@ -174,7 +174,6 @@ GoRouter createRouter(
           child: child,
         ),
         routes: [
-          FcRoute(path: '/activity', builder: (_, _) => const ActivityPage()),
           FcRoute(
             path: '/notifications',
             builder: (_, _) => NotificationsPage(

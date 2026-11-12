@@ -73,7 +73,7 @@ void main() {
     when(() => repository.restoreSession())
         .thenAnswer((_) async => customerUser);
     await pumpApp(tester);
-    await tester.tap(find.text('Đã đặt').hitTestable().first);
+    await tester.tap(find.text('Đơn của tôi').hitTestable().first);
     await tester.pumpAndSettle();
     expect(find.widgetWithText(ChoiceChip, 'Sắp diễn ra'), findsOneWidget);
     expect(find.text('Thủ Đức · Sân 1'), findsOneWidget);

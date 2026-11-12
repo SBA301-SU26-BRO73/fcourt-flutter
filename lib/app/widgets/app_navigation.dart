@@ -6,6 +6,69 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import '../../features/auth/domain/entities/user_role.dart';
 import '../auth_redirect.dart';
 
+/// Một tab của thanh điều hướng dưới.
+class NavDestination {
+  const NavDestination(this.label, this.icon, this.route);
+  final String label;
+  final IconData icon;
+  final String route;
+}
+
+/// Mỗi vai trò có 4 tab đúng việc của vai trò đó (không có tab rỗng).
+List<NavDestination> navDestinations(UserRole role) => switch (role) {
+  UserRole.customer => const [
+    NavDestination('Khám phá', CupertinoIcons.compass, AppRoutes.discover),
+    NavDestination('Đơn của tôi', CupertinoIcons.ticket, '/bookings'),
+    NavDestination('Thông báo', CupertinoIcons.bell, '/notifications'),
+    NavDestination('Tài khoản', CupertinoIcons.person, AppRoutes.profile),
+  ],
+  UserRole.admin => const [
+    NavDestination(
+      'Việc cần làm',
+      CupertinoIcons.checkmark_seal,
+      AppRoutes.home,
+    ),
+    NavDestination('Đơn', CupertinoIcons.ticket, '/admin/bookings'),
+    NavDestination(
+      'Chi nhánh',
+      CupertinoIcons.building_2_fill,
+      '/admin/branches',
+    ),
+    NavDestination('Tài khoản', CupertinoIcons.person, AppRoutes.profile),
+  ],
+  UserRole.staff => const [
+    NavDestination('Tổng quan', CupertinoIcons.house, AppRoutes.home),
+    NavDestination('Lịch sân', CupertinoIcons.calendar, '/staff/schedule'),
+    NavDestination('Thông báo', CupertinoIcons.bell, '/notifications'),
+    NavDestination('Tài khoản', CupertinoIcons.person, AppRoutes.profile),
+  ],
+  UserRole.superAdmin => const [
+    NavDestination('Tổng quan', CupertinoIcons.house, AppRoutes.home),
+    NavDestination(
+      'Chủ sân',
+      CupertinoIcons.person_2,
+      '/super-admin/owners/pending',
+    ),
+    NavDestination('Thông báo', CupertinoIcons.bell, '/notifications'),
+    NavDestination('Tài khoản', CupertinoIcons.person, AppRoutes.profile),
+  ],
+};
+
+/// Tab đang sáng theo đường dẫn hiện tại; trang con của một mục giữ mục đó sáng.
+int navSelectedIndex(UserRole role, String location) {
+  final destinations = navDestinations(role);
+  for (var i = 0; i < destinations.length; i++) {
+    final route = destinations[i].route;
+    if (route == AppRoutes.profile) continue;
+    if (location == route || location.startsWith('$route/')) return i;
+  }
+  if (role == UserRole.customer && location.startsWith('/payments')) return 1;
+  if (role == UserRole.admin && location.startsWith('/admin/bookings')) {
+    return 1;
+  }
+  return 0;
+}
+
 class AppNavigation extends StatelessWidget {
   const AppNavigation({
     super.key,
@@ -18,26 +81,20 @@ class AppNavigation extends StatelessWidget {
   final int unreadCount;
   @override
   Widget build(BuildContext context) {
-    final customer = role == UserRole.customer;
-    final mainRoute = switch (role) {
-      UserRole.customer => AppRoutes.discover,
-      UserRole.staff => '/staff/schedule',
-      UserRole.admin => '/admin/bookings',
-      UserRole.superAdmin => AppRoutes.superAdminOverview,
-    };
-    final routes = [
-      customer ? AppRoutes.discover : AppRoutes.home,
-      customer ? '/bookings' : mainRoute,
-      '/activity',
-      '/notifications',
-    ];
+    final destinations = navDestinations(role);
+    final routes = [for (final d in destinations) d.route];
     final colors = Theme.of(context).colorScheme;
     final bar = GlassTabBar.bottom(
       key: const ValueKey('persistent-app-tabs'),
       selectedIndex: selectedIndex,
       onTabSelected: (index) {
-        if (GoRouterState.of(context).uri.path != routes[index]) {
-          context.go(routes[index]);
+        final destination = destinations[index];
+        if (GoRouterState.of(context).uri.path == destination.route) return;
+        // Tài khoản là màn con (có nút Back), không thay thế màn đang đứng.
+        if (destination.route == AppRoutes.profile) {
+          context.push(destination.route);
+        } else {
+          context.go(destination.route);
         }
       },
       horizontalPadding: 16,
@@ -68,23 +125,17 @@ class AppNavigation extends StatelessWidget {
         chromaticAberration: .01,
       ),
       tabs: [
-        GlassTab(
-          icon: const Icon(CupertinoIcons.compass),
-          label: customer ? 'Khám phá' : 'Tổng quan',
-        ),
-        GlassTab(
-          icon: const Icon(CupertinoIcons.ticket),
-          label: customer ? 'Đã đặt' : 'Vận hành',
-        ),
-        const GlassTab(icon: Icon(CupertinoIcons.clock), label: 'Hoạt động'),
-        GlassTab(
-          icon: Badge(
-            isLabelVisible: unreadCount > 0,
-            smallSize: 8,
-            child: const Icon(CupertinoIcons.bell),
+        for (final d in destinations)
+          GlassTab(
+            icon: d.route == '/notifications'
+                ? Badge(
+                    isLabelVisible: unreadCount > 0,
+                    smallSize: 8,
+                    child: Icon(d.icon),
+                  )
+                : Icon(d.icon),
+            label: d.label,
           ),
-          label: 'Thông báo',
-        ),
       ],
     );
     return LayoutBuilder(

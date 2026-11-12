@@ -163,6 +163,7 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
                         AuthTextField(
                           controller: _password,
                           label: 'Mật khẩu',
+                          helperText: 'Tối thiểu 8 ký tự',
                           obscure: true,
                           validator: AuthValidators.password,
                           serverError: fieldErrors['password'],

@@ -87,9 +87,8 @@ void main() {
         isTrue,
       );
       expect(
-        MediaQuery.paddingOf(
-          tester.element(find.byType(CustomScrollView)),
-        ).bottom,
+        MediaQuery.paddingOf(tester.element(find.byType(CustomScrollView)))
+            .bottom,
         greaterThanOrEqualTo(96),
       );
       expect(find.byType(BackButton), findsNothing);
@@ -132,10 +131,15 @@ void main() {
         );
       }
 
-      await tab('Đã đặt');
+      await tab('Đơn của tôi');
       expect(find.byType(BookingHistoryScreen), findsOneWidget);
-      await tab('Hoạt động');
-      expect(find.text('Hiện vẫn chưa có hoạt động nào'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(GlassTabBar),
+          matching: find.text('Hoạt động'),
+        ),
+        findsNothing,
+      );
       await tab('Thông báo');
       expect(find.text('Thông báo chưa khả dụng'), findsOneWidget);
       await tab('Khám phá');
