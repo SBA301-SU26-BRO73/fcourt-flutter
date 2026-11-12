@@ -511,3 +511,150 @@ class OwnerBranchPicker extends StatelessWidget {
     );
   }
 }
+
+/// Form field of the mock-up login screen: an 11px bold label above a soft
+/// 49dp field (`.field`). Wrap any `TextFormField`/dropdown built with
+/// [ownerInput] in it.
+class OwnerField extends StatelessWidget {
+  const OwnerField({
+    super.key,
+    required this.label,
+    required this.child,
+    this.trailing,
+    this.bottom = 14,
+  });
+  final String label;
+  final Widget child;
+
+  /// Small action on the label line.
+  final Widget? trailing;
+  final double bottom;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                ),
+                ?trailing,
+              ],
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+/// Decoration of the fields inside [OwnerField] (no floating label).
+InputDecoration ownerInput({
+  String? hint,
+  String? error,
+  String? helper,
+  Widget? suffixIcon,
+  bool counter = false,
+}) => InputDecoration(
+  hintText: hint,
+  errorText: error,
+  errorMaxLines: 3,
+  helperText: helper,
+  helperMaxLines: 2,
+  counterText: counter ? null : '',
+  suffixIcon: suffixIcon,
+  hintStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+  constraints: const BoxConstraints(minHeight: 49),
+);
+
+/// Text style of the text inside the owner form fields.
+const TextStyle ownerInputText = TextStyle(
+  fontSize: 12,
+  fontWeight: FontWeight.w500,
+);
+
+/// Handle at the top of the owner bottom sheets (`.sheet-handle`).
+class OwnerSheetHeader extends StatelessWidget {
+  const OwnerSheetHeader({
+    super.key,
+    required this.title,
+    this.onClose,
+    this.closable = true,
+    this.closeTooltip = 'Đóng',
+  });
+  final String title;
+  final String closeTooltip;
+
+  /// Shows the close button (disabled while [onClose] is null).
+  final bool closable;
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(ownerPad, 10, 8, 4),
+      child: Column(
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: colors.outlineVariant,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -.5,
+                    color: colors.onSurface,
+                  ),
+                ),
+              ),
+              if (closable)
+                IconButton(
+                  tooltip: closeTooltip,
+                  onPressed: onClose,
+                  icon: const Icon(Icons.close, size: 20),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Text style of a dropdown value inside [OwnerField]; built on the theme
+/// text style so it keeps the app font.
+TextStyle ownerDropdownText(BuildContext context) {
+  final theme = Theme.of(context);
+  return (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: theme.colorScheme.onSurface,
+  );
+}

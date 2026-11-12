@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/theme/tokens.dart';
 import '../../../core/error/failure.dart';
+import '../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../domain/voucher.dart';
 import '../domain/voucher_draft.dart';
 import '../domain/voucher_repository.dart';
@@ -162,147 +164,165 @@ class _VoucherEditorState extends State<VoucherEditor> {
     String label,
     String key, {
     bool number = true,
-  }) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
+    String? hint,
+  }) => OwnerField(
+    label: label,
     child: TextField(
+      key: ValueKey('voucher-$key'),
       controller: controller,
       enabled: !_saving,
+      style: ownerInputText,
       keyboardType: number
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,
       textCapitalization: number
           ? TextCapitalization.none
           : TextCapitalization.characters,
-      decoration: InputDecoration(
-        labelText: label,
-        errorText: _errors[key],
-        errorMaxLines: 3,
-      ),
+      decoration: ownerInput(hint: hint, error: _errors[key]),
     ),
   );
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: !_saving,
-    child: SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * .88,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.id == null ? 'Tạo voucher' : 'Sửa voucher',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -.5,
-                        ),
-                      ),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final fmt = DateFormat('dd/MM/yyyy');
+    final canSave =
+        !(_saving || _loading || (widget.id != null && _code.text.isEmpty));
+    return PopScope(
+      canPop: !_saving,
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * .88,
+            child: Column(
+              children: [
+                OwnerSheetHeader(
+                  title: widget.id == null ? 'Tạo voucher' : 'Sửa voucher',
+                  closeTooltip: 'Đóng form',
+                  onClose: _saving ? null : () => Navigator.pop(context),
+                ),
+                if (_loading) const LinearProgressIndicator(),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      ownerPad,
+                      12,
+                      ownerPad,
+                      12,
                     ),
-                    IconButton(
-                      tooltip: 'Đóng form',
-                      onPressed: _saving ? null : () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
+                    children: [
+                      if (_error != null) ...[
+                        OwnerNote(_error!, size: 12, color: colors.error),
+                        if (widget.id != null && _code.text.isEmpty)
+                          TextButton(
+                            onPressed: _load,
+                            child: const Text('Thử lại'),
+                          ),
+                      ],
+                      if (!_loading &&
+                          (widget.id == null || _code.text.isNotEmpty)) ...[
+                        _field(
+                          _code,
+                          'Mã voucher',
+                          'code',
+                          number: false,
+                          hint: 'SUMMER20',
+                        ),
+                        OwnerField(
+                          label: 'Loại giảm giá',
+                          child: DropdownButtonFormField<VoucherDiscountType>(
+                            initialValue: _type,
+                            isExpanded: true,
+                            style: ownerDropdownText(context),
+                            decoration: ownerInput(),
+                            items: const [
+                              DropdownMenuItem(
+                                value: VoucherDiscountType.percentage,
+                                child: Text('Phần trăm (%)'),
+                              ),
+                              DropdownMenuItem(
+                                value: VoucherDiscountType.fixedAmount,
+                                child: Text('Số tiền cố định (VND)'),
+                              ),
+                            ],
+                            onChanged: _saving
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      setState(() => _type = value);
+                                    }
+                                  },
+                          ),
+                        ),
+                        _field(
+                          _value,
+                          _type == VoucherDiscountType.percentage
+                              ? 'Giá trị giảm (%)'
+                              : 'Giá trị giảm (VND)',
+                          'discountValue',
+                        ),
+                        _field(
+                          _cap,
+                          'Giảm tối đa (VND, có thể bỏ trống)',
+                          'maxDiscountAmount',
+                        ),
+                        _field(
+                          _minimum,
+                          'Đơn tối thiểu (VND)',
+                          'minOrderAmount',
+                        ),
+                        _field(_limit, 'Tổng lượt sử dụng', 'usageLimit'),
+                        if (widget.id != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: OwnerNote('Đã sử dụng: $_used lượt'),
+                          ),
+                        OwnerField(
+                          label: 'Thời gian áp dụng',
+                          bottom: 6,
+                          child: InkWell(
+                            onTap: _saving ? null : _dates,
+                            borderRadius: BorderRadius.circular(Radii.md),
+                            child: InputDecorator(
+                              decoration: ownerInput(
+                                error: _errors['dates'],
+                                suffixIcon: const Icon(
+                                  Icons.date_range,
+                                  size: 18,
+                                ),
+                              ),
+                              child: Text(
+                                '${fmt.format(_range.start)} – ${fmt.format(_range.end)}',
+                                style: ownerInputText,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const OwnerNote(
+                          'Khoảng ngày theo giờ Việt Nam, bao gồm ngày kết thúc.',
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(ownerPad, 8, ownerPad, 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: canSave ? _save : null,
+                      child: Text(_saving ? 'Đang lưu…' : 'Lưu voucher'),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              if (_loading) const LinearProgressIndicator(),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: [
-                    if (_error != null) ...[
-                      Text(_error!),
-                      if (widget.id != null && _code.text.isEmpty)
-                        TextButton(
-                          onPressed: _load,
-                          child: const Text('Thử lại'),
-                        ),
-                    ],
-                    if (!_loading &&
-                        (widget.id == null || _code.text.isNotEmpty)) ...[
-                      _field(_code, 'Mã voucher', 'code', number: false),
-                      DropdownButtonFormField<VoucherDiscountType>(
-                        initialValue: _type,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Loại giảm giá',
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: VoucherDiscountType.percentage,
-                            child: Text('Phần trăm (%)'),
-                          ),
-                          DropdownMenuItem(
-                            value: VoucherDiscountType.fixedAmount,
-                            child: Text('Số tiền cố định (VND)'),
-                          ),
-                        ],
-                        onChanged: _saving
-                            ? null
-                            : (value) {
-                                if (value != null) {
-                                  setState(() => _type = value);
-                                }
-                              },
-                      ),
-                      const SizedBox(height: 12),
-                      _field(
-                        _value,
-                        _type == VoucherDiscountType.percentage
-                            ? 'Giá trị giảm (%)'
-                            : 'Giá trị giảm (VND)',
-                        'discountValue',
-                      ),
-                      _field(
-                        _cap,
-                        'Giảm tối đa (VND, có thể bỏ trống)',
-                        'maxDiscountAmount',
-                      ),
-                      _field(_minimum, 'Đơn tối thiểu (VND)', 'minOrderAmount'),
-                      _field(_limit, 'Tổng lượt sử dụng', 'usageLimit'),
-                      if (widget.id != null) Text('Đã sử dụng: $_used lượt'),
-                      OutlinedButton.icon(
-                        onPressed: _saving ? null : _dates,
-                        icon: const Icon(Icons.date_range),
-                        label: Text(
-                          '${DateFormat('dd/MM/yyyy').format(_range.start)} – ${DateFormat('dd/MM/yyyy').format(_range.end)}',
-                        ),
-                      ),
-                      const Text(
-                        'Khoảng ngày theo giờ Việt Nam, bao gồm ngày kết thúc.',
-                      ),
-                      if (_errors['dates'] != null) Text(_errors['dates']!),
-                      const SizedBox(height: 20),
-                    ],
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: FilledButton(
-                  onPressed:
-                      _saving ||
-                          _loading ||
-                          (widget.id != null && _code.text.isEmpty)
-                      ? null
-                      : _save,
-                  child: Text(_saving ? 'Đang lưu…' : 'Lưu voucher'),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

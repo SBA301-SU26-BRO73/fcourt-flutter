@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/theme/tokens.dart';
 import '../../../app/widgets/wp3b_widgets.dart';
 import '../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../domain/admin_booking.dart';
@@ -72,119 +73,160 @@ class _AdminBookingManagementScreenState
       child: BlocBuilder<AdminBookingCubit, AdminBookingState>(
         builder: (context, state) {
           final query = state.query;
+          final colors = Theme.of(context).colorScheme;
+          final textStyle = ownerDropdownText(context);
           return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              16 + MediaQuery.viewInsetsOf(context).bottom,
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(context).bottom,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Bộ lọc', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 12),
-                if (state.branches.isNotEmpty) ...[
-                  DropdownButtonFormField<int>(
-                    key: ValueKey('branch-${query?.branchId}'),
-                    initialValue: query?.branchId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Chi nhánh'),
-                    items: state.branches
-                        .map(
-                          (branch) => DropdownMenuItem(
-                            value: branch.id,
-                            child: Text(branch.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (id) {
-                      if (id != null) cubit.selectBranch(id);
-                    },
+                OwnerSheetHeader(
+                  title: 'Bộ lọc',
+                  onClose: () => Navigator.pop(context),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    ownerPad,
+                    12,
+                    ownerPad,
+                    16,
                   ),
-                  const SizedBox(height: 12),
-                ],
-
-                if (query != null) ...[
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<int>(
-                    key: ValueKey('court-${query.branchId}-${query.courtId}'),
-                    initialValue: query.courtId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Sân'),
-                    items: [
-                      const DropdownMenuItem<int>(
-                        value: null,
-                        child: Text('Tất cả sân'),
-                      ),
-                      ...state.courts.map(
-                        (court) => DropdownMenuItem(
-                          value: court.id,
-                          child: Text(court.name),
-                        ),
-                      ),
-                    ],
-                    onChanged: state.courtsLoading || state.courtsError != null
-                        ? null
-                        : cubit.setCourt,
-                  ),
-                  if (state.courtsLoading) const LinearProgressIndicator(),
-                  if (state.courtsError != null) ...[
-                    Text(state.courtsError!),
-                    TextButton(
-                      onPressed: cubit.reloadCourts,
-                      child: const Text('Tải lại danh sách sân'),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<AdminBookingStatus>(
-                    key: ValueKey('status-${query.status}'),
-                    initialValue: query.status,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Trạng thái'),
-                    items: [
-                      const DropdownMenuItem<AdminBookingStatus>(
-                        value: null,
-                        child: Text('Tất cả trạng thái'),
-                      ),
-                      ...AdminBookingStatus.values.map(
-                        (status) => DropdownMenuItem(
-                          value: status,
-                          child: Text(status.label),
-                        ),
-                      ),
-                    ],
-                    onChanged: cubit.setStatus,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      OutlinedButton.icon(
-                        onPressed: () => _pickDate(cubit),
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(
-                          query.date == null
-                              ? 'Chọn ngày chơi'
-                              : DateFormat('dd/MM/yyyy').format(query.date!),
+                      if (state.branches.isNotEmpty)
+                        OwnerField(
+                          label: 'Chi nhánh',
+                          child: DropdownButtonFormField<int>(
+                            key: ValueKey('branch-${query?.branchId}'),
+                            initialValue: query?.branchId,
+                            isExpanded: true,
+                            style: textStyle,
+                            decoration: ownerInput(),
+                            items: state.branches
+                                .map(
+                                  (branch) => DropdownMenuItem(
+                                    value: branch.id,
+                                    child: Text(branch.name),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (id) {
+                              if (id != null) cubit.selectBranch(id);
+                            },
+                          ),
+                        ),
+                      if (query != null) ...[
+                        OwnerField(
+                          label: 'Sân',
+                          child: DropdownButtonFormField<int>(
+                            key: ValueKey(
+                              'court-${query.branchId}-${query.courtId}',
+                            ),
+                            initialValue: query.courtId,
+                            isExpanded: true,
+                            style: textStyle,
+                            decoration: ownerInput(),
+                            items: [
+                              const DropdownMenuItem<int>(
+                                value: null,
+                                child: Text('Tất cả sân'),
+                              ),
+                              ...state.courts.map(
+                                (court) => DropdownMenuItem(
+                                  value: court.id,
+                                  child: Text(court.name),
+                                ),
+                              ),
+                            ],
+                            onChanged:
+                                state.courtsLoading || state.courtsError != null
+                                ? null
+                                : cubit.setCourt,
+                          ),
+                        ),
+                        if (state.courtsLoading)
+                          const LinearProgressIndicator(),
+                        if (state.courtsError != null) ...[
+                          OwnerNote(
+                            state.courtsError!,
+                            size: 12,
+                            color: colors.error,
+                          ),
+                          TextButton(
+                            onPressed: cubit.reloadCourts,
+                            child: const Text('Tải lại danh sách sân'),
+                          ),
+                        ],
+                        OwnerField(
+                          label: 'Trạng thái',
+                          child: DropdownButtonFormField<AdminBookingStatus>(
+                            key: ValueKey('status-${query.status}'),
+                            initialValue: query.status,
+                            isExpanded: true,
+                            style: textStyle,
+                            decoration: ownerInput(),
+                            items: [
+                              const DropdownMenuItem<AdminBookingStatus>(
+                                value: null,
+                                child: Text('Tất cả trạng thái'),
+                              ),
+                              ...AdminBookingStatus.values.map(
+                                (status) => DropdownMenuItem(
+                                  value: status,
+                                  child: Text(status.label),
+                                ),
+                              ),
+                            ],
+                            onChanged: cubit.setStatus,
+                          ),
+                        ),
+                        OwnerField(
+                          label: 'Ngày chơi',
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => _pickDate(cubit),
+                                  borderRadius: BorderRadius.circular(Radii.md),
+                                  child: InputDecorator(
+                                    decoration: ownerInput(
+                                      suffixIcon: const Icon(
+                                        Icons.calendar_today,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      query.date == null
+                                          ? 'Chọn ngày chơi'
+                                          : DateFormat('dd/MM/yyyy')
+                                                .format(query.date!),
+                                      style: textStyle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (query.date != null)
+                                IconButton(
+                                  tooltip: 'Bỏ lọc ngày',
+                                  onPressed: () => cubit.setDate(null),
+                                  icon: const Icon(Icons.close, size: 20),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Xong'),
                         ),
                       ),
-                      if (query.date != null)
-                        IconButton(
-                          tooltip: 'Bỏ lọc ngày',
-                          onPressed: () => cubit.setDate(null),
-                          icon: const Icon(Icons.close),
-                        ),
                     ],
-                  ),
-                ],
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Xong'),
                   ),
                 ),
               ],
