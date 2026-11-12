@@ -23,7 +23,7 @@ void main() {
     stubLists(repository);
   });
 
-  Finder field(String label) => find.widgetWithText(TextFormField, label);
+  Finder field(String label) => find.byKey(ValueKey('catalog-field-$label'));
 
   Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
     await tester.tap(finder);

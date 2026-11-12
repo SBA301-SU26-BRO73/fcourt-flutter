@@ -124,60 +124,74 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final muted = TextStyle(fontSize: 11, color: colors.onSurfaceVariant);
     return FcCard(
-      padding: EdgeInsets.zero,
-      child: InkWell(
-        onTap: deleting ? null : onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      radius: 22,
+      padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+      onTap: deleting ? null : onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(plan.name, style: theme.textTheme.titleMedium),
+              Expanded(
+                child: Text(
+                  plan.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
                   ),
-                  if (deleting)
-                    const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    IconButton(
-                      tooltip: 'Xóa ${plan.name}',
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: onDelete,
-                    ),
-                ],
+                ),
               ),
-              if (plan.tagline != null) Text(plan.tagline!),
-              const SizedBox(height: 8),
-              Text('${formatVnd(plan.monthlyPrice)} / tháng'),
-              Text('${formatVnd(plan.yearlyPrice)} / năm'),
-              const SizedBox(height: 8),
-              Text(
-                'Tối đa ${plan.maxBranches} chi nhánh · ${plan.maxCourts} sân',
-              ),
-              if (plan.features.isNotEmpty)
-                Text('${plan.features.length} tính năng'),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  StatusChip(
-                    plan.active ? 'Đang bán' : 'Tạm ngưng',
-                    highlighted: plan.active,
+              if (deleting)
+                const Padding(
+                  padding: EdgeInsets.only(right: 12),
+                  child: SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  if (plan.popular)
-                    const StatusChip('Phổ biến', highlighted: true),
-                ],
-              ),
+                )
+              else
+                IconButton(
+                  tooltip: 'Xóa ${plan.name}',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: onDelete,
+                ),
             ],
           ),
-        ),
+          if (plan.tagline != null) Text(plan.tagline!, style: muted),
+          const SizedBox(height: 10),
+          Text(
+            '${formatVnd(plan.monthlyPrice)} / tháng',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: colors.primary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text('${formatVnd(plan.yearlyPrice)} / năm', style: muted),
+          const SizedBox(height: 8),
+          Text(
+            'Tối đa ${plan.maxBranches} chi nhánh · ${plan.maxCourts} sân',
+            style: muted,
+          ),
+          if (plan.features.isNotEmpty)
+            Text('${plan.features.length} tính năng', style: muted),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            children: [
+              StatusChip(
+                plan.active ? 'Đang bán' : 'Tạm ngưng',
+                highlighted: plan.active,
+              ),
+              if (plan.popular) const StatusChip('Phổ biến', highlighted: true),
+            ],
+          ),
+        ],
       ),
     );
   }

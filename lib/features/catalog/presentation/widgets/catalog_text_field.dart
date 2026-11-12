@@ -28,23 +28,48 @@ class CatalogTextField extends StatelessWidget {
   final int maxLines;
   final TextInputAction? textInputAction;
 
+  /// WP3b: an 11px bold label above a soft rounded field (same as auth forms).
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      validator: validator,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      minLines: minLines,
-      maxLines: maxLines,
-      textInputAction: textInputAction ?? (maxLines > 1 ? TextInputAction.newline : TextInputAction.next),
-      decoration: InputDecoration(
-        labelText: label,
-        helperText: helper,
-        border: const OutlineInputBorder(),
-        errorText: serverError,
-        errorMaxLines: 3,
-      ),
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ),
+        TextFormField(
+          key: ValueKey('catalog-field-$label'),
+          controller: controller,
+          validator: validator,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          minLines: minLines,
+          maxLines: maxLines,
+          textInputAction:
+              textInputAction ??
+              (maxLines > 1 ? TextInputAction.newline : TextInputAction.next),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            helperText: helper,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 15,
+            ),
+            constraints: const BoxConstraints(minHeight: 49),
+            errorText: serverError,
+            errorMaxLines: 3,
+          ),
+        ),
+      ],
     );
   }
 }

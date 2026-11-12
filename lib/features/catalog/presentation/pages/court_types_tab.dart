@@ -130,40 +130,64 @@ class _CourtTypeCard extends StatelessWidget {
       if (courtType.description != null) courtType.description!,
     ].join(' · ');
     return FcCard(
-      padding: EdgeInsets.zero,
-      child: ListTile(
-        onTap: deleting ? null : onTap,
-        leading: CircleAvatar(
-          backgroundColor: colors.primaryContainer,
-          child: SportIcon.named(
-            courtType.name,
-            color: colors.onPrimaryContainer,
-          ),
-        ),
-        title: Text(courtType.name),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (subtitle.isNotEmpty)
-              Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 4),
-            StatusChip(
-              courtType.active ? 'Hoạt động' : 'Tạm ngưng',
-              highlighted: courtType.active,
+      radius: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      onTap: deleting ? null : onTap,
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 21,
+            backgroundColor: colors.primaryContainer,
+            child: SportIcon.named(
+              courtType.name,
+              color: colors.onPrimaryContainer,
             ),
-          ],
-        ),
-        trailing: deleting
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : IconButton(
-                tooltip: 'Xóa ${courtType.name}',
-                icon: const Icon(Icons.delete_outline),
-                onPressed: onDelete,
-              ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  courtType.name,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                StatusChip(
+                  courtType.active ? 'Hoạt động' : 'Tạm ngưng',
+                  highlighted: courtType.active,
+                ),
+              ],
+            ),
+          ),
+          if (deleting)
+            const SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            IconButton(
+              tooltip: 'Xóa ${courtType.name}',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: onDelete,
+            ),
+        ],
       ),
     );
   }
