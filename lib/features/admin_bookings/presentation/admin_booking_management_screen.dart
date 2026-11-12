@@ -44,6 +44,140 @@ class _AdminBookingManagementScreenState
     }
   }
 
+  Future<void> _openFilters(
+    AdminBookingCubit cubit,
+  ) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (_) => BlocProvider.value(
+      value: cubit,
+      child: BlocBuilder<AdminBookingCubit, AdminBookingState>(
+        builder: (context, state) {
+          final query = state.query;
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              16 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Bộ lọc', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 12),
+                if (state.branches.isNotEmpty) ...[
+                  DropdownButtonFormField<int>(
+                    key: ValueKey('branch-${query?.branchId}'),
+                    initialValue: query?.branchId,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Chi nhánh'),
+                    items: state.branches
+                        .map(
+                          (branch) => DropdownMenuItem(
+                            value: branch.id,
+                            child: Text(branch.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (id) {
+                      if (id != null) cubit.selectBranch(id);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                if (query != null) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int>(
+                    key: ValueKey('court-${query.branchId}-${query.courtId}'),
+                    initialValue: query.courtId,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Sân'),
+                    items: [
+                      const DropdownMenuItem<int>(
+                        value: null,
+                        child: Text('Tất cả sân'),
+                      ),
+                      ...state.courts.map(
+                        (court) => DropdownMenuItem(
+                          value: court.id,
+                          child: Text(court.name),
+                        ),
+                      ),
+                    ],
+                    onChanged: state.courtsLoading || state.courtsError != null
+                        ? null
+                        : cubit.setCourt,
+                  ),
+                  if (state.courtsLoading) const LinearProgressIndicator(),
+                  if (state.courtsError != null) ...[
+                    Text(state.courtsError!),
+                    TextButton(
+                      onPressed: cubit.reloadCourts,
+                      child: const Text('Tải lại danh sách sân'),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<AdminBookingStatus>(
+                    key: ValueKey('status-${query.status}'),
+                    initialValue: query.status,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Trạng thái'),
+                    items: [
+                      const DropdownMenuItem<AdminBookingStatus>(
+                        value: null,
+                        child: Text('Tất cả trạng thái'),
+                      ),
+                      ...AdminBookingStatus.values.map(
+                        (status) => DropdownMenuItem(
+                          value: status,
+                          child: Text(status.label),
+                        ),
+                      ),
+                    ],
+                    onChanged: cubit.setStatus,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _pickDate(cubit),
+                        icon: const Icon(Icons.calendar_today),
+                        label: Text(
+                          query.date == null
+                              ? 'Chọn ngày chơi'
+                              : DateFormat('dd/MM/yyyy').format(query.date!),
+                        ),
+                      ),
+                      if (query.date != null)
+                        IconButton(
+                          tooltip: 'Bỏ lọc ngày',
+                          onPressed: () => cubit.setDate(null),
+                          icon: const Icon(Icons.close),
+                        ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Xong'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ),
+  );
+
   @override
   Widget build(
     BuildContext context,
@@ -69,28 +203,6 @@ class _AdminBookingManagementScreenState
                     children: [
                       if (state.branchesLoading)
                         const LinearProgressIndicator(),
-                      if (state.branches.isNotEmpty) ...[
-                        DropdownButtonFormField<int>(
-                          key: ValueKey('branch-${query?.branchId}'),
-                          initialValue: query?.branchId,
-                          isExpanded: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Chi nhánh',
-                          ),
-                          items: state.branches
-                              .map(
-                                (branch) => DropdownMenuItem(
-                                  value: branch.id,
-                                  child: Text(branch.name),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (id) {
-                            if (id != null) cubit.selectBranch(id);
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                      ],
                       if (query != null) ...[
                         TextField(
                           controller: _search,
@@ -104,84 +216,35 @@ class _AdminBookingManagementScreenState
                             prefixIcon: Icon(Icons.search),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<int>(
-                          key: ValueKey(
-                            'court-${query.branchId}-${query.courtId}',
-                          ),
-                          initialValue: query.courtId,
-                          isExpanded: true,
-                          decoration: const InputDecoration(labelText: 'Sân'),
-                          items: [
-                            const DropdownMenuItem<int>(
-                              value: null,
-                              child: Text('Tất cả sân'),
-                            ),
-                            ...state.courts.map(
-                              (court) => DropdownMenuItem(
-                                value: court.id,
-                                child: Text(court.name),
-                              ),
-                            ),
-                          ],
-                          onChanged:
-                              state.courtsLoading || state.courtsError != null
-                              ? null
-                              : cubit.setCourt,
-                        ),
-                        if (state.courtsLoading)
-                          const LinearProgressIndicator(),
-                        if (state.courtsError != null) ...[
-                          Text(state.courtsError!),
-                          TextButton(
-                            onPressed: cubit.reloadCourts,
-                            child: const Text('Tải lại danh sách sân'),
-                          ),
-                        ],
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<AdminBookingStatus>(
-                          key: ValueKey('status-${query.status}'),
-                          initialValue: query.status,
-                          isExpanded: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Trạng thái',
-                          ),
-                          items: [
-                            const DropdownMenuItem<AdminBookingStatus>(
-                              value: null,
-                              child: Text('Tất cả trạng thái'),
-                            ),
-                            ...AdminBookingStatus.values.map(
-                              (status) => DropdownMenuItem(
-                                value: status,
-                                child: Text(status.label),
-                              ),
-                            ),
-                          ],
-                          onChanged: cubit.setStatus,
-                        ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
                           children: [
-                            OutlinedButton.icon(
-                              onPressed: () => _pickDate(cubit),
-                              icon: const Icon(Icons.calendar_today),
-                              label: Text(
-                                query.date == null
-                                    ? 'Chọn ngày chơi'
-                                    : DateFormat('dd/MM/yyyy')
-                                          .format(query.date!),
+                            ChoiceChip(
+                              key: const ValueKey('chip-pending'),
+                              label: const Text('Cần xử lý'),
+                              selected:
+                                  query.status ==
+                                  AdminBookingStatus.awaitingConfirmation,
+                              onSelected: (_) => cubit.setStatus(
+                                AdminBookingStatus.awaitingConfirmation,
                               ),
                             ),
-                            if (query.date != null)
-                              IconButton(
-                                tooltip: 'Bỏ lọc ngày',
-                                onPressed: () => cubit.setDate(null),
-                                icon: const Icon(Icons.close),
-                              ),
+                            ChoiceChip(
+                              key: const ValueKey('chip-all'),
+                              label: const Text('Tất cả'),
+                              selected: query.status == null,
+                              onSelected: (_) => cubit.setStatus(null),
+                            ),
+                            ActionChip(
+                              key: const ValueKey('open-filters'),
+                              avatar: const Icon(Icons.tune, size: 18),
+                              label: const Text('Bộ lọc'),
+                              onPressed: () => _openFilters(cubit),
+                            ),
                           ],
                         ),
+                        const SizedBox(height: 8),
                         Text(
                           state.loading
                               ? 'Đang tải đơn…'

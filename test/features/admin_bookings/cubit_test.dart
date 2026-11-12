@@ -80,6 +80,7 @@ Future<void> initialize(
 }
 
 void main() {
+  defaultStatusTests();
   testWidgets(
     'unowned and empty branch selection never sends a booking query',
     (tester) async {
@@ -186,4 +187,31 @@ void main() {
       await cubit.close();
     },
   );
+}
+
+void defaultStatusTests() {
+  test('defaultStatus filters the first branch query', () async {
+    final branches = MockBranchRepository();
+    final courts = MockCourtRepository();
+    when(() => branches.getBranches())
+        .thenAnswer((_) async => [sampleBranch()]);
+    when(() => courts.getCourts(1)).thenAnswer((_) async => [sampleCourt()]);
+    final repository = PendingBookings();
+    final cubit = AdminBookingCubit(
+      repository,
+      branches,
+      courts,
+      defaultStatus: AdminBookingStatus.awaitingConfirmation,
+    );
+    addTearDown(cubit.close);
+    final pending = cubit.initialize();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    expect(
+      repository.calls.last.query.status,
+      AdminBookingStatus.awaitingConfirmation,
+    );
+    repository.calls.last.result.complete(const AdminBookingPage([], 0, 0));
+    await pending;
+  });
 }

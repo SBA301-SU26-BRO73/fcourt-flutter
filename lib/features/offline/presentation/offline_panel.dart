@@ -21,19 +21,34 @@ class _OfflinePanelState extends State<OfflinePanel> {
     listenable: widget.runtime.coordinator,
     builder: (context, _) {
       final state = widget.runtime.coordinator;
+      final synced = state.pendingCount == 0 && state.conflictCount == 0;
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: ExpansionTile(
+          key: const ValueKey('offline-summary'),
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: EdgeInsets.zero,
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          title: Align(
+            alignment: Alignment.centerLeft,
+            child: Chip(
+              avatar: Icon(
+                synced ? Icons.cloud_done_outlined : Icons.sync_problem,
+                size: 18,
+              ),
+              label: Text(
+                synced
+                    ? 'Đã đồng bộ'
+                    : 'Chờ ${state.pendingCount} · Đối soát ${state.conflictCount}',
+              ),
+            ),
+          ),
           children: [
             Text(state.message),
             if (!offlineWorkerReady)
               const Text(
                 'Chưa có worker nền. Mở ứng dụng khi có mạng để đồng bộ lượt đang chờ.',
               ),
-            Text(
-              'Đang chờ: ${state.pendingCount} · Cần đối soát: ${state.conflictCount}',
-            ),
             if (state.issues.isNotEmpty)
               ExpansionTile(
                 title: const Text('Lượt cần đối soát'),

@@ -34,7 +34,8 @@ void main() {
     await tester.pumpAndSettle();
     final before = repository.calls.length;
     await tester.dragFrom(
-      tester.getBottomRight(find.byType(CustomScrollView)) - const Offset(24, 40),
+      tester.getBottomRight(find.byType(CustomScrollView)) -
+          const Offset(24, 40),
       const Offset(0, 400),
     );
     await tester.pump();
@@ -96,6 +97,8 @@ void main() {
         AdminBookingPage([bookingRow(1)], 0, 1),
       );
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('open-filters')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(DropdownButtonFormField<int>).last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Sân 5').last);
@@ -116,12 +119,15 @@ void main() {
         AdminBookingPage([bookingRow(1)], 0, 1),
       );
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Chọn ngày chơi'));
       await tester.tap(find.text('Chọn ngày chơi'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('OK'));
       await tester.pump();
       expect(repository.calls.last.query.date, isNotNull);
       repository.calls.last.result.complete(const AdminBookingPage([], 0, 0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xong'));
       await tester.pumpAndSettle();
       expect(find.text('Không có đơn đặt sân phù hợp'), findsOneWidget);
       expect(tester.takeException(), isNull);

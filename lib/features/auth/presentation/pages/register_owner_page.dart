@@ -131,6 +131,25 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        SegmentedButton<bool>(
+                          key: const ValueKey('register-role'),
+                          segments: const [
+                            ButtonSegment(
+                              value: false,
+                              label: Text('Khách hàng'),
+                            ),
+                            ButtonSegment(value: true, label: Text('Chủ sân')),
+                          ],
+                          selected: const {true},
+                          onSelectionChanged: (value) {
+                            if (!value.single) {
+                              context.pushReplacement(
+                                AppRoutes.registerCustomer,
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 16),
                         if (showBanner) ...[
                           ErrorBanner(
                             AuthMessages.localize(state.message ?? ''),

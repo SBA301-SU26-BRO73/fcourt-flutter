@@ -12,8 +12,15 @@ import '../domain/admin_booking_status.dart';
 import 'admin_booking_state.dart';
 
 class AdminBookingCubit extends Cubit<AdminBookingState> {
-  AdminBookingCubit(this.repository, this.branches, this.courts)
-    : super(const AdminBookingState());
+  AdminBookingCubit(
+    this.repository,
+    this.branches,
+    this.courts, {
+    this.defaultStatus,
+  }) : super(const AdminBookingState());
+
+  /// Bộ lọc trạng thái mặc định khi chọn chi nhánh (chủ sân mở vào tab "Cần xử lý").
+  final AdminBookingStatus? defaultStatus;
   final AdminBookingRepository repository;
   final BranchRepository branches;
   final CourtRepository courts;
@@ -58,7 +65,7 @@ class AdminBookingCubit extends Cubit<AdminBookingState> {
     _courtRevision++;
     emit(
       state.copyWith(
-        query: AdminBookingQuery(branchId: id),
+        query: AdminBookingQuery(branchId: id, status: defaultStatus),
         courts: [],
         courtsError: null,
         courtsLoading: true,

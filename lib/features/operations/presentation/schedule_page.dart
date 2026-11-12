@@ -53,6 +53,15 @@ class _ScheduleBoardState extends State<ScheduleBoard>
   }
 
   Timer? _poll;
+  String _filter = '';
+
+  /// Khớp tên khách hoặc SĐT (gõ vài số cuối là đủ).
+  bool _matches(CourtSession session) {
+    final q = _filter.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return session.phone.contains(q) || session.name.toLowerCase().contains(q);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -224,6 +233,19 @@ class _ScheduleBoardState extends State<ScheduleBoard>
                           }
                         },
                 ),
+                if (!state.weekly)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: TextField(
+                      key: const ValueKey('schedule-search'),
+                      onChanged: (value) => setState(() => _filter = value),
+                      textInputAction: TextInputAction.search,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search),
+                        labelText: 'Tìm khách theo SĐT hoặc tên',
+                      ),
+                    ),
+                  ),
                 if (state.weekly)
                   Wrap(
                     crossAxisAlignment: WrapCrossAlignment.center,
@@ -307,7 +329,9 @@ class _ScheduleBoardState extends State<ScheduleBoard>
                             ),
                           ),
                           if (court.sessions.isEmpty)
-                            const Text('Chưa có ca đặt sân.'),
+                            const Text('Chưa có ca đặt sân.')
+                          else if (!court.sessions.any(_matches))
+                            const Text('Không có khách phù hợp.'),
                           if (widget.counter != null)
                             TextButton.icon(
                               onPressed: () => _walkIn(court),
@@ -327,36 +351,39 @@ class _ScheduleBoardState extends State<ScheduleBoard>
                               onSelected: (slot) =>
                                   _walkIn(court, initialSlotId: slot.id),
                             ),
-                          ...court.sessions.map(
-                            (session) => ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 8,
+                          ...court.sessions
+                              .where(_matches)
+                              .map(
+                                (session) => ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  leading: Icon(
+                                    session.playing
+                                        ? Icons.sports_tennis
+                                        : Icons.event_available,
+                                  ),
+                                  title: Text(
+                                    '${session.start}–${session.end} · ${session.name.isEmpty ? 'Khách vãng lai' : session.name}',
+                                  ),
+                                  subtitle: Text(
+                                    '${session.phone}\n${sessionLabel(session.status)}',
+                                  ),
+                                  isThreeLine: true,
+                                  onTap:
+                                      session.playing && widget.counter != null
+                                      ? () => _checkout(session)
+                                      : null,
+                                  trailing:
+                                      session.playing && widget.counter != null
+                                      ? IconButton(
+                                          tooltip: 'Trả sân',
+                                          onPressed: () => _checkout(session),
+                                          icon: const Icon(Icons.logout),
+                                        )
+                                      : null,
+                                ),
                               ),
-                              leading: Icon(
-                                session.playing
-                                    ? Icons.sports_tennis
-                                    : Icons.event_available,
-                              ),
-                              title: Text(
-                                '${session.start}–${session.end} · ${session.name.isEmpty ? 'Khách vãng lai' : session.name}',
-                              ),
-                              subtitle: Text(
-                                '${session.phone}\n${sessionLabel(session.status)}',
-                              ),
-                              isThreeLine: true,
-                              onTap: session.playing && widget.counter != null
-                                  ? () => _checkout(session)
-                                  : null,
-                              trailing:
-                                  session.playing && widget.counter != null
-                                  ? IconButton(
-                                      tooltip: 'Trả sân',
-                                      onPressed: () => _checkout(session),
-                                      icon: const Icon(Icons.logout),
-                                    )
-                                  : null,
-                            ),
-                          ),
                           const Divider(),
                         ],
                       ),

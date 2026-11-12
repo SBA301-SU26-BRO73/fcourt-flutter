@@ -298,11 +298,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Đăng ký khách hàng'), findsOneWidget);
 
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Đăng ký làm chủ sân'));
+    await tester.tap(find.text('Chủ sân'));
     await tester.pumpAndSettle();
     expect(find.text('Đăng ký chủ sân'), findsOneWidget);
+    expect(find.text('Đăng ký làm chủ sân'), findsNothing);
+  });
+
+  testWidgets('màn đăng nhập gọn: một lối vào Đăng ký và nút Bỏ qua', (
+    tester,
+  ) async {
+    when(() => repository.restoreSession()).thenAnswer((_) async => null);
+    await pumpApp(tester);
+
+    expect(find.text('Chưa có tài khoản? Đăng ký'), findsOneWidget);
+    expect(find.byKey(const ValueKey('login-skip')), findsOneWidget);
+    expect(find.text('Xem sân không cần đăng nhập'), findsNothing);
+    expect(find.text('Tra cứu đơn khách vãng lai'), findsNothing);
+    expect(find.text('Đăng ký làm chủ sân'), findsNothing);
+    expect(find.text('Chào mừng đến FCOURT'), findsNothing);
   });
 
   testWidgets('khách hàng mở được màn tìm sân và cài đặt giao diện', (

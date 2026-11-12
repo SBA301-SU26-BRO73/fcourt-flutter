@@ -68,128 +68,122 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            key: const ValueKey('login-skip'),
+                            onPressed: () => context.push('/branches'),
+                            child: const Text('Bỏ qua'),
+                          ),
+                        ),
                         const Align(
                           alignment: Alignment.centerLeft,
-                          child: BrandMark(size: 68),
+                          child: BrandMark(size: 40),
                         ),
-                        const SizedBox(height: Gap.xl),
-                        const Eyebrow('FCOURT · RA SÂN. HẾT MÌNH.'),
-                        const SizedBox(height: Gap.sm),
+                        const SizedBox(height: Gap.md),
                         Text(
-                          'Chào mừng đến FCOURT',
+                          'Đăng nhập',
                           style: theme.textTheme.headlineMedium,
                         ),
-                        const SizedBox(height: Gap.sm),
-                        Text(
-                          'Đăng nhập để tiếp tục buổi chơi của bạn.',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: Gap.xl),
-                        FrostedCard(
-                          padding: const EdgeInsets.all(Gap.screen),
-                          radius: Radii.xl,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (state.status == SubmissionStatus.failure) ...[
-                                ErrorBanner(
-                                  AuthMessages.localize(state.message ?? ''),
-                                ),
-                                const SizedBox(height: Gap.lg),
-                              ],
-                              AuthTextField(
-                                controller: _email,
-                                label: 'Email',
-                                icon: Icons.mail_outline_rounded,
-                                keyboardType: TextInputType.emailAddress,
-                                autofillHints: const [AutofillHints.email],
-                                validator: AuthValidators.email,
-                                serverError: fieldErrors['email'],
+                        const SizedBox(height: Gap.lg),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (state.status == SubmissionStatus.failure) ...[
+                              ErrorBanner(
+                                AuthMessages.localize(state.message ?? ''),
                               ),
                               const SizedBox(height: Gap.lg),
-                              AuthTextField(
-                                controller: _password,
-                                label: 'Mật khẩu',
-                                icon: Icons.lock_outline_rounded,
-                                obscure: true,
-                                textInputAction: TextInputAction.done,
-                                autofillHints: const [AutofillHints.password],
-                                validator: AuthValidators.loginPassword,
-                                serverError: fieldErrors['password'],
-                                onSubmitted: (_) => _submit(),
+                            ],
+                            AuthTextField(
+                              controller: _email,
+                              label: 'Email',
+                              icon: Icons.mail_outline_rounded,
+                              keyboardType: TextInputType.emailAddress,
+                              autofillHints: const [AutofillHints.email],
+                              validator: AuthValidators.email,
+                              serverError: fieldErrors['email'],
+                            ),
+                            const SizedBox(height: Gap.lg),
+                            AuthTextField(
+                              controller: _password,
+                              label: 'Mật khẩu',
+                              icon: Icons.lock_outline_rounded,
+                              obscure: true,
+                              textInputAction: TextInputAction.done,
+                              autofillHints: const [AutofillHints.password],
+                              validator: AuthValidators.loginPassword,
+                              serverError: fieldErrors['password'],
+                              onSubmitted: (_) => _submit(),
+                            ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () =>
+                                    context.push(AppRoutes.forgotPassword),
+                                child: const Text('Quên mật khẩu?'),
                               ),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () =>
-                                      context.push(AppRoutes.forgotPassword),
-                                  child: const Text('Quên mật khẩu?'),
-                                ),
-                              ),
-                              const SizedBox(height: Gap.xs),
-                              FilledButton(
-                                onPressed: state.isSubmitting ? null : _submit,
-                                child: state.isSubmitting
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text('Đăng nhập'),
-                              ),
-                              const SizedBox(height: Gap.lg),
-                              Row(
-                                children: [
-                                  const Expanded(child: Divider()),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: Gap.md,
-                                    ),
-                                    child: Text(
-                                      'hoặc',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: colors.onSurfaceVariant,
-                                          ),
+                            ),
+                            const SizedBox(height: Gap.xs),
+                            FilledButton(
+                              onPressed: state.isSubmitting ? null : _submit,
+                              child: state.isSubmitting
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Đăng nhập'),
+                            ),
+                            const SizedBox(height: Gap.lg),
+                            Row(
+                              children: [
+                                const Expanded(child: Divider()),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: Gap.md,
+                                  ),
+                                  child: Text(
+                                    'hoặc',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colors.onSurfaceVariant,
                                     ),
                                   ),
-                                  const Expanded(child: Divider()),
+                                ),
+                                const Expanded(child: Divider()),
+                              ],
+                            ),
+                            const SizedBox(height: Gap.lg),
+                            OutlinedButton(
+                              onPressed: state.isSubmitting
+                                  ? null
+                                  : () => context.read<LoginBloc>().add(
+                                      const GoogleLoginSubmitted(),
+                                    ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'G',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text('Tiếp tục với Google'),
                                 ],
                               ),
-                              const SizedBox(height: Gap.lg),
-                              OutlinedButton(
-                                onPressed: state.isSubmitting
-                                    ? null
-                                    : () => context.read<LoginBloc>().add(
-                                        const GoogleLoginSubmitted(),
-                                      ),
-                                child: const Text('Tiếp tục với Google'),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: Gap.lg),
                         TextButton(
                           onPressed: () =>
                               context.push(AppRoutes.registerCustomer),
                           child: const Text('Chưa có tài khoản? Đăng ký'),
-                        ),
-                        TextButton(
-                          onPressed: () => context.push('/branches'),
-                          child: const Text('Xem sân không cần đăng nhập'),
-                        ),
-                        TextButton(
-                          onPressed: () => context.push('/lookup'),
-                          child: const Text('Tra cứu đơn khách vãng lai'),
-                        ),
-                        TextButton(
-                          onPressed: () =>
-                              context.push(AppRoutes.registerOwner),
-                          child: const Text('Đăng ký làm chủ sân'),
                         ),
                       ],
                     ),
