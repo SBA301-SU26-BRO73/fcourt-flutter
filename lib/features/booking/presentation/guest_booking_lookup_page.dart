@@ -105,38 +105,40 @@ class _GuestBookingLookupPageState extends State<GuestBookingLookupPage> {
             key: _formKey,
             child: Column(
               children: [
-                TextFormField(
-                  controller: _code,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: const InputDecoration(
-                    labelText: 'Mã đơn',
-                    hintText: 'FC12345678',
+                Wp3bField(
+                  'Mã đơn',
+                  child: TextFormField(
+                    controller: _code,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      hintText: 'FC12345678',
+                      prefixIcon: Icon(Icons.confirmation_number_outlined),
+                    ),
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Nhập mã đơn'
+                        : null,
                   ),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Nhập mã đơn'
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _phone,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'Số điện thoại'),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Nhập số điện thoại'
-                      : null,
                 ),
                 const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _loading ? null : _lookup,
-                    child: _loading
-                        ? const SizedBox.square(
-                            dimension: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Tra cứu'),
+                Wp3bField(
+                  'Số điện thoại',
+                  child: TextFormField(
+                    controller: _phone,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      hintText: '0912345678',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                    ),
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Nhập số điện thoại'
+                        : null,
                   ),
+                ),
+                const SizedBox(height: 16),
+                Wp3bAction(
+                  'Tra cứu',
+                  busy: _loading,
+                  onPressed: _loading ? null : _lookup,
                 ),
               ],
             ),

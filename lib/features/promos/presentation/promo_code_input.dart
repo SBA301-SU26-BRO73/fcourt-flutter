@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
 
 class PromoCodeInput extends StatefulWidget {
   const PromoCodeInput({
@@ -43,49 +44,56 @@ class _PromoCodeInputState extends State<PromoCodeInput> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      TextField(
-        controller: _code,
-        readOnly: widget.readOnly || widget.applied,
-        enabled: !widget.loading,
-        maxLength: 50,
-        textCapitalization: TextCapitalization.characters,
-        onChanged: widget.onChanged,
-        decoration: InputDecoration(
-          labelText: widget.applied ? 'Voucher đã áp dụng' : 'Mã khuyến mãi',
-          counterText: '',
-          errorText: widget.error,
-          errorMaxLines: 4,
-          helperText: widget.helperText,
-          helperMaxLines: 3,
-          errorStyle: TextStyle(color: Theme.of(context).colorScheme.error),
-          prefixIcon: Icon(
-            widget.applied
-                ? Icons.check_circle_outline
-                : Icons.local_offer_outlined,
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final showApply = widget.onApply != null && !widget.applied;
+    return Wp3bField(
+      widget.applied ? 'Voucher đã áp dụng' : 'Mã khuyến mãi',
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _code,
+              readOnly: widget.readOnly || widget.applied,
+              enabled: !widget.loading,
+              maxLength: 50,
+              textCapitalization: TextCapitalization.characters,
+              onChanged: widget.onChanged,
+              decoration: InputDecoration(
+                hintText: widget.applied
+                    ? 'Đã áp dụng mã khuyến mãi'
+                    : 'Nhập mã khuyến mãi',
+                counterText: '',
+                errorText: widget.error,
+                errorMaxLines: 4,
+                helperText: widget.helperText,
+                helperMaxLines: 3,
+                errorStyle: TextStyle(color: colors.error),
+                prefixIcon: Icon(
+                  widget.applied
+                      ? Icons.check_circle_outline
+                      : Icons.local_offer_outlined,
+                  color: widget.applied ? colors.primary : null,
+                ),
+              ),
+            ),
           ),
-        ),
+          if (showApply) ...[
+            const SizedBox(width: Gap.md),
+            SizedBox(
+              width: 112,
+              child: Wp3bAction(
+                'Áp dụng',
+                busy: widget.loading,
+                onPressed: widget.loading
+                    ? null
+                    : () => widget.onApply!(_code.text),
+              ),
+            ),
+          ],
+        ],
       ),
-      if (widget.onApply != null && !widget.applied)
-        const SizedBox(height: Gap.sm),
-      if (widget.onApply != null && !widget.applied)
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton.tonal(
-            onPressed: widget.loading
-                ? null
-                : () => widget.onApply!(_code.text),
-            child: widget.loading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Áp dụng'),
-          ),
-        ),
-    ],
-  );
+    );
+  }
 }

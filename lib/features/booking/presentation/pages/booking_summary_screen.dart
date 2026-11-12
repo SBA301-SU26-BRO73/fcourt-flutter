@@ -302,40 +302,48 @@ class _SummaryFormState extends State<_SummaryForm> {
                         ),
                       ),
                       if (_needsName) ...[
-                        TextFormField(
-                          controller: _name,
-                          enabled: !locked,
-                          decoration: const InputDecoration(
-                            labelText: 'Họ tên người đặt',
-                            counterText: '',
+                        Wp3bField(
+                          'Họ tên người đặt',
+                          child: TextFormField(
+                            controller: _name,
+                            enabled: !locked,
+                            decoration: const InputDecoration(
+                              hintText: 'Nguyễn Văn A',
+                              prefixIcon: Icon(Icons.person_outline),
+                              counterText: '',
+                            ),
+                            textCapitalization: TextCapitalization.words,
+                            autofillHints: const [AutofillHints.name],
+                            maxLength: 100,
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                ? 'Vui lòng nhập họ tên'
+                                : null,
                           ),
-                          textCapitalization: TextCapitalization.words,
-                          autofillHints: const [AutofillHints.name],
-                          maxLength: 100,
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? 'Vui lòng nhập họ tên'
-                              : null,
                         ),
                         const SizedBox(height: 12),
                       ],
                       if (_needsPhone)
-                        TextFormField(
-                          controller: _phone,
-                          enabled: !locked,
-                          decoration: InputDecoration(
-                            labelText: 'Số điện thoại',
-                            helperText: widget.arguments.guest
-                                ? 'Dùng để tra cứu đơn, không cần đăng nhập'
-                                : null,
-                            counterText: '',
+                        Wp3bField(
+                          'Số điện thoại',
+                          child: TextFormField(
+                            controller: _phone,
+                            enabled: !locked,
+                            decoration: InputDecoration(
+                              hintText: '0912345678',
+                              prefixIcon: const Icon(Icons.phone_outlined),
+                              helperText: widget.arguments.guest
+                                  ? 'Dùng để tra cứu đơn, không cần đăng nhập'
+                                  : null,
+                              counterText: '',
+                            ),
+                            keyboardType: TextInputType.phone,
+                            autofillHints: const [
+                              AutofillHints.telephoneNumberNational,
+                            ],
+                            maxLength: 10,
+                            validator: validateBookingPhone,
                           ),
-                          keyboardType: TextInputType.phone,
-                          autofillHints: const [
-                            AutofillHints.telephoneNumberNational,
-                          ],
-                          maxLength: 10,
-                          validator: validateBookingPhone,
                         ),
                       if (!_needsName && !_needsPhone)
                         PayPanel(

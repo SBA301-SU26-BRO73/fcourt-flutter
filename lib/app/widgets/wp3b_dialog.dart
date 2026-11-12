@@ -192,10 +192,14 @@ class Wp3bSheet extends StatelessWidget {
     required this.title,
     required this.child,
     this.subtitle,
+    this.trailing,
     this.actions = const [],
   });
   final String title;
   final String? subtitle;
+
+  /// Optional control at the end of the title row (e.g. a close button).
+  final Widget? trailing;
   final Widget child;
   final List<Widget> actions;
 
@@ -228,27 +232,35 @@ class Wp3bSheet extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: text.titleLarge?.copyWith(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: colors.onSurface,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: text.titleLarge?.copyWith(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: colors.onSurface,
+                            ),
+                          ),
+                          if (subtitle != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                subtitle!,
+                                style: text.bodyMedium?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    if (subtitle != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          subtitle!,
-                          style: text.bodyMedium?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
+                    ?trailing,
                   ],
                 ),
               ),
