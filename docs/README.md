@@ -1,13 +1,14 @@
-# fcourt-flutter docs
+# Tài liệu fcourt-flutter
 
-| Folder | Content |
+| Thư mục | Nội dung |
 |---|---|
-| [features/](features/) | Feature guides per Jira task (also SCRUM-27 staff management and SCRUM-116 offline check-in, moved from the old README): SCRUM-9 (super admin approves owners), 13 (dashboard), 15 (branches), 17 (courts), 19 (slot templates), 21 (customer discovery), 23 (30-minute slots), 50/112 (weekly schedule, locks), 108 (realtime availability). Mostly Vietnamese. |
-| [validation/](validation/) | Evidence and limits per task (SCRUM-27 to SCRUM-116) and dated UI/UX validation passes (2026-11-10). |
-| [qa/](qa/) | Manual QA reports (auth entry, customer, owner, admin roles) and issue notes. |
-| [review/](review/) | Review handoff, service smoke result and screenshots. |
-| [release/](release/) | [Android release and signing](release/android-release.md). |
-| [planning/](planning/) | [Flutter execution plan](planning/FLUTTER_EXECUTION_PLAN.md). |
-| [report/](report/) | Local-only report deliverables (DOCX/PDF are git-ignored). |
+| [features/](features/) | Hướng dẫn feature theo task Jira (gồm SCRUM-27 quản lý nhân viên và SCRUM-116 check-in offline, chuyển từ README cũ): SCRUM-9 (super admin duyệt chủ sân), 13 (dashboard), 15 (chi nhánh), 17 (sân), 19 (slot template), 21 (khám phá cho khách hàng), 23 (slot 30 phút), 50/112 (lịch tuần, khóa), 108 (tình trạng trống realtime). Phần lớn viết bằng tiếng Việt. |
+| [validation/](validation/) | Bằng chứng và giới hạn theo từng task (SCRUM-27 đến SCRUM-116) và các đợt validation UI/UX có ghi ngày (2026-11-10). |
+| [qa/](qa/) | Báo cáo QA thủ công (màn hình đăng nhập, các vai trò khách hàng, chủ sân, admin) và ghi chú vấn đề. |
+| [review/](review/) | Bàn giao review, kết quả smoke test service và ảnh chụp màn hình. |
+| [release/](release/) | [Release và ký Android](release/android-release.md). |
+| [planning/](planning/) | [Kế hoạch thực hiện Flutter](planning/FLUTTER_EXECUTION_PLAN.md). |
+| [architecture/](architecture/) | Hình ảnh kiến trúc hệ thống FCourt dùng trong README (`images/`). |
+| [report/](report/) | Sản phẩm báo cáo chỉ lưu local (DOCX/PDF bị git-ignore). |
 
-The project README is [../README.md](../README.md); product principles are in [../PRODUCT.md](../PRODUCT.md).
+README chính của dự án là [../README.md](../README.md); nguyên tắc sản phẩm nằm trong [../PRODUCT.md](../PRODUCT.md).
