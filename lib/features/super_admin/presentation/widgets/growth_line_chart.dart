@@ -20,6 +20,12 @@ class GrowthLineChart extends StatelessWidget {
   static String monthLabel(String month) =>
       '${month.substring(5)}/${month.substring(2, 4)}';
 
+  /// Nhãn trục: `T10`; tháng 1 và nhãn đầu kèm năm (`T1/26`) để không giống ngày/tháng.
+  static String axisLabel(String month, {bool first = false}) {
+    final m = int.parse(month.substring(5));
+    return first || m == 1 ? 'T$m/${month.substring(2, 4)}' : 'T$m';
+  }
+
   static List<FlSpot> normalized(List<num> values) {
     final peak = values.fold<num>(0, (a, b) => b > a ? b : a);
     return [
@@ -41,7 +47,16 @@ class GrowthLineChart extends StatelessWidget {
     // Nhãn thưa dần khi có nhiều tháng để không chồng chữ trên màn hình hẹp.
     final labelEvery = (points.length / 6).ceil();
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Wrap(
+          spacing: 16,
+          children: [
+            _Legend(color: accountsColor, label: 'Tài khoản mới'),
+            _Legend(color: gmvColor, label: 'Dòng tiền GMV'),
+          ],
+        ),
+        const SizedBox(height: 12),
         SizedBox(
           height: 220,
           child: LineChart(
@@ -76,7 +91,7 @@ class GrowthLineChart extends StatelessWidget {
                       return SideTitleWidget(
                         meta: meta,
                         child: Text(
-                          monthLabel(points[i].month),
+                          axisLabel(points[i].month),
                           style: Theme.of(context).textTheme.labelSmall,
                         ),
                       );
@@ -86,6 +101,7 @@ class GrowthLineChart extends StatelessWidget {
               ),
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
+                  getTooltipColor: (_) => scheme.inverseSurface,
                   getTooltipItems: (spots) => [
                     for (final spot in spots)
                       LineTooltipItem(
@@ -94,9 +110,7 @@ class GrowthLineChart extends StatelessWidget {
                                   '${points[spot.spotIndex].newAccounts} tài khoản mới'
                             : '${formatCompactVnd(points[spot.spotIndex].gmv)} GMV',
                         TextStyle(
-                          color: spot.barIndex == 0
-                              ? Colors.lightBlue.shade100
-                              : Colors.lightGreen.shade100,
+                          color: scheme.onInverseSurface,
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
@@ -105,19 +119,14 @@ class GrowthLineChart extends StatelessWidget {
                 ),
               ),
               lineBarsData: [
-                _line(normalized([for (final p in points) p.newAccounts]), accountsColor),
+                _line(
+                  normalized([for (final p in points) p.newAccounts]),
+                  accountsColor,
+                ),
                 _line(normalized([for (final p in points) p.gmv]), gmvColor),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        const Wrap(
-          spacing: 16,
-          children: [
-            _Legend(color: accountsColor, label: 'Tài khoản mới'),
-            _Legend(color: gmvColor, label: 'Dòng tiền GMV'),
-          ],
         ),
       ],
     );
@@ -131,10 +140,7 @@ class GrowthLineChart extends StatelessWidget {
     color: color,
     barWidth: 3,
     dotData: FlDotData(show: points.length <= 12),
-    belowBarData: BarAreaData(
-      show: true,
-      color: color.withValues(alpha: 0.08),
-    ),
+    belowBarData: BarAreaData(show: true, color: color.withValues(alpha: 0.08)),
   );
 }
 

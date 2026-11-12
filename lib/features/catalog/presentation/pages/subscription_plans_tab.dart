@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/widgets/fc_widgets.dart';
 import '../../domain/entities/subscription_plan.dart';
 import '../../domain/entities/subscription_plan_input.dart';
 import '../../domain/usecases/save_subscription_plan.dart';
@@ -52,7 +53,9 @@ class _SubscriptionPlansTabState extends State<SubscriptionPlansTab>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(editing == null ? 'Đã thêm gói dịch vụ' : 'Đã lưu gói dịch vụ'),
+            content: Text(
+              editing == null ? 'Đã thêm gói dịch vụ' : 'Đã lưu gói dịch vụ',
+            ),
           ),
         );
       }
@@ -64,7 +67,8 @@ class _SubscriptionPlansTabState extends State<SubscriptionPlansTab>
     final confirmed = await confirmDelete(
       context,
       title: 'Xóa gói dịch vụ?',
-      message: 'Gói "${plan.name}" sẽ không còn hiện cho chủ sân chọn. '
+      message:
+          'Gói "${plan.name}" sẽ không còn hiện cho chủ sân chọn. '
           'Chủ sân đã mua gói này vẫn tiếp tục dùng bình thường.',
     );
     if (confirmed) bloc.add(CatalogItemDeleted(plan.id));
@@ -121,7 +125,8 @@ class _PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return FcCard(
+      padding: EdgeInsets.zero,
       child: InkWell(
         onTap: deleting ? null : onTap,
         child: Padding(
@@ -131,7 +136,9 @@ class _PlanCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text(plan.name, style: theme.textTheme.titleMedium)),
+                  Expanded(
+                    child: Text(plan.name, style: theme.textTheme.titleMedium),
+                  ),
                   if (deleting)
                     const SizedBox(
                       height: 24,
@@ -151,14 +158,21 @@ class _PlanCard extends StatelessWidget {
               Text('${formatVnd(plan.monthlyPrice)} / tháng'),
               Text('${formatVnd(plan.yearlyPrice)} / năm'),
               const SizedBox(height: 8),
-              Text('Tối đa ${plan.maxBranches} chi nhánh · ${plan.maxCourts} sân'),
-              if (plan.features.isNotEmpty) Text('${plan.features.length} tính năng'),
+              Text(
+                'Tối đa ${plan.maxBranches} chi nhánh · ${plan.maxCourts} sân',
+              ),
+              if (plan.features.isNotEmpty)
+                Text('${plan.features.length} tính năng'),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 children: [
-                  StatusChip(plan.active ? 'Đang bán' : 'Tạm ngưng', highlighted: plan.active),
-                  if (plan.popular) const StatusChip('Phổ biến', highlighted: true),
+                  StatusChip(
+                    plan.active ? 'Đang bán' : 'Tạm ngưng',
+                    highlighted: plan.active,
+                  ),
+                  if (plan.popular)
+                    const StatusChip('Phổ biến', highlighted: true),
                 ],
               ),
             ],

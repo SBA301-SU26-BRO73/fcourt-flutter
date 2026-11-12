@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../app/widgets/fc_widgets.dart';
 import '../../domain/entities/court_owner.dart';
 import '../bloc/owner_detail_cubit.dart';
 import '../bloc/pending_owners_cubit.dart';
@@ -71,16 +72,11 @@ class PendingOwnersScreen extends StatelessWidget {
                 if (state.status == PendingOwnersStatus.success &&
                     state.owners.isEmpty)
                   const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 64),
-                    child: Column(
-                      children: [
-                        Icon(Icons.verified_user_outlined, size: 48),
-                        SizedBox(height: 12),
-                        Text(
-                          'Không có hồ sơ nào chờ duyệt',
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    padding: EdgeInsets.symmetric(vertical: Gap.xxl),
+                    child: EmptyState(
+                      icon: Icons.how_to_reg_outlined,
+                      title: 'Không có hồ sơ nào chờ duyệt',
+                      message: 'Hồ sơ đăng ký chủ sân mới sẽ hiện ở đây để bạn xét duyệt.',
                     ),
                   ),
                 for (final owner in state.owners)

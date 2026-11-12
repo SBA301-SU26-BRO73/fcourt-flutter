@@ -193,9 +193,9 @@ class _ScheduleBoardState extends State<ScheduleBoard>
           title: Text(state.weekly ? 'Lịch sân theo tuần' : 'Lịch sân hôm nay'),
           actions: [
             IconButton(
-              onPressed: _manual,
-              tooltip: 'Nhập mã vé',
-              icon: const Icon(Icons.keyboard),
+              onPressed: _scan,
+              tooltip: 'Quét vé',
+              icon: const Icon(Icons.qr_code_scanner),
             ),
             IconButton(
               onPressed: state.loading ? null : cubit.refresh,
@@ -205,15 +205,15 @@ class _ScheduleBoardState extends State<ScheduleBoard>
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: _scan,
-          icon: const Icon(Icons.qr_code_scanner),
-          label: const Text('Quét vé'),
+          onPressed: _manual,
+          icon: const Icon(Icons.keyboard_outlined),
+          label: const Text('Nhập mã vé'),
         ),
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: cubit.refresh,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, Gap.fabClearance),
               children: [
                 if (state.loading) const LinearProgressIndicator(),
                 if (widget.offline != null)
@@ -301,11 +301,6 @@ class _ScheduleBoardState extends State<ScheduleBoard>
                     ),
                   ),
                 if (state.data case final data?) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    'Chi nhánh #${data.branchId}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
                   if (data.courts.isEmpty)
                     const Padding(
                       padding: EdgeInsets.all(24),
@@ -334,7 +329,7 @@ class _ScheduleBoardState extends State<ScheduleBoard>
                           else if (!court.sessions.any(_matches))
                             const Text('Không có khách phù hợp.'),
                           if (widget.counter != null)
-                            TextButton.icon(
+                            FilledButton.tonalIcon(
                               onPressed: () => _walkIn(court),
                               icon: const Icon(Icons.add),
                               label: const Text('Đặt tại quầy'),

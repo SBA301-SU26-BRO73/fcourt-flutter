@@ -5,7 +5,7 @@ import '../../../admin_dashboard/presentation/widgets/compact_currency.dart';
 import '../../domain/entities/platform_overview.dart';
 import '../bloc/platform_overview_cubit.dart';
 import '../widgets/growth_line_chart.dart';
-import '../../../../app/theme/tokens.dart';
+import '../../../../app/widgets/fc_widgets.dart';
 
 /// SCRUM-79: trung tâm thống kê vĩ mô toàn nền tảng. Cần [PlatformOverviewCubit]
 /// phía trên trong cây widget.
@@ -59,7 +59,12 @@ class SuperAdminOverviewScreen extends StatelessWidget {
                 final tablet = constraints.maxWidth >= tabletBreakpoint;
                 return ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(
+                    Gap.screen,
+                    Gap.lg,
+                    Gap.screen,
+                    Gap.xl,
+                  ),
                   children: [
                     if (state.status == PlatformOverviewStatus.failure)
                       _StaleBanner(message: state.message),
@@ -137,7 +142,8 @@ class _KpiGrid extends StatelessWidget {
         color: ChartColors.info,
         label: 'Tổng chi nhánh',
         value: '${overview.branches.total}',
-        caption: '${overview.branches.active} hoạt động · ${overview.courts} sân',
+        caption:
+            '${overview.branches.active} hoạt động · ${overview.courts} sân',
       ),
       _KpiCard(
         key: const ValueKey('kpi-customers'),
@@ -163,7 +169,9 @@ class _KpiGrid extends StatelessWidget {
                 children: [
                   for (var i = start; i < start + columns; i++) ...[
                     if (i > start) const SizedBox(width: 12),
-                    Expanded(child: i < cards.length ? cards[i] : const SizedBox()),
+                    Expanded(
+                      child: i < cards.length ? cards[i] : const SizedBox(),
+                    ),
                   ],
                 ],
               ),
@@ -193,35 +201,37 @@ class _KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: color.withValues(alpha: 0.15),
-              child: Icon(icon, color: color, size: 18),
-            ),
-            const SizedBox(height: 12),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                style: textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+    return FcCard(
+      padding: const EdgeInsets.all(Gap.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: color.withValues(alpha: 0.15),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 12),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
             ),
-            Text(label, style: textTheme.bodySmall),
-            const SizedBox(height: 2),
-            Text(caption, style: textTheme.labelSmall?.copyWith(color: color)),
-          ],
-        ),
+          ),
+          Text(label, style: textTheme.bodySmall),
+          const SizedBox(height: 2),
+          Text(
+            caption,
+            style: textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -236,38 +246,35 @@ class _GrowthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<PlatformOverviewCubit>();
-    return Card(
+    return FcCard(
       key: const ValueKey('growth-card'),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tăng trưởng tài khoản và dòng tiền',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            SegmentedButton<int>(
-              key: const ValueKey('overview-months'),
-              segments: [
-                for (final m in SuperAdminOverviewScreen.monthOptions)
-                  ButtonSegment(value: m, label: Text('$m tháng')),
-              ],
-              selected: {months},
-              showSelectedIcon: false,
-              onSelectionChanged: (s) => cubit.load(months: s.first),
-            ),
-            const SizedBox(height: 16),
-            GrowthLineChart(points: overview.monthly),
-            const SizedBox(height: 8),
-            Text(
-              'Mỗi đường được chuẩn hóa theo mức cao nhất của chính nó; chạm vào '
-              'một tháng để xem số thật.',
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Tăng trưởng tài khoản và dòng tiền',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<int>(
+            key: const ValueKey('overview-months'),
+            segments: [
+              for (final m in SuperAdminOverviewScreen.monthOptions)
+                ButtonSegment(value: m, label: Text('$m tháng')),
+            ],
+            selected: {months},
+            showSelectedIcon: false,
+            onSelectionChanged: (s) => cubit.load(months: s.first),
+          ),
+          const SizedBox(height: 16),
+          GrowthLineChart(points: overview.monthly),
+          const SizedBox(height: 8),
+          Text(
+            'Mỗi đường được chuẩn hóa theo mức cao nhất của chính nó; chạm vào '
+            'một tháng để xem số thật.',
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+        ],
       ),
     );
   }
@@ -280,45 +287,39 @@ class _TopOwnersCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return FcCard(
       key: const ValueKey('top-owners-card'),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Top 5 chủ sân doanh thu cao nhất',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            if (owners.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: Text('Chưa có doanh thu đặt sân')),
-              )
-            else
-              for (var i = 0; i < owners.length; i++)
-                ListTile(
-                  key: ValueKey('top-owner-${owners[i].ownerId}'),
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    radius: 14,
-                    child: Text('${i + 1}'),
-                  ),
-                  title: Text(
-                    owners[i].ownerName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text('${owners[i].branches} chi nhánh'),
-                  trailing: Text(
-                    formatCompactVnd(owners[i].revenue),
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Top 5 chủ sân doanh thu cao nhất',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          if (owners.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: Text('Chưa có doanh thu đặt sân')),
+            )
+          else
+            for (var i = 0; i < owners.length; i++)
+              ListTile(
+                key: ValueKey('top-owner-${owners[i].ownerId}'),
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(radius: 14, child: Text('${i + 1}')),
+                title: Text(
+                  owners[i].ownerName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-          ],
-        ),
+                subtitle: Text('${owners[i].branches} chi nhánh'),
+                trailing: Text(
+                  formatCompactVnd(owners[i].revenue),
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+        ],
       ),
     );
   }

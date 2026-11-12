@@ -165,13 +165,7 @@ class _LoginPageState extends State<LoginPage> {
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    'G',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 18,
-                                    ),
-                                  ),
+                                  _GoogleMark(),
                                   SizedBox(width: 10),
                                   Text('Tiếp tục với Google'),
                                 ],
@@ -194,6 +188,32 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Dấu "G" của Google trong vòng tròn, để nút đăng nhập Google nhận ra ngay.
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: 24,
+      height: 24,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: colors.outline),
+      ),
+      child: Text(
+        'G',
+        style: TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 13,
+          color: colors.onSurface,
+        ),
+      ),
     );
   }
 }
