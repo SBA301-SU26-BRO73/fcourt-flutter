@@ -8,6 +8,8 @@ import 'package:fcourt/features/operations/presentation/schedule_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/wp3b_shots.dart';
+
 import '../../helpers/fake_adapter.dart';
 
 class FakeOperations implements OperationsRepository {
@@ -206,4 +208,15 @@ void main() {
     expect(find.textContaining('Chờ nhận sân'), findsOneWidget);
     expect(find.text('Nhập mã vé'), findsOneWidget);
   });
+  for (final b in Brightness.values) {
+    testWidgets('schedule matches the WP3b look (${b.name})', (tester) async {
+      await pumpShot(
+        tester,
+        b,
+        SchedulePage(repository: FakeOperations()),
+        name: 'schedule',
+      );
+      expect(find.text('Sân 1'), findsOneWidget);
+    });
+  }
 }

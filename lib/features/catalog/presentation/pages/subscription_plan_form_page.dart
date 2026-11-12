@@ -91,7 +91,7 @@ class _SubscriptionPlanFormPageState extends State<SubscriptionPlanFormPage> {
           appBar: AppBar(title: Text(isEdit ? 'Sửa gói dịch vụ' : 'Thêm gói dịch vụ')),
           body: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               child: Form(
                 key: _formKey,
                 child: Column(

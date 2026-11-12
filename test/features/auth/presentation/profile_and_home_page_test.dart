@@ -49,7 +49,7 @@ void main() {
     await tester.pump();
   }
 
-  Finder field(String label) => find.widgetWithText(TextFormField, label);
+  Finder field(String label) => find.byKey(ValueKey('auth-field-$label'));
 
   group('ProfilePage', () {
     testWidgets(

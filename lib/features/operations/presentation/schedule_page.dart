@@ -15,6 +15,11 @@ import 'manual_check_in.dart';
 import '../../offline/data/offline_runtime.dart';
 import '../../offline/presentation/offline_panel.dart';
 import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/widgets/filter_pill.dart';
+import '../../../app/widgets/pill_search_field.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
+import 'appointment_row.dart';
 
 class SchedulePage extends StatelessWidget {
   const SchedulePage({
@@ -192,16 +197,17 @@ class _ScheduleBoardState extends State<ScheduleBoard>
         appBar: AppBar(
           title: Text(state.weekly ? 'Lịch sân theo tuần' : 'Lịch sân hôm nay'),
           actions: [
-            IconButton(
+            CircleIconButton(
               onPressed: _scan,
               tooltip: 'Quét vé',
-              icon: const Icon(Icons.qr_code_scanner),
+              icon: Icons.qr_code_scanner,
             ),
-            IconButton(
+            CircleIconButton(
               onPressed: state.loading ? null : cubit.refresh,
               tooltip: 'Làm mới lịch',
-              icon: const Icon(Icons.refresh),
+              icon: Icons.refresh,
             ),
+            const SizedBox(width: 8),
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
@@ -213,38 +219,37 @@ class _ScheduleBoardState extends State<ScheduleBoard>
           child: RefreshIndicator(
             onRefresh: cubit.refresh,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, Gap.fabClearance),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, Gap.fabClearance),
               children: [
                 if (state.loading) const LinearProgressIndicator(),
                 if (widget.offline != null)
                   OfflinePanel(runtime: widget.offline!),
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(value: false, label: Text('Hôm nay')),
-                    ButtonSegment(value: true, label: Text('Cả tuần')),
+                Row(
+                  children: [
+                    FilterPill(
+                      'Hôm nay',
+                      selected: !state.weekly,
+                      onTap: state.loading || !state.weekly
+                          ? () {}
+                          : cubit.load,
+                    ),
+                    const SizedBox(width: 7),
+                    FilterPill(
+                      'Cả tuần',
+                      selected: state.weekly,
+                      onTap: state.loading || state.weekly
+                          ? () {}
+                          : () => cubit.loadWeek(DateTime.now()),
+                    ),
                   ],
-                  selected: {state.weekly},
-                  onSelectionChanged: state.loading
-                      ? null
-                      : (value) {
-                          if (value.single) {
-                            cubit.loadWeek(DateTime.now());
-                          } else {
-                            cubit.load();
-                          }
-                        },
                 ),
                 if (!state.weekly)
                   Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: TextField(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: PillSearchField(
                       key: const ValueKey('schedule-search'),
+                      hint: 'Tìm khách theo SĐT hoặc tên',
                       onChanged: (value) => setState(() => _filter = value),
-                      textInputAction: TextInputAction.search,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
-                        labelText: 'Tìm khách theo SĐT hoặc tên',
-                      ),
                     ),
                   ),
                 if (state.weekly)
@@ -318,10 +323,15 @@ class _ScheduleBoardState extends State<ScheduleBoard>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.only(top: 22, bottom: 12),
                             child: Text(
                               court.name,
-                              style: Theme.of(context).textTheme.titleLarge,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -.5,
+                                  ),
                             ),
                           ),
                           if (court.sessions.isEmpty)
@@ -350,37 +360,32 @@ class _ScheduleBoardState extends State<ScheduleBoard>
                           ...court.sessions
                               .where(_matches)
                               .map(
-                                (session) => ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                  ),
-                                  leading: Icon(
-                                    session.playing
-                                        ? Icons.sports_tennis
-                                        : Icons.event_available,
-                                  ),
-                                  title: Text(
-                                    '${session.start}–${session.end} · ${session.name.isEmpty ? 'Khách vãng lai' : session.name}',
-                                  ),
-                                  subtitle: Text(
-                                    '${session.phone}\n${sessionLabel(session.status)}',
-                                  ),
-                                  isThreeLine: true,
-                                  onTap:
+                                (session) => AppointmentRow(
+                                  start: session.start,
+                                  end: session.end,
+                                  title: session.name.isEmpty
+                                      ? 'Khách vãng lai'
+                                      : session.name,
+                                  reference: '#${session.bookingId}',
+                                  line: session.phone,
+                                  tag: sessionLabel(session.status),
+                                  tone: switch (session.status) {
+                                    'CHECKED_IN' => context.fc.info,
+                                    'CONFIRMED' => context.fc.success,
+                                    'CANCELLED' => context.fc.danger,
+                                    'COMPLETED' => context.fc.neutral,
+                                    _ => context.fc.warning,
+                                  },
+                                  action:
                                       session.playing && widget.counter != null
-                                      ? () => _checkout(session)
-                                      : null,
-                                  trailing:
-                                      session.playing && widget.counter != null
-                                      ? IconButton(
-                                          tooltip: 'Trả sân',
+                                      ? AppointmentAction(
+                                          label: 'Trả sân',
+                                          icon: Icons.logout,
                                           onPressed: () => _checkout(session),
-                                          icon: const Icon(Icons.logout),
                                         )
                                       : null,
                                 ),
                               ),
-                          const Divider(),
                         ],
                       ),
                     ),

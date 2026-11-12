@@ -11,19 +11,11 @@ import '../../domain/entities/user_role.dart';
 import '../bloc/auth_bloc.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({
-    super.key,
-    this.discoveryRepository,
-    this.adminTodo,
-    this.staffToday,
-  });
+  const HomePage({super.key, this.discoveryRepository, this.adminTodo});
   final DiscoveryRepository? discoveryRepository;
 
   /// Khối "Việc cần làm" của chủ sân; thay cho banner chào ở đầu trang chủ.
   final Widget? adminTodo;
-
-  /// Staff: today orders with one-tap check-in.
-  final Widget? staffToday;
 
   static String titleFor(UserRole role) => switch (role) {
     UserRole.customer => 'Đặt sân',
@@ -74,7 +66,7 @@ class HomePage extends StatelessWidget {
                   Row(
                     children: [
                       CircleAvatar(
-                        radius: 24,
+                        radius: 22,
                         backgroundColor: colors.primaryContainer,
                         foregroundColor: colors.onPrimaryContainer,
                         child: Text(
@@ -95,7 +87,11 @@ class HomePage extends StatelessWidget {
                               'Xin chào, ${user.displayName}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleMedium,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -.5,
+                              ),
                             ),
                             Text(
                               user.role.label,
@@ -111,10 +107,6 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: Gap.xl),
                   if (user.role == UserRole.admin && adminTodo != null) ...[
                     adminTodo!,
-                    const SizedBox(height: Gap.xl),
-                  ],
-                  if (user.role == UserRole.staff && staffToday != null) ...[
-                    staffToday!,
                     const SizedBox(height: Gap.xl),
                   ],
                   if (user.role == UserRole.customer) ...[
@@ -254,21 +246,32 @@ class _ActionCard extends StatelessWidget {
         backgroundColor: colors.surfaceContainerLow,
         foregroundColor: colors.onSurface,
         alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(
-          horizontal: Gap.lg,
-          vertical: Gap.md,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         side: BorderSide(color: colors.outlineVariant),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(Radii.lg),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
       onPressed: () => context.push(entry.route),
       child: Row(
         children: [
-          IconBadge(entry.icon),
-          const SizedBox(width: Gap.md),
-          Expanded(child: Text(entry.title, style: theme.textTheme.titleSmall)),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colors.primaryContainer,
+            ),
+            child: Icon(entry.icon, size: 20, color: colors.onPrimaryContainer),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              entry.title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
           Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
         ],
       ),

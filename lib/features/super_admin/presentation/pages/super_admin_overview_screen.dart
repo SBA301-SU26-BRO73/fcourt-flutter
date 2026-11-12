@@ -6,6 +6,7 @@ import '../../domain/entities/platform_overview.dart';
 import '../bloc/platform_overview_cubit.dart';
 import '../widgets/growth_line_chart.dart';
 import '../../../../app/widgets/fc_widgets.dart';
+import '../../../../app/widgets/wp3b_widgets.dart';
 
 /// SCRUM-79: trung tâm thống kê vĩ mô toàn nền tảng. Cần [PlatformOverviewCubit]
 /// phía trên trong cây widget.
@@ -20,93 +21,85 @@ class SuperAdminOverviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Thống kê nền tảng'),
-        actions: [
-          BlocBuilder<PlatformOverviewCubit, PlatformOverviewState>(
-            builder: (context, state) => IconButton(
-              tooltip: 'Tải lại',
-              onPressed: state.status == PlatformOverviewStatus.loading
-                  ? null
-                  : () => context.read<PlatformOverviewCubit>().load(),
-              icon: const Icon(Icons.refresh),
-            ),
-          ),
-        ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            _Topline(canPop: Navigator.of(context).canPop()),
+            Expanded(child: _body()),
+          ],
+        ),
       ),
-      body: BlocBuilder<PlatformOverviewCubit, PlatformOverviewState>(
-        builder: (context, state) {
-          final overview = state.overview;
-          if (overview == null) {
-            if (state.status == PlatformOverviewStatus.failure) {
-              return _Failure(message: state.message);
-            }
-            return const Center(
-              key: ValueKey('overview-loading'),
-              child: CircularProgressIndicator(),
-            );
+    );
+  }
+
+  Widget _body() {
+    return BlocBuilder<PlatformOverviewCubit, PlatformOverviewState>(
+      builder: (context, state) {
+        final overview = state.overview;
+        if (overview == null) {
+          if (state.status == PlatformOverviewStatus.failure) {
+            return _Failure(message: state.message);
           }
-          final cubit = context.read<PlatformOverviewCubit>();
-          return RefreshIndicator(
-            onRefresh: () async {
-              cubit.load();
-              await cubit.stream.firstWhere(
-                (s) => s.status != PlatformOverviewStatus.loading,
+          return const Center(
+            key: ValueKey('overview-loading'),
+            child: CircularProgressIndicator(),
+          );
+        }
+        final cubit = context.read<PlatformOverviewCubit>();
+        return RefreshIndicator(
+          onRefresh: () async {
+            cubit.load();
+            await cubit.stream.firstWhere(
+              (s) => s.status != PlatformOverviewStatus.loading,
+            );
+          },
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final tablet = constraints.maxWidth >= tabletBreakpoint;
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, Gap.navClearance),
+                children: [
+                  if (state.status == PlatformOverviewStatus.failure)
+                    _StaleBanner(message: state.message),
+                  if (state.status == PlatformOverviewStatus.loading)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: LinearProgressIndicator(
+                        key: ValueKey('overview-refreshing'),
+                      ),
+                    ),
+                  _KpiGrid(overview: overview, columns: tablet ? 4 : 2),
+                  const SizedBox(height: 12),
+                  if (tablet)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: _GrowthCard(
+                            overview: overview,
+                            months: state.months,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: _TopOwnersCard(owners: overview.topOwners),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    _GrowthCard(overview: overview, months: state.months),
+                    const SizedBox(height: 16),
+                    _TopOwnersCard(owners: overview.topOwners),
+                  ],
+                ],
               );
             },
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final tablet = constraints.maxWidth >= tabletBreakpoint;
-                return ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
-                    Gap.screen,
-                    Gap.lg,
-                    Gap.screen,
-                    Gap.xl,
-                  ),
-                  children: [
-                    if (state.status == PlatformOverviewStatus.failure)
-                      _StaleBanner(message: state.message),
-                    if (state.status == PlatformOverviewStatus.loading)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 8),
-                        child: LinearProgressIndicator(
-                          key: ValueKey('overview-refreshing'),
-                        ),
-                      ),
-                    _KpiGrid(overview: overview, columns: tablet ? 4 : 2),
-                    const SizedBox(height: 16),
-                    if (tablet)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: _GrowthCard(
-                              overview: overview,
-                              months: state.months,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            flex: 2,
-                            child: _TopOwnersCard(owners: overview.topOwners),
-                          ),
-                        ],
-                      )
-                    else ...[
-                      _GrowthCard(overview: overview, months: state.months),
-                      const SizedBox(height: 16),
-                      _TopOwnersCard(owners: overview.topOwners),
-                    ],
-                  ],
-                );
-              },
-            ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -119,39 +112,38 @@ class _KpiGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fc = context.fc;
     final cards = [
-      _KpiCard(
+      KpiCard(
         key: const ValueKey('kpi-gmv'),
         icon: Icons.payments_outlined,
-        color: ChartColors.success,
+        tone: fc.success,
         label: 'Tổng GMV đặt sân',
         value: formatCompactVnd(overview.gmv),
-        caption: 'Doanh thu đặt sân qua hệ thống',
+        note: 'Doanh thu đặt sân qua hệ thống',
       ),
-      _KpiCard(
+      KpiCard(
         key: const ValueKey('kpi-saas'),
         icon: Icons.workspace_premium_outlined,
-        color: ChartColors.accent,
         label: 'Doanh thu gói SaaS',
         value: formatCompactVnd(overview.saasRevenue),
-        caption: 'Chủ sân mua gói',
+        note: 'Chủ sân mua gói',
       ),
-      _KpiCard(
+      KpiCard(
         key: const ValueKey('kpi-branches'),
         icon: Icons.store_mall_directory_outlined,
-        color: ChartColors.info,
+        tone: fc.info,
         label: 'Tổng chi nhánh',
         value: '${overview.branches.total}',
-        caption:
-            '${overview.branches.active} hoạt động · ${overview.courts} sân',
+        note: '${overview.branches.active} hoạt động · ${overview.courts} sân',
       ),
-      _KpiCard(
+      KpiCard(
         key: const ValueKey('kpi-customers'),
         icon: Icons.groups_outlined,
-        color: ChartColors.peak,
+        tone: fc.warning,
         label: 'Khách hàng hoạt động',
         value: '${overview.customers.active}',
-        caption:
+        note:
             'Trên ${overview.customers.total} khách · chủ sân '
             '${overview.owners.active} (${overview.owners.pending} chờ duyệt)',
       ),
@@ -182,61 +174,6 @@ class _KpiGrid extends StatelessWidget {
   }
 }
 
-class _KpiCard extends StatelessWidget {
-  const _KpiCard({
-    super.key,
-    required this.icon,
-    required this.color,
-    required this.label,
-    required this.value,
-    required this.caption,
-  });
-
-  final IconData icon;
-  final Color color;
-  final String label;
-  final String value;
-  final String caption;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return FcCard(
-      padding: const EdgeInsets.all(Gap.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: color.withValues(alpha: 0.15),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(height: 12),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Text(label, style: textTheme.bodySmall),
-          const SizedBox(height: 2),
-          Text(
-            caption,
-            style: textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _GrowthCard extends StatelessWidget {
   const _GrowthCard({required this.overview, required this.months});
 
@@ -248,12 +185,14 @@ class _GrowthCard extends StatelessWidget {
     final cubit = context.read<PlatformOverviewCubit>();
     return FcCard(
       key: const ValueKey('growth-card'),
+      radius: 22,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Tăng trưởng tài khoản và dòng tiền',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(fontSize: 13, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           SegmentedButton<int>(
@@ -289,12 +228,14 @@ class _TopOwnersCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return FcCard(
       key: const ValueKey('top-owners-card'),
+      radius: 22,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Top 5 chủ sân doanh thu cao nhất',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(fontSize: 13, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           if (owners.isEmpty)
@@ -307,7 +248,16 @@ class _TopOwnersCard extends StatelessWidget {
               ListTile(
                 key: ValueKey('top-owner-${owners[i].ownerId}'),
                 contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(radius: 14, child: Text('${i + 1}')),
+                leading: CircleAvatar(
+                  radius: 14,
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer,
+                  foregroundColor: Theme.of(context)
+                      .colorScheme
+                      .onPrimaryContainer,
+                  child: Text('${i + 1}'),
+                ),
                 title: Text(
                   owners[i].ownerName,
                   maxLines: 1,
@@ -380,4 +330,53 @@ class _StaleBanner extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// Mock-up topline: 58dp, optional round back button, 22px title and a round
+/// refresh button.
+class _Topline extends StatelessWidget {
+  const _Topline({required this.canPop});
+  final bool canPop;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      height: 58,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          children: [
+            if (canPop) ...[
+              CircleIconButton(
+                icon: Icons.chevron_left,
+                tooltip: 'Quay lại',
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: Text(
+                'Thống kê nền tảng',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -.7,
+                ),
+              ),
+            ),
+            BlocBuilder<PlatformOverviewCubit, PlatformOverviewState>(
+              builder: (context, state) => CircleIconButton(
+                icon: Icons.refresh,
+                tooltip: 'Tải lại',
+                onPressed: state.status == PlatformOverviewStatus.loading
+                    ? null
+                    : () => context.read<PlatformOverviewCubit>().load(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

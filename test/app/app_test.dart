@@ -151,11 +151,11 @@ void main() {
       await pumpApp(tester);
 
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Email'),
+        find.byKey(const ValueKey('auth-field-Email')),
         'customer@demo.com',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Mật khẩu'),
+        find.byKey(const ValueKey('auth-field-Mật khẩu')),
         'S3cret-pass',
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Đăng nhập'));
@@ -227,7 +227,7 @@ void main() {
     expect(
       tester
           .widget<TextFormField>(
-            find.widgetWithText(TextFormField, 'Mã đặt lại mật khẩu'),
+            find.byKey(const ValueKey('auth-field-Mã đặt lại mật khẩu')),
           )
           .controller
           ?.text,
@@ -247,7 +247,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.widgetWithText(TextFormField, 'Mã đặt lại mật khẩu'),
+      find.byKey(const ValueKey('auth-field-Mã đặt lại mật khẩu')),
       findsOneWidget,
     );
   });

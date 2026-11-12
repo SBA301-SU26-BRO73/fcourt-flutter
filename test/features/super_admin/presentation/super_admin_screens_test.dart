@@ -1,3 +1,4 @@
+import 'package:fcourt/app/widgets/fc_widgets.dart';
 import 'package:fcourt/app/app_dependencies.dart';
 import 'package:fcourt/app/router.dart';
 import 'package:fcourt/core/config/app_config.dart';
@@ -21,6 +22,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:fcourt/features/super_admin/presentation/bloc/pending_owners_cubit.dart';
+import 'package:fcourt/features/super_admin/presentation/pages/pending_owners_screen.dart';
+import '../../../helpers/wp3b_shots.dart';
 import '../../auth/helpers.dart';
 import '../../catalog/helpers.dart';
 
@@ -177,7 +181,7 @@ void main() {
     expect(find.text('Chủ sân 1'), findsOneWidget);
     expect(find.text('Chủ sân 3'), findsOneWidget);
     expect(find.text('Chủ sân 2'), findsNothing);
-    expect(find.byType(Card), findsNWidgets(2));
+    expect(find.byType(FcCard), findsNWidgets(2));
   });
 
   testWidgets('kéo xuống để tải lại danh sách', (tester) async {
@@ -307,4 +311,45 @@ void main() {
     expect(find.byType(ZoomableImagePage), findsOneWidget);
     expect(find.byType(InteractiveViewer), findsOneWidget);
   });
+
+  for (final b in Brightness.values) {
+    testWidgets('pending owners matches the WP3b look (${b.name})', (
+      tester,
+    ) async {
+      final repository = FakeOwnerRepository([owner(1), owner(2), owner(3)]);
+      await pumpShot(
+        tester,
+        b,
+        PendingOwnersScreen(onOpenOwner: (_) async => null),
+        name: 'pending-owners',
+        wrap: (child) => BlocProvider(
+          create: (_) => PendingOwnersCubit(GetPendingOwners(repository))..load(),
+          child: child,
+        ),
+      );
+      expect(find.text('Chủ sân 1'), findsOneWidget);
+    });
+
+    testWidgets('owner detail matches the WP3b look (${b.name})', (
+      tester,
+    ) async {
+      final repository = FakeOwnerRepository([owner(1)]);
+      await pumpShot(
+        tester,
+        b,
+        OwnerApprovalDetailScreen(imageBuilder: (_, url) => Text('image:${url.path}')),
+        name: 'owner-detail',
+        wrap: (child) => BlocProvider(
+          create: (_) => OwnerDetailCubit(
+            ownerId: 1,
+            getOwnerDetail: GetOwnerDetail(repository),
+            approveOwner: ApproveOwner(repository),
+            rejectOwner: RejectOwner(repository),
+          )..load(),
+          child: child,
+        ),
+      );
+      expect(find.text('Chủ sân 1'), findsOneWidget);
+    });
+  }
 }

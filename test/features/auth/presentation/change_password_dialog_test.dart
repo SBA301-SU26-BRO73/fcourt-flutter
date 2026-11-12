@@ -49,7 +49,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder field(String label) => find.widgetWithText(TextFormField, label);
+  Finder field(String label) => find.byKey(ValueKey('auth-field-$label'));
   Finder dialogButton() => find.widgetWithText(FilledButton, 'Đổi mật khẩu');
 
   Future<void> fill(

@@ -53,7 +53,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder field(String label) => find.widgetWithText(TextFormField, label);
+  Finder field(String label) => find.byKey(ValueKey('auth-field-$label'));
 
   Future<void> fillPasswords(WidgetTester tester, {String confirm = 'new-pass-2'}) async {
     await tester.enterText(field('Mật khẩu mới'), 'new-pass-2');

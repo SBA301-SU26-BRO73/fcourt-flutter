@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/auth_redirect.dart';
+import '../../../../app/widgets/filter_pill.dart';
 
 import '../bloc/auth_bloc.dart';
 import '../bloc/register_bloc.dart';
@@ -62,9 +63,10 @@ class _RegisterCustomerPageState extends State<RegisterCustomerPage> {
         return Scaffold(
           appBar: AppBar(title: const Text('Đăng ký khách hàng')),
           body: SafeArea(
-            child: Center(
+            child: Align(
+              alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Form(
@@ -72,21 +74,25 @@ class _RegisterCustomerPageState extends State<RegisterCustomerPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SegmentedButton<bool>(
+                        Row(
                           key: const ValueKey('register-role'),
-                          segments: const [
-                            ButtonSegment(
-                              value: false,
-                              label: Text('Khách hàng'),
+                          children: [
+                            FilterPill(
+                              'Khách hàng',
+                              selected: true,
+                              onTap: () {},
                             ),
-                            ButtonSegment(value: true, label: Text('Chủ sân')),
+                            const SizedBox(width: 7),
+                            FilterPill(
+                              'Chủ sân',
+                              selected: false,
+                              onTap: () {
+                                context.pushReplacement(
+                                  AppRoutes.registerOwner,
+                                );
+                              },
+                            ),
                           ],
-                          selected: const {false},
-                          onSelectionChanged: (value) {
-                            if (value.single) {
-                              context.pushReplacement(AppRoutes.registerOwner);
-                            }
-                          },
                         ),
                         const SizedBox(height: 16),
                         if (state.status == SubmissionStatus.failure &&

@@ -47,7 +47,7 @@ void main() {
   }
 
   Future<void> submit(WidgetTester tester, {String email = 'customer@demo.com'}) async {
-    await tester.enterText(find.widgetWithText(TextFormField, 'Email'), email);
+    await tester.enterText(find.byKey(const ValueKey('auth-field-Email')), email);
     await tester.tap(find.widgetWithText(FilledButton, 'Gửi link đặt lại'));
     await tester.pump();
   }

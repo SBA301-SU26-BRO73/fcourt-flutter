@@ -83,7 +83,7 @@ import 'auth_redirect.dart';
 import '../features/staff/presentation/staff_page.dart';
 import '../features/pos/presentation/pos_page.dart';
 import '../features/operations/presentation/schedule_page.dart';
-import '../features/operations/presentation/staff_today_orders.dart';
+import '../features/operations/presentation/staff_today_screen.dart';
 import '../features/offline/data/offline_operations.dart';
 import '../features/offline/presentation/offline_check_in_page.dart';
 import '../features/offline/presentation/offline_panel.dart';
@@ -718,7 +718,10 @@ GoRouter createRouter(
           FcRoute(
             path: AppRoutes.home,
             builder: (context, state) =>
-                authBloc.state.role == UserRole.customer
+                authBloc.state.role == UserRole.staff &&
+                    dependencies.operations != null
+                ? StaffTodayScreen(repository: dependencies.operations!)
+                : authBloc.state.role == UserRole.customer
                 ? CustomerHomeScreen(
                     repository: dependencies.discoveryRepository,
                   )
@@ -740,14 +743,6 @@ GoRouter createRouter(
                             onRefunds: (id) =>
                                 context.push('/admin/branches/$id/refunds'),
                             onToday: () => context.go('/admin/bookings'),
-                          )
-                        : null,
-                    staffToday:
-                        authBloc.state.role == UserRole.staff &&
-                            dependencies.operations != null
-                        ? StaffTodayOrders(
-                            repository: dependencies.operations!,
-                            onOpenSchedule: () => context.go('/staff/schedule'),
                           )
                         : null,
                   ),

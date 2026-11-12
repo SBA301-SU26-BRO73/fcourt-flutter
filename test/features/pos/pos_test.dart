@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/fake_adapter.dart';
+import '../../helpers/wp3b_shots.dart';
 
 const product = PosProduct(
   id: 1,
@@ -265,6 +266,17 @@ void main() {
           .last;
       expect(tester.widget<IconButton>(button).onPressed, isNull);
       expect(tester.takeException(), isNull);
+    });
+  }
+  for (final b in Brightness.values) {
+    testWidgets('pos matches the WP3b look (${b.name})', (tester) async {
+      await pumpShot(
+        tester,
+        b,
+        PosPage(repository: FakePos()),
+        name: 'pos',
+      );
+      expect(find.text('Quầy dịch vụ'), findsOneWidget);
     });
   }
 }
