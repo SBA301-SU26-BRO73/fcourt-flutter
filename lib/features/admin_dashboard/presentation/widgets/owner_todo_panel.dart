@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../app/theme/tokens.dart';
 import '../../../admin_bookings/domain/admin_booking_query.dart';
 import '../../../admin_bookings/domain/admin_booking_repository.dart';
 import '../../../admin_facility/domain/entities/branch.dart';
@@ -9,6 +10,7 @@ import '../../../payment/domain/entities/payment_checkout.dart';
 import '../../../payment/domain/entities/pending_payment.dart';
 import '../../../payment/domain/repositories/admin_payment_repository.dart';
 import '../../../refunds/domain/admin_refunds.dart';
+import 'owner_ui.dart';
 
 /// Một biên lai chờ duyệt kèm chi nhánh của nó.
 class TodoReceipt {
@@ -26,11 +28,20 @@ class OwnerTodoSummary {
     this.todayCount = 0,
     this.receiptBranchId,
     this.refundBranchId,
+    this.branchLabel,
   });
   final List<TodoReceipt> receipts;
   final int receiptCount, refundCount, todayCount;
   final int? receiptBranchId, refundBranchId;
+
+  /// Khu vực của chi nhánh đầu tiên, vd "Ba Đình, Hà Nội".
+  final String? branchLabel;
 }
+
+String _area(Branch b) => [
+  b.district,
+  b.city,
+].whereType<String>().where((p) => p.trim().isNotEmpty).join(", ");
 
 class OwnerTodoLoader {
   const OwnerTodoLoader({
@@ -79,12 +90,22 @@ class OwnerTodoLoader {
       refundCount: refundCount,
       todayCount: todayCount,
       receiptBranchId: receiptBranch,
+      branchLabel: owned.isEmpty ? null : _area(owned.first),
       refundBranchId: refundBranch,
     );
   }
 }
 
-/// Đầu trang chủ chủ sân: ba thẻ đếm và duyệt/từ chối biên lai ngay trên thẻ.
+/// Lối tắt tới màn quản lý khác của chủ sân (vòng tròn tint dưới danh sách).
+class OwnerShortcut {
+  const OwnerShortcut(this.label, this.icon, this.onTap);
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
+/// Màn "Việc cần làm" của chủ sân (mockup 05): lời chào, ba thẻ đếm, biên lai
+/// chờ duyệt có nút Duyệt/Từ chối ngay trên thẻ.
 class OwnerTodoPanel extends StatefulWidget {
   const OwnerTodoPanel({
     super.key,
@@ -92,10 +113,20 @@ class OwnerTodoPanel extends StatefulWidget {
     this.onReceipts,
     this.onRefunds,
     this.onToday,
+    this.onOverview,
+    this.onNotifications,
+    this.userName,
+    this.shortcuts = const [],
+    this.now,
   });
   final OwnerTodoLoader loader;
   final void Function(int branchId)? onReceipts, onRefunds;
-  final VoidCallback? onToday;
+  final VoidCallback? onToday, onOverview, onNotifications;
+  final String? userName;
+  final List<OwnerShortcut> shortcuts;
+
+  /// Giờ hiện tại (cho test và ảnh chụp).
+  final DateTime? now;
 
   @override
   State<OwnerTodoPanel> createState() => _OwnerTodoPanelState();
@@ -106,6 +137,9 @@ class _OwnerTodoPanelState extends State<OwnerTodoPanel> {
   String? _error;
   bool _loading = true;
   bool _busy = false;
+
+  /// Số biên lai hiện trực tiếp trên thẻ; phần còn lại nằm sau dòng "Còn n".
+  static const _visibleReceipts = 2;
 
   @override
   void initState() {
@@ -141,6 +175,9 @@ class _OwnerTodoPanelState extends State<OwnerTodoPanel> {
     symbol: '₫',
     decimalDigits: 0,
   ).format(value);
+
+  static String _price(int value) =>
+      '${NumberFormat.decimalPattern('vi_VN').format(value)}đ';
 
   Future<void> _approve(TodoReceipt item) async {
     final repository = widget.loader.payments;
@@ -222,111 +259,270 @@ class _OwnerTodoPanelState extends State<OwnerTodoPanel> {
     }
   }
 
+  static const _weekdays = [
+    'Thứ Hai',
+    'Thứ Ba',
+    'Thứ Tư',
+    'Thứ Năm',
+    'Thứ Sáu',
+    'Thứ Bảy',
+    'Chủ Nhật',
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final summary = _summary;
+    final Widget body;
     if (_loading && summary == null) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
+      body = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 48),
         child: Center(child: CircularProgressIndicator()),
       );
-    }
-    if (summary == null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Row(
-          children: [
-            Expanded(child: Text(_error ?? 'Không tải được việc cần làm.')),
-            TextButton(onPressed: _load, child: const Text('Thử lại')),
-          ],
-        ),
+    } else if (summary == null) {
+      body = OwnerMessage(
+        icon: Icons.cloud_off_outlined,
+        text: _error ?? 'Không tải được việc cần làm.',
+        action: 'Thử lại',
+        onAction: _load,
       );
+    } else {
+      body = _content(context, summary);
     }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: ownerPad),
+      child: Column(
+        key: const ValueKey('owner-todo'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Hello(widget: widget, label: summary?.branchLabel),
+          body,
+        ],
+      ),
+    );
+  }
+
+  Widget _content(BuildContext context, OwnerTodoSummary summary) {
+    final fc = context.fc;
+    final shown = summary.receipts.take(_visibleReceipts).toList();
+    final more = summary.receiptCount - shown.length;
     return Column(
-      key: const ValueKey('owner-todo'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Việc cần làm', style: theme.textTheme.titleLarge),
-        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.only(top: 3, bottom: 15),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Việc cần làm',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -.7,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              if (widget.onOverview != null)
+                OwnerLink('Tổng quan', onTap: widget.onOverview),
+            ],
+          ),
+        ),
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _CountCard(
                 key: const ValueKey('todo-receipts'),
-                icon: Icons.receipt_long_outlined,
-                label: 'Biên lai chờ duyệt',
+                icon: Icons.check,
+                tone: fc.info,
+                label: 'Biên lai\nchờ duyệt',
                 count: summary.receiptCount,
-                highlight: summary.receiptCount > 0,
                 onTap:
                     widget.onReceipts == null || summary.receiptBranchId == null
                     ? null
                     : () => widget.onReceipts!(summary.receiptBranchId!),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 9),
               _CountCard(
                 key: const ValueKey('todo-refunds'),
-                icon: Icons.currency_exchange,
-                label: 'Yêu cầu hoàn tiền',
+                icon: Icons.arrow_forward,
+                tone: fc.warning,
+                label: 'Yêu cầu\nhoàn tiền',
                 count: summary.refundCount,
-                highlight: summary.refundCount > 0,
                 onTap:
                     widget.onRefunds == null || summary.refundBranchId == null
                     ? null
                     : () => widget.onRefunds!(summary.refundBranchId!),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 9),
               _CountCard(
                 key: const ValueKey('todo-today'),
                 icon: Icons.event_note_outlined,
-                label: 'Đơn hôm nay',
+                tone: fc.success,
+                label: 'Đơn\nhôm nay',
                 count: summary.todayCount,
                 onTap: widget.onToday,
               ),
             ],
           ),
         ),
-        for (final item in summary.receipts.take(3)) ...[
-          const SizedBox(height: 8),
-          Card(
-            key: ValueKey('todo-receipt-${item.payment.id}'),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        OwnerSectionTitle(
+          'Biên lai chờ duyệt',
+          trailing: OwnerNote('${summary.receiptCount} biên lai'),
+        ),
+        if (shown.isEmpty)
+          OwnerCard(
+            child: Row(
+              children: [
+                OwnerCircle(icon: Icons.check, tone: fc.success),
+                const SizedBox(width: 13),
+                const Expanded(
+                  child: OwnerNote('Không có biên lai nào đang chờ duyệt'),
+                ),
+              ],
+            ),
+          ),
+        for (final item in shown)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _ReceiptCard(
+              key: ValueKey('todo-receipt-${item.payment.id}'),
+              item: item,
+              price: _price(item.payment.amountVnd),
+              ago: timeAgoVi(item.payment.submittedAt, now: widget.now),
+              busy: _busy,
+              onApprove: () => _approve(item),
+              onReject: () => _reject(item),
+            ),
+          ),
+        if (more > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: InkWell(
+              onTap:
+                  widget.onReceipts == null || summary.receiptBranchId == null
+                  ? null
+                  : () => widget.onReceipts!(summary.receiptBranchId!),
+              borderRadius: BorderRadius.circular(16),
+              child: Row(
                 children: [
-                  Text(
-                    '${item.payment.bookingCode} · ${item.payment.customerName}',
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  Text(_money(item.payment.amountVnd)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          key: ValueKey('reject-${item.payment.id}'),
-                          onPressed: _busy ? null : () => _reject(item),
-                          child: const Text('Từ chối'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: FilledButton(
-                          key: ValueKey('approve-${item.payment.id}'),
-                          onPressed: _busy ? null : () => _approve(item),
-                          child: const Text('Duyệt'),
-                        ),
-                      ),
-                    ],
+                  OwnerCircle(icon: Icons.schedule, tone: fc.info),
+                  const SizedBox(width: 8),
+                  OwnerNote('Còn $more biên lai chờ duyệt'),
+                  const Spacer(),
+                  Icon(
+                    Icons.arrow_forward,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ],
               ),
             ),
           ),
+        if (widget.shortcuts.isNotEmpty) ...[
+          const OwnerSectionTitle('Quản lý'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final s in widget.shortcuts) _ShortcutIcon(shortcut: s),
+            ],
+          ),
         ],
       ],
+    );
+  }
+}
+
+class _Hello extends StatelessWidget {
+  const _Hello({required this.widget, this.label});
+  final OwnerTodoPanel widget;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final now = widget.now ?? DateTime.now();
+    final date =
+        '${_OwnerTodoPanelState._weekdays[now.weekday - 1]}, '
+        '${now.day.toString().padLeft(2, '0')}/'
+        '${now.month.toString().padLeft(2, '0')}';
+    final name = widget.userName?.trim() ?? '';
+    return Padding(
+      padding: const EdgeInsets.only(top: 7, bottom: 18),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                OwnerNote('Chủ sân · $date'),
+                const SizedBox(height: 7),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name.isEmpty ? 'Chào bạn' : 'Chào $name',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -.7,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    Icon(
+                      Icons.wb_sunny_outlined,
+                      size: 23,
+                      color: colors.primary,
+                    ),
+                  ],
+                ),
+                if (label != null && label!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.place_outlined,
+                        size: 14,
+                        color: colors.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(child: OwnerNote(label!)),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Tooltip(
+            message: 'Thông báo',
+            child: Material(
+              color: colors.surfaceContainerLow,
+              shape: CircleBorder(
+                side: BorderSide(color: colors.outlineVariant),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: widget.onNotifications,
+                child: SizedBox.square(
+                  dimension: 42,
+                  child: Icon(
+                    Icons.notifications_none,
+                    size: 22,
+                    color: colors.onSurface,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -335,43 +531,244 @@ class _CountCard extends StatelessWidget {
   const _CountCard({
     super.key,
     required this.icon,
+    required this.tone,
     required this.label,
     required this.count,
-    this.highlight = false,
     this.onTap,
   });
   final IconData icon;
+  final StatusTone tone;
   final String label;
   final int count;
-  final bool highlight;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Expanded(
-      child: Card(
-        margin: EdgeInsets.zero,
-        color: highlight ? colors.primaryContainer : null,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(icon, size: 22),
-                const SizedBox(height: 8),
-                Text(
-                  '$count',
-                  style: Theme.of(context).textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
+      child: OwnerSoftPanel(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            OwnerCircle(icon: icon, tone: tone, iconSize: 17),
+            const SizedBox(height: 9),
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                height: 1.25,
+                color: colors.onSurface,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                height: 1.5,
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReceiptCard extends StatelessWidget {
+  const _ReceiptCard({
+    super.key,
+    required this.item,
+    required this.price,
+    required this.ago,
+    required this.busy,
+    required this.onApprove,
+    required this.onReject,
+  });
+  final TodoReceipt item;
+  final String price, ago;
+  final bool busy;
+  final VoidCallback onApprove, onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final p = item.payment;
+    return OwnerCard(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              ReceiptThumb(uri: p.receiptUri, amountVnd: p.amountVnd),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      p.customerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    OwnerNote('#${p.bookingCode} · $ago'),
+                    const SizedBox(height: 5),
+                    Text(
+                      price,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: colors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    OwnerNote(
+                      "Gửi lúc ${DateFormat('HH:mm, dd/MM').format(p.submittedAt)}",
+                    ),
+                  ],
                 ),
-                Text(label, style: Theme.of(context).textTheme.bodySmall),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OwnerPillButton(
+                  key: ValueKey('approve-${p.id}'),
+                  label: 'Duyệt',
+                  icon: Icons.check,
+                  onPressed: busy ? null : onApprove,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: OwnerPillButton(
+                  key: ValueKey('reject-${p.id}'),
+                  label: 'Từ chối',
+                  filled: false,
+                  onPressed: busy ? null : onReject,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ảnh biên lai nhỏ (67x92, nghiêng 3 độ, viền 5 màu nền mềm). Khi ảnh thật
+/// chưa tải được thì vẽ tờ biên lai mẫu có dấu tích và số tiền.
+class ReceiptThumb extends StatelessWidget {
+  const ReceiptThumb({super.key, required this.uri, required this.amountVnd});
+  final Uri uri;
+  final int amountVnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    const ink = Color(0xFF195D44);
+    final amount = NumberFormat.decimalPattern('vi_VN').format(amountVnd);
+    final stub = Container(
+      color: const Color(0xFFF5FCF8),
+      padding: const EdgeInsets.fromLTRB(3, 6, 3, 0),
+      child: Column(
+        children: [
+          const SizedBox(height: 2),
+          const Icon(Icons.check, size: 18, color: ink),
+          const SizedBox(height: 2),
+          Text(
+            amount,
+            maxLines: 1,
+            style: const TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.w700,
+              color: ink,
             ),
           ),
+          const SizedBox(height: 4),
+          const Text(
+            '••••••••\n──────\n••••••••',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 6,
+              height: 1.6,
+              color: Color(0xFFC3D7CB),
+            ),
+          ),
+        ],
+      ),
+    );
+    return Transform.rotate(
+      angle: -3 * 3.1415926 / 180,
+      child: Container(
+        width: 67,
+        height: 92,
+        decoration: BoxDecoration(
+          color: colors.surfaceContainer,
+          borderRadius: BorderRadius.circular(11),
+        ),
+        padding: const EdgeInsets.all(5),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Image.network(
+            uri.toString(),
+            fit: BoxFit.cover,
+            excludeFromSemantics: true,
+            errorBuilder: (_, _, _) => stub,
+            loadingBuilder: (_, child, progress) =>
+                progress == null ? child : stub,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShortcutIcon extends StatelessWidget {
+  const _ShortcutIcon({required this.shortcut});
+  final OwnerShortcut shortcut;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: shortcut.onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colors.primaryContainer,
+              ),
+              child: Icon(shortcut.icon, size: 27, color: colors.primary),
+            ),
+            const SizedBox(height: 9),
+            Text(
+              shortcut.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: colors.onSurface,
+              ),
+            ),
+          ],
         ),
       ),
     );

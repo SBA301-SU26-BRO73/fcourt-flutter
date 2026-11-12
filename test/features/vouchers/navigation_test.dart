@@ -85,8 +85,8 @@ void main() {
       );
       await tester.pumpWidget(FcourtApp(dependencies: dependencies));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Quản lý voucher'));
-      await tester.tap(find.text('Quản lý voucher'));
+      await tester.ensureVisible(find.text('Voucher'));
+      await tester.tap(find.text('Voucher'));
       await tester.pumpAndSettle();
       expect(find.byType(VoucherManagementScreen), findsOneWidget);
       expect(find.text('SAVE1'), findsOneWidget);

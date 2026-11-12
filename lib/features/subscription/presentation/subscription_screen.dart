@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
+import '../../admin_dashboard/presentation/widgets/owner_ui.dart';
 
 import '../domain/subscription.dart';
 import 'subscription_cubit.dart';
@@ -62,40 +64,47 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(ownerPad, 8, ownerPad, 0),
                   sliver: SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Gói hiện tại',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
+                        const OwnerSectionTitle('Gói hiện tại', top: 6),
                         if (state.loading) const LinearProgressIndicator(),
                         if (state.error != null) ...[
-                          Text(
-                            state.error!,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: locked ? null : cubit.refresh,
-                            child: const Text('Thử lại'),
+                          OwnerMessage(
+                            icon: Icons.cloud_off_outlined,
+                            text: state.error!,
+                            action: 'Thử lại',
+                            onAction: locked ? null : cubit.refresh,
                           ),
                         ],
                         if (current != null)
-                          FcCard(
+                          OwnerCard(
+                            radius: 23,
+                            padding: const EdgeInsets.all(18),
+                            bordered: false,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primaryContainer,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   current.period.plan.name,
-                                  style: Theme.of(context).textTheme.titleLarge,
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -.7,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
+                                  ),
                                 ),
+                                const SizedBox(height: 8),
                                 Align(
                                   alignment: Alignment.centerLeft,
-                                  child: StatusPill(
+                                  child: TintTag(
                                     current.active
                                         ? 'Đang có hiệu lực'
                                         : 'Không còn hiệu lực',
@@ -149,53 +158,61 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           'Gói và ngày hiệu lực sau thanh toán do máy chủ xác nhận. Gói khác có thể áp dụng từ kỳ kế tiếp.',
                         ),
                         if (payment != null)
-                          FcCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Giao dịch #${payment.orderCode} · ${payment.planName}',
-                                ),
-                                Text(
-                                  '${subscriptionMoney(payment.amount)} / ${payment.cycle.label.toLowerCase()}',
-                                ),
-                                Text(switch (payment.status) {
-                                  SubscriptionPaymentStatus.pending =>
-                                    'Chờ thanh toán',
-                                  SubscriptionPaymentStatus.paid =>
-                                    'Máy chủ đã ghi nhận thanh toán',
-                                  SubscriptionPaymentStatus.expired =>
-                                    'Giao dịch đã hết hạn',
-                                  SubscriptionPaymentStatus.cancelled =>
-                                    'Giao dịch đã hủy',
-                                  SubscriptionPaymentStatus.failed =>
-                                    'Giao dịch thất bại',
-                                }),
-                                if (payment.pending) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: OwnerCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    'Hạn thanh toán: ${DateFormat('dd/MM/yyyy HH:mm').format(payment.expiredAt.toUtc().add(const Duration(hours: 7)))} (giờ Việt Nam)',
+                                    'Giao dịch #${payment.orderCode} · ${payment.planName}',
                                   ),
+                                  Text(
+                                    '${subscriptionMoney(payment.amount)} / ${payment.cycle.label.toLowerCase()}',
+                                  ),
+                                  Text(switch (payment.status) {
+                                    SubscriptionPaymentStatus.pending =>
+                                      'Chờ thanh toán',
+                                    SubscriptionPaymentStatus.paid =>
+                                      'Máy chủ đã ghi nhận thanh toán',
+                                    SubscriptionPaymentStatus.expired =>
+                                      'Giao dịch đã hết hạn',
+                                    SubscriptionPaymentStatus.cancelled =>
+                                      'Giao dịch đã hủy',
+                                    SubscriptionPaymentStatus.failed =>
+                                      'Giao dịch thất bại',
+                                  }),
+                                  if (payment.pending) ...[
+                                    Text(
+                                      'Hạn thanh toán: ${DateFormat('dd/MM/yyyy HH:mm').format(payment.expiredAt.toUtc().add(const Duration(hours: 7)))} (giờ Việt Nam)',
+                                    ),
+                                    TextButton(
+                                      onPressed: locked
+                                          ? null
+                                          : cubit.openPayment,
+                                      child: const Text('Mở lại PayOS'),
+                                    ),
+                                  ],
                                   TextButton(
                                     onPressed: locked
                                         ? null
-                                        : cubit.openPayment,
-                                    child: const Text('Mở lại PayOS'),
+                                        : cubit.checkPayment,
+                                    child: const Text(
+                                      'Kiểm tra kết quả thanh toán',
+                                    ),
                                   ),
                                 ],
-                                TextButton(
-                                  onPressed: locked ? null : cubit.checkPayment,
-                                  child: const Text(
-                                    'Kiểm tra kết quả thanh toán',
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         if (state.paymentError != null)
-                          Text(
-                            state.paymentError!,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              state.paymentError!,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                             ),
                           ),
                         if (state.busy || state.checking)
@@ -203,7 +220,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         if (!state.loading &&
                             state.plans.isEmpty &&
                             state.error == null)
-                          const Text('Chưa có gói dịch vụ đang bán'),
+                          const OwnerMessage(
+                            icon: Icons.workspace_premium_outlined,
+                            text: 'Chưa có gói dịch vụ đang bán',
+                          ),
                         if (state.plans.isNotEmpty)
                           PlanComparison(plans: state.plans),
                       ],
@@ -211,26 +231,33 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   ),
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: Gap.screen),
+                  padding: const EdgeInsets.symmetric(horizontal: ownerPad),
                   sliver: SliverList.builder(
                     itemCount: state.plans.length,
                     itemBuilder: (context, index) {
                       final plan = state.plans[index],
                           price = state.cycle.price(state.plans[index]);
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: Gap.md),
-                        child: FcCard(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: OwnerCard(
+                          radius: 23,
+                          padding: const EdgeInsets.all(18),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 plan.name,
-                                style: Theme.of(context).textTheme.titleLarge,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -.5,
+                                ),
                               ),
+                              const SizedBox(height: 6),
                               if (plan.popular)
                                 Align(
                                   alignment: Alignment.centerLeft,
-                                  child: StatusPill(
+                                  child: TintTag(
                                     'Phổ biến',
                                     tone: context.fc.info,
                                   ),
@@ -238,6 +265,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                               if (plan.tagline != null) Text(plan.tagline!),
                               Text(
                                 '${subscriptionMoney(price)}${price == null ? '' : ' / ${state.cycle.label.toLowerCase()}'}',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
                               ),
                               Text(
                                 '${plan.maxBranches} chi nhánh · ${plan.maxCourts} sân',

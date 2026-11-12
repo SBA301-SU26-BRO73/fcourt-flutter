@@ -25,7 +25,7 @@ class PricingTimelineBar extends StatelessWidget {
   final List<PricingRule> rules;
   final void Function(PricingRule rule) onSegmentTap;
 
-  static const _barHeight = 56.0;
+  static const _barHeight = 48.0;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +45,7 @@ class PricingTimelineBar extends StatelessWidget {
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: scheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                   ),
@@ -102,9 +102,9 @@ class _Segment extends StatelessWidget {
       child: Material(
         key: Key('pricing-segment-${rule.id}'),
         color: color,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(10),
         child: InkWell(
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(10),
           onTap: onTap,
           child: Center(
             child: Padding(
@@ -132,7 +132,10 @@ class _HourTicks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.labelSmall;
+    final style = TextStyle(
+      fontSize: 9,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -154,12 +157,18 @@ class _LegendDot extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
-        width: 12,
-        height: 12,
+        width: 7,
+        height: 7,
         decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
       const SizedBox(width: 6),
-      Text(label, style: Theme.of(context).textTheme.bodySmall),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
     ],
   );
 }

@@ -10,7 +10,7 @@ class OccupancyGauge extends StatelessWidget {
 
   final double rate;
 
-  static const fillColor = ChartColors.peak;
+  static const fillColor = ChartColors.accent;
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +24,12 @@ class OccupancyGauge extends StatelessWidget {
           Text(
             formatPercent(value),
             key: const ValueKey('occupancy-gauge-value'),
-            style: Theme.of(context).textTheme.headlineMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -.5,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: Gap.sm),
           TweenAnimationBuilder<double>(
@@ -36,9 +40,9 @@ class OccupancyGauge extends StatelessWidget {
               borderRadius: BorderRadius.circular(Radii.pill),
               child: LinearProgressIndicator(
                 value: animated,
-                minHeight: 10,
+                minHeight: 8,
                 color: fillColor,
-                backgroundColor: scheme.surfaceContainerHighest,
+                backgroundColor: scheme.surfaceContainer,
               ),
             ),
           ),

@@ -72,11 +72,13 @@ void main() {
       );
       await tester.pumpWidget(FcourtApp(dependencies: dependencies));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Quản lý đơn đặt sân'));
-      await tester.tap(find.text('Quản lý đơn đặt sân'));
+      await tester.tap(find.text('Đơn'));
       await tester.pumpAndSettle();
       expect(find.byType(AdminBookingManagementScreen), findsOneWidget);
-      expect(bookings.calls, 2); // 1 lần cho thẻ "Đơn hôm nay" ở trang chủ + 1 lần cho màn quản lý
+      expect(
+        bookings.calls,
+        2,
+      ); // 1 lần cho thẻ "Đơn hôm nay" ở trang chủ + 1 lần cho màn quản lý
       await tester.pumpWidget(const SizedBox());
       user = customerUser;
       await tester.pumpWidget(FcourtApp(dependencies: dependencies));
@@ -86,7 +88,10 @@ void main() {
           .go('/admin/bookings');
       await tester.pumpAndSettle();
       expect(find.byType(AdminBookingManagementScreen), findsNothing);
-      expect(bookings.calls, 2); // 1 lần cho thẻ "Đơn hôm nay" ở trang chủ + 1 lần cho màn quản lý
+      expect(
+        bookings.calls,
+        2,
+      ); // 1 lần cho thẻ "Đơn hôm nay" ở trang chủ + 1 lần cho màn quản lý
       await tester.pumpWidget(const SizedBox());
     },
   );

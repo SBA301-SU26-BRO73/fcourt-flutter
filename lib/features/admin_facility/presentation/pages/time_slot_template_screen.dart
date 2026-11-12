@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../../domain/entities/clock_time.dart';
 import '../../domain/entities/slot_matrix.dart';
 import '../bloc/slot_template_bloc.dart';
@@ -75,9 +76,11 @@ class TimeSlotTemplateScreen extends StatelessWidget {
               case SlotTemplateStatus.loading:
                 return const Center(child: CircularProgressIndicator());
               case SlotTemplateStatus.loadFailure:
-                return FacilityErrorView(
-                  message: state.message ?? 'Không tải được thông tin sân',
-                  onRetry: () => context.read<SlotTemplateBloc>().add(
+                return OwnerMessage(
+                  icon: Icons.cloud_off_outlined,
+                  text: state.message ?? 'Không tải được thông tin sân',
+                  action: 'Thử lại',
+                  onAction: () => context.read<SlotTemplateBloc>().add(
                     const SlotTemplateStarted(),
                   ),
                 );
@@ -93,7 +96,7 @@ class TimeSlotTemplateScreen extends StatelessWidget {
             }
             return SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(ownerPad, 8, ownerPad, 16),
                 child: FilledButton.icon(
                   key: const Key('slot-apply'),
                   onPressed: state.request == null || state.applying
@@ -154,20 +157,22 @@ class _TemplateBody extends StatelessWidget {
     final bloc = context.read<SlotTemplateBloc>();
     final warning = _warning;
     final slots = state.slots;
-    final textTheme = Theme.of(context).textTheme;
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(ownerPad, 14, ownerPad, 8),
           sliver: SliverList.list(
             children: [
               Text(
                 state.court?.name ?? '',
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -.7,
                 ),
               ),
-              Text(
+              const SizedBox(height: 6),
+              OwnerNote(
                 '${state.branch?.name} · mở cửa '
                 '${state.branch?.openTime.format()}–'
                 '${state.branch?.closeTime.format()}',
@@ -249,7 +254,7 @@ class _TemplateBody extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: context.fc.warning.container,
-                    borderRadius: BorderRadius.circular(Radii.sm),
+                    borderRadius: BorderRadius.circular(Radii.md),
                   ),
                   child: Row(
                     children: [
@@ -268,17 +273,12 @@ class _TemplateBody extends StatelessWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 16),
-              Text(
-                'Xem trước: ${slots.length} slot/ngày',
-                style: textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
+              OwnerSectionTitle('Xem trước: ${slots.length} slot/ngày'),
             ],
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          padding: const EdgeInsets.fromLTRB(ownerPad, 0, ownerPad, 16),
           sliver: SlotMatrixPreview(slots: slots),
         ),
       ],

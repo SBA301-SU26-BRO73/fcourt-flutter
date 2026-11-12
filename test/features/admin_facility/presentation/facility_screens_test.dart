@@ -103,10 +103,9 @@ void main() {
         find.text('12 Nguyễn Hữu Thọ, Tân Hưng, Quận 7, TP. Hồ Chí Minh'),
         findsOneWidget,
       );
-      expect(find.text('Mở cửa 06:00 – 22:00'), findsOneWidget);
       expect(find.text('4 sân'), findsOneWidget);
 
-      await tester.tap(find.text('Thêm chi nhánh'));
+      await tester.tap(find.text('+ Chi nhánh'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Chúc mừng!'), findsOneWidget);
@@ -270,7 +269,7 @@ void main() {
       (tester) async {
         await _pump(tester, courtList());
 
-        expect(find.text('FCourt Quận 7'), findsOneWidget);
+        expect(find.textContaining('FCourt Quận 7'), findsOneWidget);
         expect(find.text('Hoạt động'), findsOneWidget);
         expect(find.text('Bảo trì'), findsWidgets);
         expect(find.text('Đang đóng'), findsOneWidget);

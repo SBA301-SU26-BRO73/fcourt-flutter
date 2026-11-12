@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../app/widgets/fc_widgets.dart';
+import '../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../../../core/error/failure.dart';
 import '../../report_export/domain/report_export.dart';
 import '../../report_export/presentation/revenue_export_button.dart';
@@ -173,6 +173,8 @@ class _AdminTransactionHistoryScreenState
   @override
   Widget build(BuildContext context) {
     final ledger = _ledger;
+    final colors = Theme.of(context).colorScheme;
+    const pillPad = EdgeInsets.symmetric(horizontal: 13, vertical: 10);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Đối soát tài chính'),
@@ -195,39 +197,104 @@ class _AdminTransactionHistoryScreenState
       body: RefreshIndicator(
         onRefresh: () => _load(reset: true),
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(ownerPad, 4, ownerPad, 24),
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            if (ledger != null)
-              FcCard(
-                child: Wrap(
-                  spacing: 20,
-                  runSpacing: 12,
-                  children: [
-                    Text(
-                      'Tổng thu\n${vnd(ledger.received)}',
-                      key: const ValueKey('ledger-received'),
-                    ),
-                    Text('Tổng hoàn tiền\n${vnd(ledger.refunded)}'),
-                    Text('Doanh thu thực tế\n${vnd(ledger.netRevenue)}'),
-                    Text('Chờ duyệt\n${vnd(ledger.pending)}'),
-                    Text('Bị từ chối\n${ledger.rejectedCount}'),
-                  ],
+            if (ledger != null) ...[
+              OwnerCard(
+                radius: 23,
+                padding: const EdgeInsets.all(18),
+                color: colors.primaryContainer,
+                bordered: false,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const OwnerNote('Doanh thu thực tế'),
+                      const SizedBox(height: 7),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          vnd(ledger.netRevenue),
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -1,
+                            color: colors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            TextField(
-              enabled: !_exporting,
-              controller: _search,
-              maxLength: 100,
-              decoration: const InputDecoration(
-                labelText: 'Tìm mã đơn, tên hoặc số điện thoại',
-                prefixIcon: Icon(Icons.search),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _Figure(
+                    'Tổng thu',
+                    vnd(ledger.received),
+                    key: const ValueKey('ledger-received'),
+                  ),
+                  const SizedBox(width: 12),
+                  _Figure('Tổng hoàn tiền', vnd(ledger.refunded)),
+                ],
               ),
-              onChanged: _changed,
-              onSubmitted: (_) => _load(reset: true),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _Figure('Chờ duyệt', vnd(ledger.pending)),
+                  const SizedBox(width: 12),
+                  _Figure('Bị từ chối', '${ledger.rejectedCount}'),
+                ],
+              ),
+              const SizedBox(height: 17),
+            ],
+            Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: colors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: colors.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search, size: 18, color: colors.onSurfaceVariant),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      enabled: !_exporting,
+                      controller: _search,
+                      maxLength: 100,
+                      style: const TextStyle(fontSize: 12),
+                      decoration: InputDecoration(
+                        isCollapsed: true,
+                        filled: false,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        counterText: '',
+                        hintText: 'Tìm mã đơn, tên hoặc số điện thoại',
+                        hintStyle: TextStyle(
+                          fontSize: 12,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      onChanged: _changed,
+                      onSubmitted: (_) => _load(reset: true),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(height: 14),
             Wrap(
-              spacing: 8,
+              spacing: 7,
+              runSpacing: 7,
               children: [
                 for (final pair in const {
                   'ALL': 'Mọi loại',
@@ -235,20 +302,24 @@ class _AdminTransactionHistoryScreenState
                   'REFUND': 'Hoàn tiền',
                   'WALK_IN_CASH': 'Tiền mặt',
                 }.entries)
-                  FilterChip(
-                    label: Text(pair.value),
+                  OwnerPill(
+                    pair.value,
+                    fontSize: 11,
+                    padding: pillPad,
                     selected: _type == pair.key,
-                    onSelected: _exporting
+                    onTap: _exporting
                         ? null
-                        : (_) {
+                        : () {
                             setState(() => _type = pair.key);
                             _load(reset: true);
                           },
                   ),
               ],
             ),
+            const SizedBox(height: 7),
             Wrap(
-              spacing: 8,
+              spacing: 7,
+              runSpacing: 7,
               children: [
                 for (final pair in const {
                   'ALL': 'Tất cả',
@@ -256,44 +327,53 @@ class _AdminTransactionHistoryScreenState
                   'PENDING': 'Chờ duyệt',
                   'REJECTED': 'Từ chối',
                 }.entries)
-                  ChoiceChip(
-                    label: Text(pair.value),
+                  OwnerPill(
+                    pair.value,
+                    fontSize: 11,
+                    padding: pillPad,
                     selected: _status == pair.key,
-                    onSelected: (_) {
+                    onTap: () {
                       setState(() => _status = pair.key);
                       _load(reset: true);
                     },
                   ),
-                ActionChip(
-                  label: Text(
-                    _range == null
-                        ? 'Khoảng ngày'
-                        : '${DateFormat('dd/MM/yyyy').format(_range!.start)} – ${DateFormat('dd/MM/yyyy').format(_range!.end)}',
+                OwnerPill(
+                  _range == null
+                      ? 'Khoảng ngày'
+                      : '${DateFormat('dd/MM/yyyy').format(_range!.start)} – ${DateFormat('dd/MM/yyyy').format(_range!.end)}',
+                  fontSize: 11,
+                  padding: pillPad,
+                  trailing: Icon(
+                    Icons.date_range,
+                    size: 14,
+                    color: colors.primary,
                   ),
-                  avatar: const Icon(Icons.date_range),
-                  onPressed: _dates,
+                  onTap: _dates,
                 ),
                 if (_range != null)
-                  ActionChip(
-                    label: const Text('Xóa ngày'),
-                    onPressed: () {
+                  OwnerPill(
+                    'Xóa ngày',
+                    fontSize: 11,
+                    padding: pillPad,
+                    onTap: () {
                       setState(() => _range = null);
                       _load(reset: true);
                     },
                   ),
               ],
             ),
+            const SizedBox(height: 17),
             if (_error != null) ...[
-              Text(_error!),
+              OwnerNote(_error!, color: colors.error, size: 12),
               TextButton(
                 onPressed: () => _load(reset: _items.isEmpty),
                 child: const Text('Thử lại'),
               ),
             ],
             if (!_loading && _error == null && _items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('Không có giao dịch phù hợp'),
+              const OwnerMessage(
+                icon: Icons.account_balance_wallet_outlined,
+                text: 'Không có giao dịch phù hợp',
               ),
             ..._items.map((e) => TransactionTile(entry: e)),
             if (_loading) const Center(child: CircularProgressIndicator()),
@@ -307,4 +387,40 @@ class _AdminTransactionHistoryScreenState
       ),
     );
   }
+}
+
+/// Thẻ số liệu của sổ đối soát (`.kpi-pair`): nhãn nhỏ, giá trị 17 đậm.
+class _Figure extends StatelessWidget {
+  const _Figure(this.label, this.value, {super.key});
+  final String label, value;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: OwnerCard(
+      radius: 20,
+      padding: const EdgeInsets.fromLTRB(15, 14, 15, 14),
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            OwnerNote(label),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

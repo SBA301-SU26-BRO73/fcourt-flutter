@@ -6,6 +6,7 @@ import '../../../../app/widgets/fc_widgets.dart';
 import '../../domain/entities/analytics.dart';
 import '../bloc/analytics_bloc.dart';
 import '../widgets/compact_currency.dart';
+import '../widgets/owner_ui.dart';
 import '../widgets/occupancy_gauge.dart';
 import '../widgets/peak_hours_bar_chart.dart';
 import '../widgets/revenue_line_chart.dart';
@@ -34,73 +35,27 @@ class AnalyticsScreen extends StatelessWidget {
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(ownerPad, 0, ownerPad, Gap.xl),
               children: [
-                _BranchDropdown(state: state),
-                const SizedBox(height: 16),
+                OwnerBranchPicker(
+                  key: ValueKey('analytics-branch-${state.branches.length}'),
+                  branches: state.branches,
+                  selectedId: state.selectedBranchId,
+                  message: state.branchesMessage,
+                  onSelected: (id) => bloc.add(AnalyticsBranchChanged(id)),
+                ),
                 _RevenueSection(state: state),
-                const SizedBox(height: 16),
+                const SizedBox(height: 13),
                 _OccupancySection(state: state),
-                const SizedBox(height: 16),
+                const SizedBox(height: 13),
                 _TopCourtsSection(state: state),
-                const SizedBox(height: 16),
+                const SizedBox(height: 13),
                 _PeakHoursSection(state: state),
               ],
             ),
           );
         },
       ),
-    );
-  }
-}
-
-class _BranchDropdown extends StatelessWidget {
-  const _BranchDropdown({required this.state});
-
-  final AnalyticsState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final selected = state.branches.any((b) => b.id == state.selectedBranchId)
-        ? state.selectedBranchId
-        : null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DropdownButtonFormField<int?>(
-          key: ValueKey('analytics-branch-${state.branches.length}'),
-          initialValue: selected,
-          isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Chi nhánh',
-            prefixIcon: Icon(Icons.store_mall_directory_outlined),
-          ),
-          items: [
-            const DropdownMenuItem<int?>(
-              value: null,
-              child: Text('Tất cả chi nhánh'),
-            ),
-            for (final branch in state.branches)
-              DropdownMenuItem<int?>(
-                value: branch.id,
-                child: Text(branch.name),
-              ),
-          ],
-          onChanged: (id) =>
-              context.read<AnalyticsBloc>().add(AnalyticsBranchChanged(id)),
-        ),
-        if (state.branchesMessage != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 4, left: 12),
-            child: Text(
-              'Không tải được danh sách chi nhánh: ${state.branchesMessage}',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: 12,
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
@@ -120,15 +75,26 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FcCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          if (filters != null) ...[const SizedBox(height: 8), filters!],
-          const SizedBox(height: 12),
-          child,
-        ],
+    return OwnerCard(
+      padding: const EdgeInsets.all(16),
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            if (filters != null) ...[const SizedBox(height: 12), filters!],
+            const SizedBox(height: 14),
+            child,
+          ],
+        ),
       ),
     );
   }
@@ -226,13 +192,14 @@ class _RevenueSection extends StatelessWidget {
       title: 'Doanh thu',
       filters: Wrap(
         spacing: 8,
+        runSpacing: 8,
         children: [
           for (final range in RevenueRange.values)
-            ChoiceChip(
+            OwnerPill(
+              range.label,
               key: ValueKey('range-${range.name}'),
-              label: Text(range.label),
               selected: state.range == range,
-              onSelected: (_) => context.read<AnalyticsBloc>().add(
+              onTap: () => context.read<AnalyticsBloc>().add(
                 AnalyticsRangeChanged(range),
               ),
             ),
@@ -351,13 +318,14 @@ class _PeriodFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Wrap(
       spacing: 8,
+      runSpacing: 8,
       children: [
         for (final period in AnalyticsPeriod.values)
-          ChoiceChip(
+          OwnerPill(
+            _labels[period]!,
             key: ValueKey('period-${period.name}'),
-            label: Text(_labels[period]!),
             selected: selected == period,
-            onSelected: (_) => context.read<AnalyticsBloc>().add(
+            onTap: () => context.read<AnalyticsBloc>().add(
               AnalyticsPeriodChanged(period),
             ),
           ),

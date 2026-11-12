@@ -19,6 +19,7 @@ import '../features/subscription/presentation/subscription_cubit.dart';
 import '../features/subscription/presentation/subscription_screen.dart';
 import '../features/admin_bookings/domain/admin_booking_status.dart';
 import '../features/admin_bookings/presentation/admin_booking_cubit.dart';
+import '../features/admin_dashboard/presentation/pages/owner_home_page.dart';
 import '../features/admin_dashboard/presentation/widgets/owner_todo_panel.dart';
 import '../features/admin_bookings/presentation/admin_booking_management_screen.dart';
 import '../features/vouchers/presentation/voucher_cubit.dart';
@@ -717,35 +718,60 @@ GoRouter createRouter(
           ),
           FcRoute(
             path: AppRoutes.home,
-            builder: (context, state) =>
-                authBloc.state.role == UserRole.staff &&
-                    dependencies.operations != null
-                ? StaffTodayScreen(repository: dependencies.operations!)
-                : authBloc.state.role == UserRole.customer
-                ? CustomerHomeScreen(
-                    repository: dependencies.discoveryRepository,
-                  )
-                : HomePage(
-                    discoveryRepository: dependencies.discoveryRepository,
-                    adminTodo:
-                        authBloc.state.role == UserRole.admin &&
-                            dependencies.adminFacility != null
-                        ? OwnerTodoPanel(
-                            loader: OwnerTodoLoader(
-                              branches:
-                                  dependencies.adminFacility!.branchRepository,
-                              payments: dependencies.adminPaymentRepository,
-                              refunds: dependencies.adminRefunds,
-                              bookings: dependencies.adminBookings,
-                            ),
-                            onReceipts: (id) =>
-                                context.push('/admin/branches/$id/payments'),
-                            onRefunds: (id) =>
-                                context.push('/admin/branches/$id/refunds'),
-                            onToday: () => context.go('/admin/bookings'),
-                          )
-                        : null,
+            builder: (context, state) {
+              final role = authBloc.state.role;
+              if (role == UserRole.staff && dependencies.operations != null) {
+                return StaffTodayScreen(repository: dependencies.operations!);
+              }
+              if (role == UserRole.customer) {
+                return CustomerHomeScreen(
+                  repository: dependencies.discoveryRepository,
+                );
+              }
+              if (role == UserRole.admin &&
+                  dependencies.adminFacility != null) {
+                return OwnerHomePage(
+                  loader: OwnerTodoLoader(
+                    branches: dependencies.adminFacility!.branchRepository,
+                    payments: dependencies.adminPaymentRepository,
+                    refunds: dependencies.adminRefunds,
+                    bookings: dependencies.adminBookings,
                   ),
+                  onReceipts: (id) =>
+                      context.push('/admin/branches/$id/payments'),
+                  onRefunds: (id) =>
+                      context.push('/admin/branches/$id/refunds'),
+                  onToday: () => context.go('/admin/bookings'),
+                  onOverview: () => context.push('/admin/dashboard'),
+                  onNotifications: () => context.push('/notifications'),
+                  shortcuts: [
+                    OwnerShortcut(
+                      'Phân tích',
+                      Icons.insights_outlined,
+                      () => context.push('/admin/analytics'),
+                    ),
+                    OwnerShortcut(
+                      'Nhân viên',
+                      Icons.badge_outlined,
+                      () => context.push('/admin/staff'),
+                    ),
+                    OwnerShortcut(
+                      'Gói dịch vụ',
+                      Icons.workspace_premium_outlined,
+                      () => context.push('/admin/subscription'),
+                    ),
+                    OwnerShortcut(
+                      'Voucher',
+                      Icons.local_offer_outlined,
+                      () => context.push('/admin/vouchers'),
+                    ),
+                  ],
+                );
+              }
+              return HomePage(
+                discoveryRepository: dependencies.discoveryRepository,
+              );
+            },
           ),
           FcRoute(
             path: AppRoutes.catalog,

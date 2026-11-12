@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
 import '../domain/admin_booking_status.dart';
 
 class BookingStatusBadge extends StatelessWidget {
@@ -19,5 +20,5 @@ class BookingStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      StatusPill(status.label, tone: tone(context, status));
+      TintTag(status.label, tone: tone(context, status));
 }

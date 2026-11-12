@@ -1,28 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../../app/widgets/fc_widgets.dart';
 import '../../../report_export/domain/report_export.dart';
 import '../../../report_export/presentation/revenue_export_button.dart';
 import '../../domain/entities/dashboard_stats.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../widgets/booking_status_pie_chart.dart';
-import '../widgets/compact_currency.dart';
-import '../../../../app/widgets/fc_widgets.dart';
+import '../widgets/owner_ui.dart';
+import '../widgets/week_revenue_chart.dart';
 
-/// SCRUM-13: tổng quan doanh thu, lượt đặt, sân hoạt động và tỷ lệ lấp đầy.
+/// SCRUM-13: tổng quan doanh thu (mockup 06): banner doanh thu, lấp đầy và số
+/// đơn, doanh thu 7 ngày, trạng thái đơn.
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({
     super.key,
-    this.onOpenBranches,
     this.exportRepository,
     this.fileOpener,
-    this.onOpenAnalytics,
   });
-
-  final VoidCallback? onOpenBranches;
-  final VoidCallback? onOpenAnalytics;
 
   /// SCRUM-77: có cả hai thì thanh công cụ có nút xuất báo cáo doanh thu.
   final RevenueReportRepository? exportRepository;
@@ -32,7 +29,7 @@ class AdminDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tổng quan'),
+        title: const Text('Tổng quan doanh thu'),
         actions: [
           if (exportRepository != null && fileOpener != null)
             BlocBuilder<DashboardBloc, DashboardState>(
@@ -46,39 +43,6 @@ class AdminDashboardScreen extends StatelessWidget {
                 initialBranchId: state.selectedBranchId,
               ),
             ),
-          PopupMenuButton<String>(
-            tooltip: 'Thêm tùy chọn',
-            onSelected: (value) => switch (value) {
-              'analytics' => onOpenAnalytics?.call(),
-              'plan' => context.push('/admin/subscription'),
-              _ => onOpenBranches?.call(),
-            },
-            itemBuilder: (_) => [
-              if (onOpenAnalytics != null)
-                const PopupMenuItem(
-                  value: 'analytics',
-                  child: ListTile(
-                    leading: Icon(Icons.insights_outlined),
-                    title: Text('Phân tích'),
-                  ),
-                ),
-              const PopupMenuItem(
-                value: 'plan',
-                child: ListTile(
-                  leading: Icon(Icons.workspace_premium_outlined),
-                  title: Text('Gói dịch vụ'),
-                ),
-              ),
-              if (onOpenBranches != null)
-                const PopupMenuItem(
-                  value: 'branches',
-                  child: ListTile(
-                    leading: Icon(Icons.store_mall_directory_outlined),
-                    title: Text('Chi nhánh'),
-                  ),
-                ),
-            ],
-          ),
         ],
       ),
       body: BlocBuilder<DashboardBloc, DashboardState>(
@@ -93,10 +57,15 @@ class AdminDashboardScreen extends StatelessWidget {
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(ownerPad, 0, ownerPad, Gap.xl),
               children: [
-                _BranchDropdown(state: state),
-                const SizedBox(height: 16),
+                OwnerBranchPicker(
+                  key: ValueKey('dashboard-branch-${state.branches.length}'),
+                  branches: state.branches,
+                  selectedId: state.selectedBranchId,
+                  message: state.branchesMessage,
+                  onSelected: (id) => bloc.add(DashboardBranchChanged(id)),
+                ),
                 ..._content(context, state),
               ],
             ),
@@ -110,225 +79,250 @@ class AdminDashboardScreen extends StatelessWidget {
     final stats = state.stats;
     switch (state.status) {
       case DashboardStatus.loading:
-        // Lần tải đầu: khung xương. Đổi chi nhánh: giữ biểu đồ đang hiển thị
-        // để fl_chart chuyển động mượt sang số liệu mới, chỉ phủ shimmer lên
-        // các thẻ số liệu.
+        // Lần tải đầu: khung xương. Đổi chi nhánh: giữ số liệu đang hiển thị
+        // và phủ shimmer lên khối số liệu.
         if (stats == null) return const [DashboardSkeleton()];
-        return _statsContent(context, stats, loading: true);
+        return _statsContent(context, state, stats, loading: true);
       case DashboardStatus.failure:
         return [
           const SizedBox(height: 48),
-          Icon(
-            Icons.cloud_off_outlined,
-            size: 48,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            state.message ?? 'Không tải được số liệu',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: FilledButton.tonal(
-              onPressed: () =>
-                  context.read<DashboardBloc>().add(const DashboardRefreshed()),
-              child: const Text('Thử lại'),
-            ),
+          OwnerMessage(
+            icon: Icons.cloud_off_outlined,
+            text: state.message ?? 'Không tải được số liệu',
+            action: 'Thử lại',
+            onAction: () =>
+                context.read<DashboardBloc>().add(const DashboardRefreshed()),
           ),
         ];
       case DashboardStatus.success:
         if (stats == null) return const [];
-        return _statsContent(context, stats, loading: false);
+        return _statsContent(context, state, stats, loading: false);
     }
   }
 
   List<Widget> _statsContent(
     BuildContext context,
+    DashboardState state,
     DashboardStats stats, {
     required bool loading,
   }) {
     final scheme = Theme.of(context).colorScheme;
-    final grid = _StatGrid(stats: stats);
+    final figures = _Figures(stats: stats);
+    final week = state.weekRevenue;
+    final updated = state.updatedAt ?? DateTime.now();
     return [
       loading
           ? Shimmer.fromColors(
               key: const ValueKey('dashboard-stats-loading'),
               baseColor: scheme.surfaceContainerHighest,
               highlightColor: scheme.surface,
-              child: grid,
+              child: figures,
             )
-          : grid,
-      const SizedBox(height: 16),
-      FcCard(
-        key: const ValueKey('dashboard-chart'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Trạng thái đặt sân',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            BookingStatusPieChart(counts: stats.bookingStatusCounts),
-          ],
+          : figures,
+      if (week != null && week.points.isNotEmpty)
+        _Panel(
+          key: const ValueKey('dashboard-week'),
+          title: 'Doanh thu 7 ngày',
+          trailing: 'Triệu đồng',
+          bottom:
+              '${DateFormat('dd').format(week.from)}–'
+              '${DateFormat('dd/MM/yyyy').format(week.to)} · '
+              'Cập nhật lúc ${DateFormat('HH:mm').format(updated)}',
+          child: WeekRevenueChart(points: week.points),
         ),
+      _Panel(
+        key: const ValueKey('dashboard-chart'),
+        title: 'Trạng thái đơn',
+        child: BookingStatusPieChart(counts: stats.bookingStatusCounts),
       ),
     ];
   }
 }
 
-class _BranchDropdown extends StatelessWidget {
-  const _BranchDropdown({required this.state});
+/// Banner doanh thu + hai thẻ lấp đầy / số đơn.
+class _Figures extends StatelessWidget {
+  const _Figures({required this.stats});
 
-  final DashboardState state;
+  final DashboardStats stats;
+
+  static String _vnd(int v) => NumberFormat.decimalPattern('vi_VN').format(v);
+
+  static String _percent(double ratio) {
+    final value = (ratio * 1000).roundToDouble() / 10;
+    return value == value.roundToDouble()
+        ? '${value.toInt()}'
+        : value.toStringAsFixed(1).replaceAll('.', ',');
+  }
 
   @override
   Widget build(BuildContext context) {
-    final selected = state.branches.any((b) => b.id == state.selectedBranchId)
-        ? state.selectedBranchId
-        : null;
+    final colors = Theme.of(context).colorScheme;
+    final good = context.fc.success.color;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DropdownButtonFormField<int?>(
-          key: ValueKey('dashboard-branch-${state.branches.length}'),
-          initialValue: selected,
-          isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Chi nhánh',
-            prefixIcon: Icon(Icons.store_mall_directory_outlined),
-          ),
-          items: [
-            const DropdownMenuItem<int?>(
-              value: null,
-              child: Text('Tất cả chi nhánh'),
+        OwnerCard(
+          radius: 23,
+          padding: const EdgeInsets.all(18),
+          color: colors.primaryContainer,
+          bordered: false,
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const OwnerNote('Tổng doanh thu'),
+                const SizedBox(height: 7),
+                _Big(_vnd(stats.totalRevenue), 'đ', size: 34, unit: 20),
+                const SizedBox(height: 9),
+                Text(
+                  'Hôm nay ${_vnd(stats.todayRevenue)}đ',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: good,
+                  ),
+                ),
+              ],
             ),
-            for (final branch in state.branches)
-              DropdownMenuItem<int?>(
-                value: branch.id,
-                child: Text(branch.name),
-              ),
-          ],
-          onChanged: (id) =>
-              context.read<DashboardBloc>().add(DashboardBranchChanged(id)),
+          ),
         ),
-        if (state.branchesMessage != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 4, left: 12),
-            child: Text(
-              'Không tải được danh sách chi nhánh: ${state.branchesMessage}',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: 12,
-              ),
+        Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 17),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: OwnerCard(
+                    radius: 20,
+                    padding: const EdgeInsets.fromLTRB(15, 18, 15, 17),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const OwnerNote('Tỷ lệ lấp đầy'),
+                        const SizedBox(height: 8),
+                        _Big(_percent(stats.occupancyRate), '%'),
+                        const SizedBox(height: 9),
+                        const OwnerNote('Trong kỳ báo cáo'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OwnerCard(
+                    radius: 20,
+                    padding: const EdgeInsets.fromLTRB(15, 18, 15, 17),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const OwnerNote('Số đơn'),
+                        const SizedBox(height: 8),
+                        _Big('${stats.totalBookings}', ''),
+                        const SizedBox(height: 9),
+                        OwnerNote(
+                          '${stats.activeCourts}/${stats.totalCourts} sân hoạt động',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+        ),
       ],
     );
   }
 }
 
-class _StatGrid extends StatelessWidget {
-  const _StatGrid({required this.stats});
-
-  final DashboardStats stats;
+/// Số lớn kèm đơn vị nhỏ (`34px` + `20px`, hoặc `28px` + `17px`).
+class _Big extends StatelessWidget {
+  const _Big(this.value, this.unitText, {this.size = 28, this.unit = 17});
+  final String value, unitText;
+  final double size, unit;
 
   @override
   Widget build(BuildContext context) {
-    final cards = [
-      StatCard(
-        icon: Icons.payments_outlined,
-        color: ChartColors.success,
-        label: 'Tổng doanh thu',
-        value: formatCompactVnd(stats.totalRevenue),
-        caption: 'Hôm nay ${formatCompactVnd(stats.todayRevenue)}',
+    final colors = Theme.of(context).colorScheme;
+    final accent = size > 30;
+    final color = accent ? colors.primary : colors.onSurface;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Text.rich(
+        TextSpan(
+          text: value,
+          style: TextStyle(
+            fontSize: size,
+            fontWeight: FontWeight.w700,
+            letterSpacing: accent ? -1.2 : -.5,
+            height: accent ? 1.28 : 1.2,
+            color: color,
+          ),
+          children: [
+            if (unitText.isNotEmpty)
+              TextSpan(
+                text: unitText,
+                style: TextStyle(fontSize: unit, fontWeight: FontWeight.w700),
+              ),
+          ],
+        ),
       ),
-      StatCard(
-        icon: Icons.event_available_outlined,
-        color: ChartColors.info,
-        label: 'Lượt đặt sân',
-        value: '${stats.totalBookings}',
-      ),
-      StatCard(
-        icon: Icons.sports_tennis,
-        color: ChartColors.accent,
-        label: 'Sân hoạt động',
-        value: '${stats.activeCourts}/${stats.totalCourts}',
-      ),
-      StatCard(
-        icon: Icons.donut_large,
-        color: ChartColors.peak,
-        label: 'Tỷ lệ lấp đầy',
-        value: formatPercent(stats.occupancyRate),
-      ),
-    ];
-    return _TwoColumnGrid(children: cards);
+    );
   }
 }
 
-/// Lưới 2x2 không cuộn riêng (nằm trong ListView của màn hình).
-class _TwoColumnGrid extends StatelessWidget {
-  const _TwoColumnGrid({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) => GridView.count(
-    crossAxisCount: 2,
-    shrinkWrap: true,
-    physics: const NeverScrollableScrollPhysics(),
-    mainAxisSpacing: 12,
-    crossAxisSpacing: 12,
-    childAspectRatio: 1.25,
-    children: children,
-  );
-}
-
-class StatCard extends StatelessWidget {
-  const StatCard({
+/// Khung biểu đồ (`.chart-panel`): viền 1px, bo 22, đệm 16.
+class _Panel extends StatelessWidget {
+  const _Panel({
     super.key,
-    required this.icon,
-    required this.color,
-    required this.label,
-    required this.value,
-    this.caption,
+    required this.title,
+    required this.child,
+    this.trailing,
+    this.bottom,
   });
-
-  final IconData icon;
-  final Color color;
-  final String label;
-  final String value;
-  final String? caption;
+  final String title;
+  final Widget child;
+  final String? trailing, bottom;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return FcCard(
-      padding: const EdgeInsets.all(Gap.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: color.withValues(alpha: 0.15),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const Spacer(),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 13),
+      child: OwnerCard(
+        padding: const EdgeInsets.all(16),
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                  ),
+                  if (trailing != null) OwnerNote(trailing!, size: 9),
+                ],
               ),
-            ),
+              const SizedBox(height: 14),
+              child,
+              if (bottom != null) ...[
+                const SizedBox(height: 13),
+                OwnerNote(bottom!, size: 9),
+              ],
+            ],
           ),
-          Text(label, style: textTheme.bodySmall),
-          if (caption != null)
-            Text(caption!, style: textTheme.labelSmall?.copyWith(color: color)),
-        ],
+        ),
       ),
     );
   }
@@ -341,11 +335,11 @@ class DashboardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    Widget block({double? height}) => Container(
+    Widget block(double height, double radius) => Container(
       height: height,
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(Radii.md),
+        borderRadius: BorderRadius.circular(radius),
       ),
     );
     return Shimmer.fromColors(
@@ -353,9 +347,17 @@ class DashboardSkeleton extends StatelessWidget {
       highlightColor: scheme.surface,
       child: Column(
         children: [
-          _TwoColumnGrid(children: [for (var i = 0; i < 4; i++) block()]),
-          const SizedBox(height: 16),
-          block(height: 260),
+          block(120, 23),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: block(110, 20)),
+              const SizedBox(width: 12),
+              Expanded(child: block(110, 20)),
+            ],
+          ),
+          const SizedBox(height: 17),
+          block(220, 22),
         ],
       ),
     );

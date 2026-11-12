@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../app/widgets/wp3b_widgets.dart';
 import '../../../app/widgets/fc_widgets.dart';
+import '../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../../../core/error/failure.dart';
 import '../../../core/network/command_key.dart';
 import '../domain/staff.dart';
@@ -106,6 +108,8 @@ class _StaffViewState extends State<_StaffView> {
         floatingActionButton: state.branchId == null
             ? null
             : FloatingActionButton.extended(
+                shape: const StadiumBorder(),
+                elevation: 2,
                 onPressed: _busy ? null : () => _edit(state),
                 icon: const Icon(Icons.person_add_outlined),
                 label: const Text('Thêm nhân viên'),
@@ -120,41 +124,32 @@ class _StaffViewState extends State<_StaffView> {
                     : cubit.load(state.branchId!),
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(
-                    Gap.screen,
-                    Gap.lg,
-                    Gap.screen,
+                    ownerPad,
+                    Gap.sm,
+                    ownerPad,
                     Gap.fabClearance,
                   ),
                   children: [
-                    Text(
-                      'Đội ngũ tại cơ sở',
-                      style: Theme.of(context).textTheme.headlineSmall,
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6, bottom: 4),
+                      child: Text(
+                        'Đội ngũ tại cơ sở',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -.7,
+                        ),
+                      ),
                     ),
+                    const SizedBox(height: 6),
+                    const OwnerNote('Phân công và quản lý người vận hành sân'),
                     const SizedBox(height: 16),
                     if (state.branches.isNotEmpty)
-                      DropdownButtonFormField<int>(
+                      _BranchPicker(
                         key: ValueKey(state.branchId),
-                        initialValue: state.branchId,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Chi nhánh',
-                        ),
-                        items: state.branches
-                            .map(
-                              (b) => DropdownMenuItem(
-                                value: b.id,
-                                child: Text(
-                                  b.name,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: _busy
-                            ? null
-                            : (id) {
-                                if (id != null) cubit.load(id);
-                              },
+                        state: state,
+                        enabled: !_busy,
+                        onSelected: cubit.load,
                       ),
                     if (state.loading)
                       const Padding(
@@ -162,40 +157,27 @@ class _StaffViewState extends State<_StaffView> {
                         child: LinearProgressIndicator(),
                       ),
                     if (state.error != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Column(
-                          children: [
-                            Text(
-                              state.error!,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => state.branchId == null
-                                  ? cubit.initialize()
-                                  : cubit.load(state.branchId!),
-                              child: const Text('Thử lại'),
-                            ),
-                          ],
-                        ),
+                      OwnerMessage(
+                        icon: Icons.cloud_off_outlined,
+                        text: state.error!,
+                        action: 'Thử lại',
+                        onAction: () => state.branchId == null
+                            ? cubit.initialize()
+                            : cubit.load(state.branchId!),
                       ),
                     if (!state.loading &&
                         state.error == null &&
                         state.members.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 32),
-                        child: Text(
-                          state.branches.isEmpty
-                              ? 'Chưa có chi nhánh đang hoạt động để quản lý nhân viên.'
-                              : 'Chưa có nhân viên. Chọn “Thêm nhân viên” để phân công người vận hành.',
-                        ),
+                      OwnerMessage(
+                        icon: Icons.badge_outlined,
+                        text: state.branches.isEmpty
+                            ? 'Chưa có chi nhánh đang hoạt động để quản lý nhân viên.'
+                            : 'Chưa có nhân viên. Chọn “Thêm nhân viên” để phân công người vận hành.',
                       ),
                     ...state.members.map(
                       (m) => Padding(
-                        padding: const EdgeInsets.only(bottom: Gap.md),
-                        child: FcCard(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: OwnerCard(
                           onTap: _busy || !m.active
                               ? null
                               : () => _edit(state, m),
@@ -204,67 +186,75 @@ class _StaffViewState extends State<_StaffView> {
                             children: [
                               Row(
                                 children: [
-                                  CircleAvatar(
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer,
+                                    ),
                                     child: Text(
                                       m.name.isEmpty
                                           ? '?'
                                           : m.name.characters.first
                                                 .toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: Gap.md),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       m.name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
+                                  ),
+                                  Flexible(
+                                    child: m.active
+                                        ? TintTag(
+                                            'Đang hoạt động',
+                                            tone: context.fc.success,
+                                          )
+                                        : TintTag(
+                                            'Đã khóa',
+                                            tone: context.fc.danger,
+                                          ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: Gap.sm),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: m.active
-                                    ? StatusPill(
-                                        'Đang hoạt động',
-                                        tone: context.fc.success,
-                                      )
-                                    : StatusPill(
-                                        'Đã khóa',
-                                        tone: context.fc.danger,
-                                      ),
-                              ),
-                              const SizedBox(height: Gap.sm),
-                              Text(m.email),
-                              Text(m.phone),
-                              Text(
+                              const SizedBox(height: 12),
+                              OwnerNote(m.email),
+                              OwnerNote(m.phone),
+                              OwnerNote(
                                 state.branches
                                     .where((b) => b.id == m.branchId)
                                     .map((b) => b.name)
                                     .join(),
                               ),
-                              const SizedBox(height: Gap.xs),
+                              const SizedBox(height: 10),
                               Align(
                                 alignment: Alignment.centerRight,
-                                child: TextButton.icon(
-                                  style: m.active
-                                      ? TextButton.styleFrom(
-                                          foregroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .error,
-                                        )
-                                      : null,
+                                child: OwnerPillButton(
+                                  label: m.active
+                                      ? 'Khóa tài khoản'
+                                      : 'Mở khóa',
+                                  icon: m.active
+                                      ? Icons.lock_outline
+                                      : Icons.lock_open,
+                                  filled: false,
+                                  danger: m.active,
                                   onPressed: _busy ? null : () => _toggle(m),
-                                  icon: Icon(
-                                    m.active
-                                        ? Icons.lock_outline
-                                        : Icons.lock_open,
-                                  ),
-                                  label: Text(
-                                    m.active ? 'Khóa tài khoản' : 'Mở khóa',
-                                  ),
                                 ),
                               ),
                             ],
@@ -288,4 +278,66 @@ class _StaffViewState extends State<_StaffView> {
       );
     },
   );
+}
+
+/// Dòng "Chi nhánh X" + pill đổi chi nhánh (kiểu `.period-picker`).
+class _BranchPicker extends StatelessWidget {
+  const _BranchPicker({
+    super.key,
+    required this.state,
+    required this.enabled,
+    required this.onSelected,
+  });
+  final StaffState state;
+  final bool enabled;
+  final void Function(int id) onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final current = state.branches
+        .where((b) => b.id == state.branchId)
+        .firstOrNull;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: PopupMenuButton<int>(
+        enabled: enabled,
+        tooltip: 'Đổi chi nhánh',
+        position: PopupMenuPosition.under,
+        onSelected: onSelected,
+        itemBuilder: (_) => [
+          for (final b in state.branches)
+            PopupMenuItem(value: b.id, child: Text(b.name)),
+        ],
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                current == null
+                    ? 'Chọn chi nhánh'
+                    : 'Chi nhánh ${current.name}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onSurface,
+                ),
+              ),
+            ),
+            Flexible(
+              child: OwnerPill(
+                'Đổi chi nhánh',
+                trailing: Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 14,
+                  color: colors.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

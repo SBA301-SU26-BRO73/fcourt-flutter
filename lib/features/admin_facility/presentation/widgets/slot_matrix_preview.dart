@@ -28,7 +28,7 @@ class SlotMatrixPreview extends StatelessWidget {
           key: Key('slot-${slot.startTime.format()}'),
           decoration: BoxDecoration(
             color: scheme.primaryContainer,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -38,15 +38,17 @@ class SlotMatrixPreview extends StatelessWidget {
               Text(
                 '${slot.startTime.format()}–${slot.endTime.format()}',
                 style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: scheme.onPrimaryContainer,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
                 ),
               ),
               Text(
                 formatVnd(slot.price),
                 style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onPrimaryContainer,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.primary,
                 ),
               ),
             ],

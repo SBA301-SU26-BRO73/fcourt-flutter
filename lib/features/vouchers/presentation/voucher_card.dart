@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
+import '../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../domain/voucher.dart';
 
+/// Thẻ voucher: mã + công tắc, thẻ trạng thái, mức giảm nổi bật màu nhấn,
+/// các điều kiện, lượt dùng và nút sửa.
 class VoucherCard extends StatelessWidget {
   const VoucherCard({
     super.key,
@@ -26,6 +30,7 @@ class VoucherCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final row = voucher;
+    final colors = Theme.of(context).colorScheme;
     final expired = row.expiredAt(now);
     final (label, tone) = expired
         ? ('Hết hạn', context.fc.danger)
@@ -38,7 +43,12 @@ class VoucherCard extends StatelessWidget {
         : ('Còn hiệu lực', context.fc.success);
     String money(int amount) =>
         '${NumberFormat('#,##0.##', 'vi').format(amount / 100)} đ';
-    return FcCard(
+    final discount = row.type == VoucherDiscountType.percentage
+        ? 'Giảm ${NumberFormat('0.##', 'vi').format(row.valueMinor / 100)}%'
+        : 'Giảm ${money(row.valueMinor)}';
+    return OwnerCard(
+      radius: 23,
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -47,7 +57,12 @@ class VoucherCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   row.code,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -.3,
+                    color: colors.onSurface,
+                  ),
                 ),
               ),
               Semantics(
@@ -61,31 +76,71 @@ class VoucherCard extends StatelessWidget {
           ),
           Align(
             alignment: Alignment.centerLeft,
-            child: StatusPill(label, tone: tone),
+            child: TintTag(label, tone: tone),
           ),
-          const SizedBox(height: 8),
-          Text(
-            row.type == VoucherDiscountType.percentage
-                ? 'Giảm ${NumberFormat('0.##', 'vi').format(row.valueMinor / 100)}%'
-                : 'Giảm ${money(row.valueMinor)}',
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colors.primaryContainer,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Text(
+              discount,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -.6,
+                color: colors.primary,
+              ),
+            ),
           ),
-          if (row.capMinor != null) Text('Tối đa: ${money(row.capMinor!)}'),
-          Text('Đơn tối thiểu: ${money(row.minOrderMinor)}'),
-          TextButton(
-            onPressed: busy || blocked ? null : onUsage,
-            child: Text('Đã dùng: ${row.usedCount} / ${row.limit} lượt'),
-          ),
-          Text(
+          const SizedBox(height: 12),
+          if (row.capMinor != null) ...[
+            OwnerNote('Tối đa: ${money(row.capMinor!)}'),
+            const SizedBox(height: 2),
+          ],
+          OwnerNote('Đơn tối thiểu: ${money(row.minOrderMinor)}'),
+          const SizedBox(height: 2),
+          OwnerNote(
             'Hạn: ${DateFormat('dd/MM/yyyy HH:mm').format(row.endsAt.toUtc().add(const Duration(hours: 7)))} (giờ Việt Nam)',
           ),
-          if (busy) const LinearProgressIndicator(),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: busy || blocked ? null : onEdit,
-              icon: const Icon(Icons.edit_outlined),
-              label: const Text('Chỉnh sửa'),
-            ),
+          if (busy) ...[
+            const SizedBox(height: 8),
+            const LinearProgressIndicator(),
+          ],
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Divider(height: 1, color: colors.outlineVariant),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    alignment: Alignment.centerLeft,
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 36),
+                  ),
+                  onPressed: busy || blocked ? null : onUsage,
+                  child: Text(
+                    'Đã dùng: ${row.usedCount} / ${row.limit} lượt',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              OwnerPillButton(
+                label: 'Chỉnh sửa',
+                icon: Icons.edit_outlined,
+                filled: false,
+                onPressed: busy || blocked ? null : onEdit,
+              ),
+            ],
           ),
         ],
       ),

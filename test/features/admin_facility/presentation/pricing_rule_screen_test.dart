@@ -1,4 +1,5 @@
 import 'package:fcourt/app/theme/tokens.dart';
+import 'package:fcourt/features/admin_dashboard/presentation/widgets/owner_ui.dart';
 import 'package:fcourt/features/admin_facility/domain/entities/clock_time.dart';
 import 'package:fcourt/features/admin_facility/domain/entities/pricing_rule.dart';
 import 'package:fcourt/features/admin_facility/domain/usecases/court_usecases.dart';
@@ -215,7 +216,7 @@ void main() {
 
     expect(
       tester
-          .widget<ButtonStyleButton>(find.byKey(const Key('copy-to-weekend')))
+          .widget<OwnerPillButton>(find.byKey(const Key('copy-to-weekend')))
           .onPressed,
       isNull,
     );

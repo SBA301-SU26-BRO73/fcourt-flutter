@@ -5,6 +5,8 @@ import '../../domain/entities/payment_checkout.dart';
 import '../../domain/entities/pending_payment.dart';
 import '../../domain/repositories/admin_payment_repository.dart';
 import '../../../../app/widgets/fc_widgets.dart';
+import '../../../admin_dashboard/presentation/widgets/owner_todo_panel.dart';
+import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
 
 class AdminPaymentApprovalScreen extends StatefulWidget {
   const AdminPaymentApprovalScreen({
@@ -128,38 +130,28 @@ class _AdminPaymentApprovalScreenState
       onRefresh: _load,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(ownerPad, 4, ownerPad, 24),
         children: [
           if (_loading) const LinearProgressIndicator(),
           if (_error != null) ...[
-            Text(_error!),
+            OwnerNote(_error!, color: Theme.of(context).colorScheme.error, size: 12),
             TextButton(onPressed: _load, child: const Text('Thử lại')),
           ],
           if (!_loading && _error == null && _payments.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(48),
-              child: Text(
-                'Không có biên lai chờ duyệt',
-                textAlign: TextAlign.center,
-              ),
+            const OwnerMessage(
+              icon: Icons.fact_check_outlined,
+              text: 'Không có biên lai chờ duyệt',
+            ),
+          if (_payments.isNotEmpty)
+            OwnerSectionTitle(
+              'Biên lai chờ duyệt',
+              top: 4,
+              trailing: OwnerNote('${_payments.length} biên lai'),
             ),
           for (final payment in _payments)
             Padding(
-              padding: const EdgeInsets.only(bottom: Gap.sm),
-              child: FcCard(
-                padding: EdgeInsets.zero,
-                child: ListTile(
-                  onTap: () => _review(payment),
-                  title: Text(
-                    '${payment.customerName} · ${payment.bookingCode}',
-                  ),
-                  subtitle: Text(
-                    '${NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0).format(payment.amountVnd)}\n${DateFormat('dd/MM/yyyy HH:mm').format(payment.submittedAt)}',
-                  ),
-                  isThreeLine: true,
-                  trailing: const Icon(Icons.chevron_right),
-                ),
-              ),
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ReceiptRow(payment: payment, onTap: () => _review(payment)),
             ),
           if (_more)
             TextButton(
@@ -170,6 +162,63 @@ class _AdminPaymentApprovalScreenState
       ),
     ),
   );
+}
+
+/// Thẻ biên lai chờ duyệt (như thẻ ở màn Việc cần làm): ảnh biên lai nhỏ,
+/// khách + mã đơn, số tiền màu nhấn, giờ gửi và nút mở duyệt.
+class _ReceiptRow extends StatelessWidget {
+  const _ReceiptRow({required this.payment, required this.onTap});
+  final PendingPayment payment;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return OwnerCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          ReceiptThumb(uri: payment.receiptUri, amountVnd: payment.amountVnd),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${payment.customerName} · ${payment.bookingCode}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: colors.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  NumberFormat.currency(
+                    locale: 'vi_VN',
+                    symbol: '₫',
+                    decimalDigits: 0,
+                  ).format(payment.amountVnd),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: colors.primary,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                OwnerNote(
+                  '${timeAgoVi(payment.submittedAt)} · ${DateFormat('dd/MM/yyyy HH:mm').format(payment.submittedAt)}',
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
+        ],
+      ),
+    );
+  }
 }
 
 class _ApprovalSheet extends StatefulWidget {
@@ -240,7 +289,11 @@ class _ApprovalSheetState extends State<_ApprovalSheet> {
                 Expanded(
                   child: Text(
                     widget.payment.bookingCode,
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -.5,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -256,11 +309,21 @@ class _ApprovalSheetState extends State<_ApprovalSheet> {
                 symbol: '₫',
                 decimalDigits: 0,
               ).format(widget.payment.amountVnd),
-              style: Theme.of(context).textTheme.titleMedium,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -.6,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
+            Container(
               height: 280,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              clipBehavior: Clip.antiAlias,
               child: InteractiveViewer(
                 minScale: 1,
                 maxScale: 6,

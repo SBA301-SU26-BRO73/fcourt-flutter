@@ -16,7 +16,7 @@ class PeakHoursBarChart extends StatelessWidget {
   static const firstHour = 6;
   static const lastHour = 23;
   static const peakColor = ChartColors.peak;
-  static const normalColor = ChartColors.info;
+  static const normalColor = ChartColors.accent;
 
   @override
   Widget build(BuildContext context) {

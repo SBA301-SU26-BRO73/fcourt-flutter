@@ -86,10 +86,10 @@ class _StaffSheetState extends State<StaffSheet> {
     canPop: !_busy,
     child: SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
-        24,
-        24,
-        24,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
+        20,
+        8,
+        20,
+        20 + MediaQuery.viewInsetsOf(context).bottom,
       ),
       child: Form(
         key: _form,
@@ -99,7 +99,7 @@ class _StaffSheetState extends State<StaffSheet> {
           children: [
             Text(
               widget.member == null ? 'Thêm nhân viên' : 'Sửa nhân viên',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<int>(
