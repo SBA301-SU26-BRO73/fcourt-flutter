@@ -92,9 +92,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         return Scaffold(
           appBar: AppBar(title: const Text('Đặt lại mật khẩu')),
           body: SafeArea(
-            child: Center(
+            child: Align(
+              alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Form(

@@ -45,9 +45,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         return Scaffold(
           appBar: AppBar(title: const Text('Quên mật khẩu')),
           body: SafeArea(
-            child: Center(
+            child: Align(
+              alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: sent

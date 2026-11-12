@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:fcourt/app/theme/app_theme.dart';
@@ -8,7 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Shots: WP3B_SHOTS=`<dir>` flutter test <file>. Without it the helpers only
+/// Shots: WP3B_SHOTS=<dir> flutter test <file>. Without it the helpers only
 /// pump the page (so the test is a plain smoke test in CI).
 final shotsDir = Platform.environment['WP3B_SHOTS'];
 

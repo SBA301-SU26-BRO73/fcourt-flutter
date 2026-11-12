@@ -66,7 +66,7 @@ class HomePage extends StatelessWidget {
                   Row(
                     children: [
                       CircleAvatar(
-                        radius: 24,
+                        radius: 22,
                         backgroundColor: colors.primaryContainer,
                         foregroundColor: colors.onPrimaryContainer,
                         child: Text(
@@ -87,7 +87,11 @@ class HomePage extends StatelessWidget {
                               'Xin chào, ${user.displayName}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleMedium,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -.5,
+                              ),
                             ),
                             Text(
                               user.role.label,
@@ -242,21 +246,32 @@ class _ActionCard extends StatelessWidget {
         backgroundColor: colors.surfaceContainerLow,
         foregroundColor: colors.onSurface,
         alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(
-          horizontal: Gap.lg,
-          vertical: Gap.md,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         side: BorderSide(color: colors.outlineVariant),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(Radii.lg),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
       onPressed: () => context.push(entry.route),
       child: Row(
         children: [
-          IconBadge(entry.icon),
-          const SizedBox(width: Gap.md),
-          Expanded(child: Text(entry.title, style: theme.textTheme.titleSmall)),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colors.primaryContainer,
+            ),
+            child: Icon(entry.icon, size: 20, color: colors.onPrimaryContainer),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              entry.title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
           Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
         ],
       ),

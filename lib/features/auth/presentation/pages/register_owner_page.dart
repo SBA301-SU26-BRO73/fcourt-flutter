@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/auth_redirect.dart';
+import '../../../../app/widgets/fc_widgets.dart';
+import '../../../../app/widgets/filter_pill.dart';
 import '../../domain/entities/upload_document.dart';
 import '../bloc/register_bloc.dart';
 import '../bloc/submission_state.dart';
@@ -121,9 +123,10 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
         return Scaffold(
           appBar: AppBar(title: const Text('Đăng ký chủ sân')),
           body: SafeArea(
-            child: Center(
+            child: Align(
+              alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Form(
@@ -131,23 +134,21 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SegmentedButton<bool>(
+                        Row(
                           key: const ValueKey('register-role'),
-                          segments: const [
-                            ButtonSegment(
-                              value: false,
-                              label: Text('Khách hàng'),
+                          children: [
+                            FilterPill(
+                              'Khách hàng',
+                              selected: false,
+                              onTap: () {
+                                context.pushReplacement(
+                                  AppRoutes.registerCustomer,
+                                );
+                              },
                             ),
-                            ButtonSegment(value: true, label: Text('Chủ sân')),
+                            const SizedBox(width: 7),
+                            FilterPill('Chủ sân', selected: true, onTap: () {}),
                           ],
-                          selected: const {true},
-                          onSelectionChanged: (value) {
-                            if (!value.single) {
-                              context.pushReplacement(
-                                AppRoutes.registerCustomer,
-                              );
-                            }
-                          },
                         ),
                         const SizedBox(height: 16),
                         if (showBanner) ...[
@@ -281,43 +282,58 @@ class _DocumentSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: theme.textTheme.titleSmall),
-        const SizedBox(height: 4),
-        Text(hint, style: theme.textTheme.bodySmall),
-        for (final document in documents)
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.attach_file),
-            title: Text(document.name, overflow: TextOverflow.ellipsis),
-            trailing: IconButton(
-              tooltip: 'Bỏ tệp ${document.name}',
-              icon: const Icon(Icons.close),
-              onPressed: () => onRemove(document),
+    return FcCard(
+      radius: 22,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
             ),
           ),
-        if (error != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              error!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
+          const SizedBox(height: 4),
+          Text(
+            hint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          for (final document in documents)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.attach_file),
+              title: Text(document.name, overflow: TextOverflow.ellipsis),
+              trailing: IconButton(
+                tooltip: 'Bỏ tệp ${document.name}',
+                icon: const Icon(Icons.close),
+                onPressed: () => onRemove(document),
               ),
             ),
+          if (error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                error!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: documents.length >= maxCount ? null : onAdd,
+              icon: const Icon(Icons.add),
+              label: Text('$addLabel (${documents.length}/$maxCount)'),
+            ),
           ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: documents.length >= maxCount ? null : onAdd,
-            icon: const Icon(Icons.add),
-            label: Text('$addLabel (${documents.length}/$maxCount)'),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
