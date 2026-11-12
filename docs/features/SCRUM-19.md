@@ -63,7 +63,7 @@ và nút áp dụng khóa cho tới khi nhập giá. Ô giá giới hạn 8 ch�
 
 ## Kiểm chứng
 
-Xem "Kiểm chứng chung" trong `docs/SCRUM-13.md`. Test riêng:
+Xem "Kiểm chứng chung" trong `docs/features/SCRUM-13.md`. Test riêng:
 `facility_rules_test.dart` (06:00–06:30…, 47 slot cho 00:00–23:30 ≤ 48, giờ
 ngược/lệch bước → rỗng, ngoài giờ chi nhánh, giá mặc định); contract
 `apply-template` và lỗi 400 trong `facility_repositories_test.dart`;

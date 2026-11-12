@@ -9,7 +9,7 @@ Feature: `lib/features/admin_facility/`. Màn hình: `CourtListScreen`,
 flutter run --dart-define-from-file=env/dev.json --route=/admin/branches/1/courts
 ```
 
-Cấu hình `FACILITY_BASE_URL` như `docs/SCRUM-15.md`. Thường vào từ thẻ chi
+Cấu hình `FACILITY_BASE_URL` như `docs/features/SCRUM-15.md`. Thường vào từ thẻ chi
 nhánh trong `/admin/branches`.
 
 ## Luồng sử dụng
@@ -61,7 +61,7 @@ Trạng thái lạ → báo dữ liệu không hợp lệ.
 
 ## Kiểm chứng
 
-Xem "Kiểm chứng chung" trong `docs/SCRUM-13.md`. Test riêng: contract
+Xem "Kiểm chứng chung" trong `docs/features/SCRUM-13.md`. Test riêng: contract
 court trong `facility_repositories_test.dart`; `facility_blocs_test.dart`
 (tải, đổi chi nhánh với phản hồi cũ, Switch thành công/lỗi, upsert, giá ≤ 0);
 `facility_screens_test.dart` (lưới 2 cột, 3 nhãn trạng thái, Switch + SnackBar,
