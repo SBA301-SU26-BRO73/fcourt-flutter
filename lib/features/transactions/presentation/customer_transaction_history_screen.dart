@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../../core/error/failure.dart';
 import '../domain/transaction.dart';
 import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
+import '../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import 'transaction_widgets.dart';
 
 class CustomerTransactionHistoryScreen extends StatefulWidget {
@@ -82,15 +84,19 @@ class _CustomerTransactionHistoryScreenState
       onRefresh: () => _load(reset: true),
       child: ListView(
         padding: EdgeInsets.fromLTRB(
-          16,
-          16,
-          16,
+          ownerPad,
+          4,
+          ownerPad,
           16 + MediaQuery.paddingOf(context).bottom,
         ),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           if (_error != null) ...[
-            Text(_error!),
+            OwnerNote(
+              _error!,
+              color: Theme.of(context).colorScheme.error,
+              size: 12,
+            ),
             TextButton(
               onPressed: () => _load(reset: _items.isEmpty),
               child: const Text('Thử lại'),
@@ -103,7 +109,7 @@ class _CustomerTransactionHistoryScreenState
             ),
           for (final e in _items)
             Padding(
-              padding: const EdgeInsets.only(bottom: Gap.sm),
+              padding: const EdgeInsets.only(bottom: 12),
               child: _CustomerTransactionCard(entry: e),
             ),
           if (_loading) const Center(child: CircularProgressIndicator()),
@@ -115,26 +121,19 @@ class _CustomerTransactionHistoryScreenState
   );
 }
 
-/// One payment: what and where on the left, an amount in plain text on the
-/// right (it is money paid or refunded, so no "+" and no success green), and
-/// the status pill on the same row as the type.
+/// Một giao dịch: nơi và số tiền (chữ thường, không "+" vì là tiền đã trả hoặc
+/// hoàn), mã + giờ, rồi thẻ trạng thái cùng loại giao dịch.
 class _CustomerTransactionCard extends StatelessWidget {
   const _CustomerTransactionCard({required this.entry});
   final PaymentTransaction entry;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final fc = context.fc;
+    final colors = Theme.of(context).colorScheme;
     final refund = entry.transactionType == 'REFUND';
-    final tone = switch (entry.status) {
-      'SUCCESS' => fc.success,
-      'REJECTED' => fc.danger,
-      'PENDING' => fc.warning,
-      _ => fc.neutral,
-    };
-    return FcCard(
+    return OwnerCard(
       onTap: () => showReceipt(context, entry),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -144,37 +143,35 @@ class _CustomerTransactionCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${entry.branch} · ${entry.court}',
-                  style: theme.textTheme.titleSmall,
-                ),
-              ),
-              const SizedBox(width: Gap.sm),
-              Text(
-                '${refund ? '−' : ''}${vnd(entry.amount)}',
-                style: theme.textTheme.titleMedium,
-              ),
-            ],
-          ),
-          const SizedBox(height: Gap.xs),
-          Text(
-            '${entry.bookingCode} · ${DateFormat('dd/MM/yyyy HH:mm').format(entry.occurredAt.toUtc().add(const Duration(hours: 7)))}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: Gap.sm),
-          Row(
-            children: [
-              StatusPill(entry.label, tone: tone),
-              const SizedBox(width: Gap.sm),
-              Flexible(
-                child: Text(
-                  entry.typeLabel,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    fontWeight: FontWeight.w700,
+                    color: colors.onSurface,
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
+              Text(
+                '${refund ? '−' : ''}${vnd(entry.amount)}',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: colors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          OwnerNote(
+            '${entry.bookingCode} · ${DateFormat('dd/MM/yyyy HH:mm').format(entry.occurredAt.toUtc().add(const Duration(hours: 7)))}',
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              TintTag(entry.label, tone: transactionTone(context, entry)),
+              const SizedBox(width: 8),
+              Flexible(child: OwnerNote(entry.typeLabel)),
             ],
           ),
         ],

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/theme/tokens.dart';
+import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
+
 import '../../domain/entities/calendar_slot.dart';
 import '../../domain/entities/clock_time.dart';
 import '../../domain/entities/court_lock.dart';
@@ -365,12 +368,13 @@ class _Conflicts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      key: const Key('lock-conflicts'),
-      color: Theme.of(context).colorScheme.errorContainer,
-      margin: const EdgeInsets.only(top: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: OwnerCard(
+        key: const Key('lock-conflicts'),
+        color: Theme.of(context).colorScheme.errorContainer,
+        bordered: false,
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -431,33 +435,32 @@ class _GroupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final event = group.type == LockType.privateEvent;
-    final color = event ? SlotStyle.eventColor : SlotStyle.serviceColor;
+    final tone = event ? context.fc.info : context.fc.warning;
     final first = group.first;
     final allCourts =
         group.locks.length > 1 && group.locks.length == state.courts.length;
-    return Card(
-      key: Key('lock-group-${group.groupId}'),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: color, width: event ? 2 : 1),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: OwnerCard(
+        key: Key('lock-group-${group.groupId}'),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  event ? Icons.celebration_outlined : Icons.block,
-                  color: color,
+                OwnerCircle(
+                  icon: event ? Icons.celebration_outlined : Icons.block,
+                  tone: tone,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     group.type.label,
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(color: color, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],

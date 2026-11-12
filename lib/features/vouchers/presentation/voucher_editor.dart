@@ -200,7 +200,11 @@ class _VoucherEditorState extends State<VoucherEditor> {
                     Expanded(
                       child: Text(
                         widget.id == null ? 'Tạo voucher' : 'Sửa voucher',
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -.5,
+                        ),
                       ),
                     ),
                     IconButton(

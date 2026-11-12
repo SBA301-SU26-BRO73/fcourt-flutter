@@ -39,20 +39,46 @@ class TopCourtsWidget extends StatelessWidget {
     return Column(
       children: [
         for (final court in courts)
-          ListTile(
+          Padding(
             key: ValueKey('top-court-${court.rank}'),
-            contentPadding: EdgeInsets.zero,
-            leading: _RankBadge(rank: court.rank),
-            title: Text(
-              court.courtName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text('${court.bookings} lượt đặt'),
-            trailing: Text(
-              formatCompactVnd(court.revenue),
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+            padding: const EdgeInsets.symmetric(vertical: 7),
+            child: Row(
+              children: [
+                _RankBadge(rank: court.rank),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        court.courtName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${court.bookings} lượt đặt',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  formatCompactVnd(court.revenue),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
             ),
           ),
       ],
@@ -71,8 +97,11 @@ class _RankBadge extends StatelessWidget {
     if (color == null) {
       return CircleAvatar(
         radius: 18,
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: Text('$rank'),
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+        child: Text(
+          '$rank',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        ),
       );
     }
     return Tooltip(

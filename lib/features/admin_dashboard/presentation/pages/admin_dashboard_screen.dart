@@ -59,7 +59,13 @@ class AdminDashboardScreen extends StatelessWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(ownerPad, 0, ownerPad, Gap.xl),
               children: [
-                _BranchPicker(state: state),
+                OwnerBranchPicker(
+                  key: ValueKey('dashboard-branch-${state.branches.length}'),
+                  branches: state.branches,
+                  selectedId: state.selectedBranchId,
+                  message: state.branchesMessage,
+                  onSelected: (id) => bloc.add(DashboardBranchChanged(id)),
+                ),
                 ..._content(context, state),
               ],
             ),
@@ -130,79 +136,6 @@ class AdminDashboardScreen extends StatelessWidget {
         child: BookingStatusPieChart(counts: stats.bookingStatusCounts),
       ),
     ];
-  }
-}
-
-/// Dòng "Chi nhánh X" + pill đổi chi nhánh (`.period-picker`).
-class _BranchPicker extends StatelessWidget {
-  const _BranchPicker({required this.state});
-
-  final DashboardState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final selected = state.branches.any((b) => b.id == state.selectedBranchId)
-        ? state.selectedBranchId
-        : null;
-    final name = selected == null
-        ? 'Tất cả chi nhánh'
-        : state.branches.firstWhere((b) => b.id == selected).name;
-    return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 17),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PopupMenuButton<int?>(
-            key: ValueKey('dashboard-branch-${state.branches.length}'),
-            tooltip: 'Đổi chi nhánh',
-            position: PopupMenuPosition.under,
-            onSelected: (id) =>
-                context.read<DashboardBloc>().add(DashboardBranchChanged(id)),
-            itemBuilder: (_) => [
-              const PopupMenuItem<int?>(
-                value: null,
-                child: Text('Tất cả chi nhánh'),
-              ),
-              for (final branch in state.branches)
-                PopupMenuItem<int?>(value: branch.id, child: Text(branch.name)),
-            ],
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    selected == null ? name : 'Chi nhánh $name',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: colors.onSurface,
-                    ),
-                  ),
-                ),
-                OwnerPill(
-                  'Đổi chi nhánh',
-                  trailing: Icon(
-                    Icons.keyboard_arrow_down,
-                    size: 14,
-                    color: colors.onSurface,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (state.branchesMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                'Không tải được danh sách chi nhánh: ${state.branchesMessage}',
-                style: TextStyle(color: colors.error, fontSize: 12),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 }
 

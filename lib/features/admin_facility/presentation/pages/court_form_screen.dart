@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/widgets/wp3b_widgets.dart';
+import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../../domain/entities/branch_rules.dart';
 import '../../domain/entities/court.dart';
 import '../../domain/entities/court_type.dart';
 import '../bloc/court_form_bloc.dart';
-import '../widgets/facility_formatters.dart';
 
 /// SCRUM-17: tạo/sửa sân. Lưu thành công thì `pop` kèm [Court] đã lưu.
 class CourtFormScreen extends StatelessWidget {
@@ -34,9 +35,11 @@ class CourtFormScreen extends StatelessWidget {
             case CourtFormStatus.loading:
               return const Center(child: CircularProgressIndicator());
             case CourtFormStatus.loadFailure:
-              return FacilityErrorView(
-                message: state.message ?? 'Không tải được dữ liệu sân',
-                onRetry: () =>
+              return OwnerMessage(
+                icon: Icons.cloud_off_outlined,
+                text: state.message ?? 'Không tải được dữ liệu sân',
+                action: 'Thử lại',
+                onAction: () =>
                     context.read<CourtFormBloc>().add(const CourtFormStarted()),
               );
             default:
@@ -112,8 +115,21 @@ class _CourtFormState extends State<_CourtForm> {
       key: _formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(ownerPad, 4, ownerPad, 24),
         children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(23),
+            child: SizedBox(
+              height: 120,
+              child: SportPhoto(
+                url: widget.initial?.imageUrl,
+                kind: sportKindOf(
+                  types.where((t) => t.id == _typeId).firstOrNull?.name,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           TextFormField(
             key: const Key('court-name'),
             controller: _name,

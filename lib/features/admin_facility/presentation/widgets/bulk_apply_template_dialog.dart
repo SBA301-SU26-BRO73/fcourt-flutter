@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../../domain/entities/clock_time.dart';
 import '../../domain/entities/slot_matrix.dart';
 import '../../domain/entities/slot_template.dart';
@@ -182,18 +183,17 @@ class _EditBody extends StatelessWidget {
             'Hãy nhập giá mỗi slot.',
     ];
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: const EdgeInsets.fromLTRB(ownerPad, 8, ownerPad, 16),
       children: [
         if (state.error != null)
-          Card(
+          OwnerCard(
             key: const Key('bulk-error'),
             color: scheme.errorContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                state.error!,
-                style: TextStyle(color: scheme.onErrorContainer),
-              ),
+            bordered: false,
+            radius: 16,
+            child: Text(
+              state.error!,
+              style: TextStyle(color: scheme.onErrorContainer),
             ),
           ),
         Text('1. Chọn sân', style: Theme.of(context).textTheme.titleMedium),
@@ -354,11 +354,11 @@ class _PreviewCourtCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final conflict = court.conflict;
     final slots = court.slots;
-    return Card(
-      key: Key('bulk-preview-court-${court.courtId}'),
-      color: conflict == null ? null : scheme.errorContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: OwnerCard(
+        key: Key('bulk-preview-court-${court.courtId}'),
+        color: conflict == null ? null : scheme.errorContainer,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

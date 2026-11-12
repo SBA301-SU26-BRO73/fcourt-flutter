@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/tokens.dart';
+import '../../../admin_facility/domain/entities/branch.dart';
 
 /// Building blocks of the owner (chủ sân) screens, measured from the approved
 /// WP3b mock-up (wp3b-mockup-2.html, screens 05 to 07). All sizes are the
@@ -208,12 +209,16 @@ class OwnerPill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? colors.onPrimary : colors.onSurface,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? colors.onPrimary : colors.onSurface,
+                  ),
                 ),
               ),
               if (trailing != null) ...[const SizedBox(width: 4), trailing!],
@@ -423,4 +428,86 @@ class OwnerPhotoChip extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// Row "Chi nhánh X" + pill that opens a menu to pick the branch
+/// (`.period-picker` of the mock-up). `null` id means all branches.
+class OwnerBranchPicker extends StatelessWidget {
+  const OwnerBranchPicker({
+    super.key,
+    required this.branches,
+    required this.selectedId,
+    required this.onSelected,
+    this.message,
+  });
+  final List<Branch> branches;
+  final int? selectedId;
+  final ValueChanged<int?> onSelected;
+
+  /// Error text when the branch list could not be loaded.
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final selected = branches.any((b) => b.id == selectedId)
+        ? selectedId
+        : null;
+    final label = selected == null
+        ? 'Tất cả chi nhánh'
+        : 'Chi nhánh ${branches.firstWhere((b) => b.id == selected).name}';
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 17),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PopupMenuButton<int?>(
+            tooltip: 'Đổi chi nhánh',
+            position: PopupMenuPosition.under,
+            onSelected: onSelected,
+            itemBuilder: (_) => [
+              const PopupMenuItem<int?>(
+                value: null,
+                child: Text('Tất cả chi nhánh'),
+              ),
+              for (final branch in branches)
+                PopupMenuItem<int?>(value: branch.id, child: Text(branch.name)),
+            ],
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                ),
+                OwnerPill(
+                  'Đổi chi nhánh',
+                  trailing: Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 14,
+                    color: colors.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (message != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'Không tải được danh sách chi nhánh: $message',
+                style: TextStyle(color: colors.error, fontSize: 12),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

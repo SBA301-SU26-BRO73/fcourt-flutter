@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../../domain/entities/pricing_rule.dart';
 import '../../domain/entities/pricing_rules.dart';
 import '../bloc/pricing_rule_bloc.dart';
@@ -36,6 +37,8 @@ class PricingRuleConfigScreen extends StatelessWidget {
           appBar: AppBar(
             title: const Text('Cấu hình giá'),
             bottom: const TabBar(
+              labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              unselectedLabelStyle: TextStyle(fontSize: 12),
               tabs: [
                 Tab(key: Key('tab-weekday'), text: 'Giá ngày thường (T2-T6)'),
                 Tab(key: Key('tab-weekend'), text: 'Giá cuối tuần (T7-CN)'),
@@ -48,9 +51,11 @@ class PricingRuleConfigScreen extends StatelessWidget {
                 case PricingRuleStatus.loading:
                   return const Center(child: CircularProgressIndicator());
                 case PricingRuleStatus.loadFailure:
-                  return FacilityErrorView(
-                    message: state.message ?? 'Không tải được cấu hình giá',
-                    onRetry: () => context.read<PricingRuleBloc>().add(
+                  return OwnerMessage(
+                    icon: Icons.cloud_off_outlined,
+                    text: state.message ?? 'Không tải được cấu hình giá',
+                    action: 'Thử lại',
+                    onAction: () => context.read<PricingRuleBloc>().add(
                       const PricingRuleStarted(),
                     ),
                   );
@@ -137,37 +142,43 @@ class _RulesTab extends StatelessWidget {
     final rules = rulesForTab(state.rules, weekend: weekend);
     final weekdayRules = rulesForTab(state.rules, weekend: false);
     final weekendRules = rulesForTab(state.rules, weekend: true);
-    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(ownerPad, 14, ownerPad, 32),
       children: [
         Text(
           state.court?.name ?? '',
-          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -.7,
+            color: colors.onSurface,
+          ),
         ),
-        Text(
+        const SizedBox(height: 6),
+        OwnerNote(
           state.court?.defaultPricePerHour == null
               ? 'Giá mặc định: chưa đặt'
               : 'Giá mặc định: '
                     '${formatVnd(state.court!.defaultPricePerHour!)}/giờ',
         ),
-        const SizedBox(height: 12),
-        _SummaryCard(weekday: weekdayRules, weekend: weekendRules),
         const SizedBox(height: 16),
-        Text(
+        _SummaryCard(weekday: weekdayRules, weekend: weekendRules),
+        OwnerSectionTitle(
           weekend ? 'Dải giá Thứ 7 / Chủ nhật' : 'Dải giá Thứ 2 – Thứ 6',
-          style: textTheme.titleMedium,
         ),
-        const SizedBox(height: 8),
-        PricingTimelineBar(
-          rules: rules,
-          onSegmentTap: (rule) => _edit(context, rule: rule),
+        OwnerCard(
+          padding: const EdgeInsets.all(16),
+          child: PricingTimelineBar(
+            rules: rules,
+            onSegmentTap: (rule) => _edit(context, rule: rule),
+          ),
         ),
         const SizedBox(height: 16),
         if (rules.isEmpty)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text(
+            padding: EdgeInsets.only(bottom: 12),
+            child: OwnerNote(
               'Chưa có khung giá. Các giờ này dùng giá mặc định của sân.',
               key: Key('pricing-empty'),
             ),
@@ -179,32 +190,40 @@ class _RulesTab extends StatelessWidget {
             onEdit: () => _edit(context, rule: rule),
             onDelete: () => _confirmDelete(context, rule),
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Wrap(
           spacing: 12,
           runSpacing: 8,
           children: [
-            FilledButton.icon(
+            OwnerPillButton(
               key: Key(weekend ? 'add-weekend-rule' : 'add-weekday-rule'),
+              label: 'Thêm khung giá',
+              icon: Icons.add,
+              fontSize: 12,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               onPressed: state.busy ? null : () => _edit(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Thêm khung giá'),
             ),
             if (weekend)
-              OutlinedButton.icon(
+              OwnerPillButton(
                 key: const Key('copy-to-weekend'),
+                label: 'Sao chép cấu hình ngày thường',
+                icon: Icons.copy_all_outlined,
+                filled: false,
+                fontSize: 12,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 12,
+                ),
                 onPressed: state.busy || weekdayRules.isEmpty
                     ? null
                     : () => _copyToWeekend(context),
-                icon: const Icon(Icons.copy_all_outlined),
-                label: const Text('Sao chép cấu hình ngày thường'),
               ),
           ],
         ),
         if (weekend && weekdayRules.isEmpty)
           const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Text(
+            padding: EdgeInsets.only(top: 10),
+            child: OwnerNote(
               'Hãy cấu hình giá ngày thường trước để sao chép sang cuối tuần.',
             ),
           ),
@@ -226,30 +245,47 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     Widget group(String title, List<PricingRule> rules) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: colors.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
         if (rules.isEmpty)
-          const Text('Dùng giá mặc định')
+          const OwnerNote('Dùng giá mặc định')
         else
-          for (final line in pricingSummaryLines(rules)) Text(line),
+          for (final line in pricingSummaryLines(rules)) OwnerNote(line),
       ],
     );
-    return Card(
+    return OwnerCard(
       key: const Key('pricing-summary'),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+      color: colors.primaryContainer,
+      bordered: false,
+      radius: 23,
+      padding: const EdgeInsets.all(18),
+      child: SizedBox(
+        width: double.infinity,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Tóm tắt biểu giá',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: colors.onSurface,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             group('Ngày thường (T2-T6)', weekday),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             group('Cuối tuần (T7-CN)', weekend),
           ],
         ),
@@ -273,26 +309,53 @@ class _RuleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final days = rule.dayType == PricingDayType.all
         ? ' · ${rule.daysOfWeek.map((d) => dayLabels[d]).join(', ')}'
         : '';
-    return Card(
-      child: ListTile(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: OwnerCard(
         key: Key('pricing-rule-${rule.id}'),
-        leading: Icon(
-          Icons.circle,
-          color: rule.peak ? peakColor : offPeakColor,
-        ),
-        title: Text(rule.name),
-        subtitle: Text(
-          '${rule.startTime.format()}–${rule.endTime.format()} · '
-          '${formatVnd(rule.pricePerHour)}/giờ$days',
-        ),
+        padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
         onTap: busy ? null : onEdit,
-        trailing: IconButton(
-          tooltip: 'Xóa khung giá',
-          icon: const Icon(Icons.delete_outline),
-          onPressed: busy ? null : onDelete,
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: rule.peak ? peakColor : offPeakColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    rule.name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  OwnerNote(
+                    '${rule.startTime.format()}–${rule.endTime.format()} · '
+                    '${formatVnd(rule.pricePerHour)}/giờ$days',
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'Xóa khung giá',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: busy ? null : onDelete,
+            ),
+          ],
         ),
       ),
     );

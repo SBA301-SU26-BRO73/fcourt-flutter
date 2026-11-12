@@ -14,7 +14,7 @@ class RevenueLineChart extends StatelessWidget {
 
   final RevenueChart chart;
 
-  static const lineColor = ChartColors.success;
+  static const lineColor = ChartColors.accent;
 
   @override
   Widget build(BuildContext context) {

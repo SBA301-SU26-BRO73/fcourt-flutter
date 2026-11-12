@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../domain/voucher_usage.dart';
 import '../domain/voucher_usage_repository.dart';
 import 'voucher_usage_cubit.dart';
@@ -50,12 +51,12 @@ class _HistoryView extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(ownerPad),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      OwnerNote(
                         state.query.trim().isEmpty
                             ? 'Tổng chi phí khuyến mãi của mã'
                             : 'Chi phí khuyến mãi của kết quả đang lọc',
@@ -64,7 +65,12 @@ class _HistoryView extends StatelessWidget {
                         state.totalDiscountMinor == null
                             ? '—'
                             : money(state.totalDiscountMinor!),
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -.8,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextField(
@@ -102,7 +108,7 @@ class _HistoryView extends StatelessWidget {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: ownerPad),
                 sliver: SliverList.builder(
                   itemCount: state.items.length,
                   itemBuilder: (context, index) {
@@ -110,23 +116,30 @@ class _HistoryView extends StatelessWidget {
                     final time = DateFormat(
                       'dd/MM/yyyy HH:mm',
                     ).format(row.usedAt.toUtc().add(const Duration(hours: 7)));
-                    return Card(
+                    return Padding(
                       key: ValueKey(row.id),
-                      child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: OwnerCard(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               row.customerName ?? 'Khách hàng #${row.userId}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                            Text(row.customerPhone ?? 'SĐT chưa được cung cấp'),
-                            Text(
+                            OwnerNote(
+                              row.customerPhone ?? 'SĐT chưa được cung cấp',
+                            ),
+                            OwnerNote(
                               row.bookingCode ??
                                   'Đơn #${row.bookingId} (chưa có mã)',
                             ),
-                            Text('Được giảm: ${money(row.discountMinor)}'),
-                            Text(
+                            OwnerNote('Được giảm: ${money(row.discountMinor)}'),
+                            OwnerNote(
                               '${row.timeSource == VoucherUsageTimeSource.paymentConfirmed ? 'Thanh toán lúc' : 'Ghi nhận lúc'}: $time (giờ Việt Nam)',
                             ),
                           ],

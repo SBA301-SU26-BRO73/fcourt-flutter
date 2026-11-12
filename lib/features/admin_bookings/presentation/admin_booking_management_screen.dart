@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
+import '../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../domain/admin_booking.dart';
 import '../domain/admin_booking_status.dart';
 import 'admin_booking_cubit.dart';
@@ -195,167 +196,297 @@ class _AdminBookingManagementScreenState
   );
 
   @override
-  Widget build(
-    BuildContext context,
-  ) => BlocConsumer<AdminBookingCubit, AdminBookingState>(
-    listenWhen: (old, current) =>
-        old.query?.branchId != current.query?.branchId,
-    listener: (_, _) => _search.clear(),
-    builder: (context, state) {
-      final cubit = context.read<AdminBookingCubit>();
-      final query = state.query;
-      return Scaffold(
-        appBar: AppBar(title: const Text('Quản lý đơn đặt sân')),
-        body: RefreshIndicator(
-          onRefresh: query == null ? cubit.initialize : cubit.refresh,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (state.branchesLoading)
-                        const LinearProgressIndicator(),
-                      if (query != null) ...[
-                        TextField(
-                          controller: _search,
-                          maxLength: 200,
-                          onChanged: cubit.search,
-                          onSubmitted: (_) => cubit.refresh(),
-                          textInputAction: TextInputAction.search,
-                          decoration: const InputDecoration(
-                            labelText: 'Tên hoặc SĐT khách hàng',
-                            counterText: '',
-                            prefixIcon: Icon(Icons.search),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            ChoiceChip(
-                              key: const ValueKey('chip-pending'),
-                              label: const Text('Cần xử lý'),
-                              selected:
-                                  query.status ==
-                                  AdminBookingStatus.awaitingConfirmation,
-                              onSelected: (_) => cubit.setStatus(
-                                AdminBookingStatus.awaitingConfirmation,
+  Widget build(BuildContext context) =>
+      BlocConsumer<AdminBookingCubit, AdminBookingState>(
+        listenWhen: (old, current) =>
+            old.query?.branchId != current.query?.branchId,
+        listener: (_, _) => _search.clear(),
+        builder: (context, state) {
+          final cubit = context.read<AdminBookingCubit>();
+          final query = state.query;
+          final colors = Theme.of(context).colorScheme;
+          const pillPad = EdgeInsets.symmetric(horizontal: 13, vertical: 10);
+          return Scaffold(
+            appBar: AppBar(title: const Text('Quản lý đơn đặt sân')),
+            body: RefreshIndicator(
+              onRefresh: query == null ? cubit.initialize : cubit.refresh,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: ownerPad),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (state.branchesLoading)
+                            const LinearProgressIndicator(),
+                          if (query != null) ...[
+                            const SizedBox(height: 7),
+                            _SearchField(
+                              controller: _search,
+                              onChanged: cubit.search,
+                              onSubmitted: cubit.refresh,
+                            ),
+                            const SizedBox(height: 14),
+                            Wrap(
+                              spacing: 7,
+                              runSpacing: 7,
+                              children: [
+                                OwnerPill(
+                                  'Cần xử lý',
+                                  key: const ValueKey('chip-pending'),
+                                  fontSize: 11,
+                                  padding: pillPad,
+                                  selected:
+                                      query.status ==
+                                      AdminBookingStatus.awaitingConfirmation,
+                                  onTap: () => cubit.setStatus(
+                                    AdminBookingStatus.awaitingConfirmation,
+                                  ),
+                                ),
+                                OwnerPill(
+                                  'Tất cả',
+                                  key: const ValueKey('chip-all'),
+                                  fontSize: 11,
+                                  padding: pillPad,
+                                  selected: query.status == null,
+                                  onTap: () => cubit.setStatus(null),
+                                ),
+                                OwnerPill(
+                                  'Bộ lọc',
+                                  key: const ValueKey('open-filters'),
+                                  fontSize: 11,
+                                  padding: pillPad,
+                                  trailing: Icon(
+                                    Icons.tune,
+                                    size: 14,
+                                    color: colors.primary,
+                                  ),
+                                  onTap: () => _openFilters(cubit),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            OwnerNote(
+                              state.loading
+                                  ? 'Đang tải đơn…'
+                                  : '${state.total} đơn đặt sân',
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          if (state.loading) const LinearProgressIndicator(),
+                          if (state.error != null) ...[
+                            const SizedBox(height: 12),
+                            OwnerNote(
+                              state.error!,
+                              color: colors.error,
+                              size: 12,
+                            ),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton(
+                                onPressed: query == null
+                                    ? cubit.initialize
+                                    : state.items.isEmpty
+                                    ? cubit.refresh
+                                    : cubit.loadMore,
+                                child: const Text('Thử lại'),
                               ),
                             ),
-                            ChoiceChip(
-                              key: const ValueKey('chip-all'),
-                              label: const Text('Tất cả'),
-                              selected: query.status == null,
-                              onSelected: (_) => cubit.setStatus(null),
-                            ),
-                            ActionChip(
-                              key: const ValueKey('open-filters'),
-                              avatar: const Icon(Icons.tune, size: 18),
-                              label: const Text('Bộ lọc'),
-                              onPressed: () => _openFilters(cubit),
-                            ),
                           ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          state.loading
-                              ? 'Đang tải đơn…'
-                              : '${state.total} đơn đặt sân',
-                        ),
-                      ],
-                      if (state.loading) const LinearProgressIndicator(),
-                      if (state.error != null) ...[
-                        Text(state.error!),
-                        TextButton(
-                          onPressed: query == null
-                              ? cubit.initialize
-                              : state.items.isEmpty
-                              ? cubit.refresh
-                              : cubit.loadMore,
-                          child: const Text('Thử lại'),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              if (!state.branchesLoading &&
-                  !state.loading &&
-                  state.error == null &&
-                  state.items.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Text(
-                      state.branches.isEmpty
-                          ? 'Chưa có chi nhánh để quản lý'
-                          : 'Không có đơn đặt sân phù hợp',
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverList.builder(
-                  itemCount: state.items.length,
-                  itemBuilder: (context, index) {
-                    final row = state.items[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: Gap.sm),
-                      child: FcCard(
-                        onTap: () => _openDetail(context, row),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${row.code} · ${row.customerName ?? 'Khách đặt sân'}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall,
-                                  ),
-                                  const SizedBox(height: Gap.xs),
-                                  Text(
-                                    '${row.courtName} · ${DateFormat('dd/MM/yyyy').format(row.date)}',
-                                  ),
-                                  if (row.customerPhone != null)
-                                    Text(row.customerPhone!),
-                                  Text(adminBookingMoney(row.amount)),
-                                  const SizedBox(height: Gap.sm),
-                                  BookingStatusBadge(row.status),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.chevron_right),
-                          ],
-                        ),
+                  if (!state.branchesLoading &&
+                      !state.loading &&
+                      state.error == null &&
+                      state.items.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: OwnerMessage(
+                        icon: Icons.receipt_long_outlined,
+                        text: state.branches.isEmpty
+                            ? 'Chưa có chi nhánh để quản lý'
+                            : 'Không có đơn đặt sân phù hợp',
                       ),
-                    );
-                  },
+                    ),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: ownerPad),
+                    sliver: SliverList.builder(
+                      itemCount: state.items.length,
+                      itemBuilder: (context, index) {
+                        final row = state.items[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 15),
+                          child: _OrderCard(
+                            row: row,
+                            onTap: () => _openDetail(context, row),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  if (state.loadingMore || state.hasMore)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: state.loadingMore
+                            ? const Center(child: CircularProgressIndicator())
+                            : TextButton(
+                                onPressed: cubit.loadMore,
+                                child: const Text('Xem thêm'),
+                              ),
+                      ),
+                    ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+}
+
+/// Ô tìm kiếm pill 48 cao (mockup `.search`).
+class _SearchField extends StatelessWidget {
+  const _SearchField({
+    required this.controller,
+    required this.onChanged,
+    required this.onSubmitted,
+  });
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search, size: 18, color: colors.onSurfaceVariant),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              maxLength: 200,
+              onChanged: onChanged,
+              onSubmitted: (_) => onSubmitted(),
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(fontSize: 12),
+              decoration: InputDecoration(
+                isCollapsed: true,
+                filled: false,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                counterText: '',
+                hintText: 'Tên hoặc SĐT khách hàng',
+                hintStyle: TextStyle(
+                  fontSize: 12,
+                  color: colors.onSurfaceVariant,
                 ),
               ),
-              if (state.loadingMore || state.hasMore)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: state.loadingMore
-                        ? const Center(child: CircularProgressIndicator())
-                        : TextButton(
-                            onPressed: cubit.loadMore,
-                            child: const Text('Xem thêm'),
-                          ),
-                  ),
-                ),
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Thẻ đơn (mockup `.order`): ngày + thẻ trạng thái, ảnh 74x82 cùng thông tin,
+/// đường kẻ rồi tổng tiền.
+class _OrderCard extends StatelessWidget {
+  const _OrderCard({required this.row, required this.onTap});
+  final AdminBooking row;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return OwnerCard(
+      radius: 23,
+      padding: const EdgeInsets.all(16),
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: OwnerNote(DateFormat('dd/MM/yyyy').format(row.date)),
+              ),
+              BookingStatusBadge(row.status),
             ],
           ),
-        ),
-      );
-    },
-  );
+          const SizedBox(height: 15),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: SizedBox(
+                  width: 74,
+                  height: 82,
+                  child: SportPhoto(sport: row.courtName),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${row.code} · ${row.customerName ?? 'Khách đặt sân'}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.5,
+                        fontWeight: FontWeight.w700,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    OwnerNote(row.courtName, size: 10),
+                    if (row.customerPhone != null) ...[
+                      const SizedBox(height: 4),
+                      OwnerNote(row.customerPhone!, size: 10),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            child: Divider(height: 1, color: colors.outlineVariant),
+          ),
+          Row(
+            children: [
+              const Expanded(child: OwnerNote('Tổng tiền')),
+              Text(
+                adminBookingMoney(row.amount),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: colors.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

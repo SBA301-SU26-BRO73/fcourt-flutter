@@ -269,7 +269,7 @@ void main() {
       (tester) async {
         await _pump(tester, courtList());
 
-        expect(find.text('FCourt Quận 7'), findsOneWidget);
+        expect(find.textContaining('FCourt Quận 7'), findsOneWidget);
         expect(find.text('Hoạt động'), findsOneWidget);
         expect(find.text('Bảo trì'), findsWidgets);
         expect(find.text('Đang đóng'), findsOneWidget);

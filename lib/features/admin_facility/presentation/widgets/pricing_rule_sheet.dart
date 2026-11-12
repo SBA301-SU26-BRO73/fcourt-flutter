@@ -128,8 +128,7 @@ class _PricingRuleSheetState extends State<_PricingRuleSheet> {
           children: [
             Text(
               widget.editing == null ? 'Thêm khung giá' : 'Sửa khung giá',
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -183,7 +182,10 @@ class _PricingRuleSheetState extends State<_PricingRuleSheet> {
               value: _peak,
               onChanged: (value) => setState(() => _peak = value),
             ),
-            const Text('Ngày áp dụng'),
+            const Text(
+              'Ngày áp dụng',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
@@ -205,7 +207,7 @@ class _PricingRuleSheetState extends State<_PricingRuleSheet> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: scheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [

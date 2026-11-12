@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/widgets/fc_widgets.dart';
+import '../../../../app/widgets/wp3b_widgets.dart';
+import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../../domain/entities/branch.dart';
 import '../../domain/entities/court.dart';
 import '../bloc/court_list_bloc.dart';
@@ -112,20 +114,53 @@ class CourtListScreen extends StatelessWidget {
         ),
         floatingActionButton: BlocSelector<CourtListBloc, CourtListState, int?>(
           selector: (state) => state.selectedBranchId,
-          builder: (context, branchId) => FloatingActionButton.extended(
-            onPressed: branchId == null
-                ? null
-                : () => _openForm(context, () => onCreateCourt(branchId)),
-            icon: const Icon(Icons.add),
-            label: const Text('Thêm sân'),
-          ),
+          builder: (context, branchId) {
+            final colors = Theme.of(context).colorScheme;
+            return Opacity(
+              opacity: branchId == null ? .5 : 1,
+              child: Material(
+                color: colors.primary,
+                shape: const StadiumBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: branchId == null
+                      ? null
+                      : () => _openForm(context, () => onCreateCourt(branchId)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 13,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add, size: 16, color: colors.onPrimary),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Thêm sân',
+                          style: TextStyle(
+                            color: colors.onPrimary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
         body: BlocBuilder<CourtListBloc, CourtListState>(
           builder: (context, state) => Column(
             children: [
               _BranchFilter(state: state),
               if (state.status == CourtListStatus.loading)
-                const LinearProgressIndicator(),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: ownerPad),
+                  child: LinearProgressIndicator(),
+                ),
               Expanded(child: _body(context, state)),
             ],
           ),
@@ -141,33 +176,32 @@ class CourtListScreen extends StatelessWidget {
       case CourtListStatus.loading:
         return const SizedBox.shrink();
       case CourtListStatus.failure:
-        return FacilityErrorView(
-          message: state.message ?? 'Không tải được danh sách sân',
-          onRetry: () => bloc.add(CourtListStarted(state.selectedBranchId!)),
+        return OwnerMessage(
+          icon: Icons.cloud_off_outlined,
+          text: state.message ?? 'Không tải được danh sách sân',
+          action: 'Thử lại',
+          onAction: () => bloc.add(CourtListStarted(state.selectedBranchId!)),
         );
       case CourtListStatus.success:
         if (state.courts.isEmpty) {
-          return const Center(
-            child: Text(
-              'Chi nhánh chưa có sân nào.\nNhấn "Thêm sân".',
-              textAlign: TextAlign.center,
-            ),
+          return const OwnerMessage(
+            icon: Icons.sports_tennis_outlined,
+            text: 'Chi nhánh chưa có sân nào.\nNhấn "Thêm sân".',
           );
         }
         return GridView.builder(
           padding: const EdgeInsets.fromLTRB(
-            Gap.md,
-            Gap.md,
-            Gap.md,
+            ownerPad,
+            4,
+            ownerPad,
             Gap.fabClearance,
           ),
-          // One full-width card per row on phones so the status badge and the
-          // three action icons fit on one line; more columns on wider screens.
+          // Một thẻ đầy chiều ngang trên điện thoại; nhiều cột trên màn rộng.
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: 440,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            mainAxisExtent: 200,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            mainAxisExtent: 258,
           ),
           itemCount: state.courts.length,
           itemBuilder: (context, index) {
@@ -192,6 +226,7 @@ class CourtListScreen extends StatelessWidget {
   }
 }
 
+/// Dòng "Chi nhánh X" + pill đổi chi nhánh (kiểu `.period-picker`).
 class _BranchFilter extends StatelessWidget {
   const _BranchFilter({required this.state});
 
@@ -199,33 +234,54 @@ class _BranchFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final branches = state.branches;
     final selected = state.selectedBranchId;
-    final known = branches.any((b) => b.id == selected);
+    final current = branches.where((b) => b.id == selected).firstOrNull;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-      child: DropdownButtonFormField<int>(
+      padding: const EdgeInsets.fromLTRB(ownerPad, 10, ownerPad, 14),
+      child: PopupMenuButton<int>(
         key: ValueKey('court-branch-filter-${branches.length}-$selected'),
-        initialValue: known ? selected : null,
-        isExpanded: true,
-        decoration: const InputDecoration(
-          labelText: 'Chi nhánh',
-          prefixIcon: Icon(Icons.store_mall_directory_outlined),
-        ),
-        items: [
+        tooltip: 'Đổi chi nhánh',
+        position: PopupMenuPosition.under,
+        onSelected: (id) =>
+            context.read<CourtListBloc>().add(CourtBranchSelected(id)),
+        itemBuilder: (_) => [
           for (final branch in branches)
-            DropdownMenuItem(value: branch.id, child: Text(branch.name)),
+            PopupMenuItem(value: branch.id, child: Text(branch.name)),
         ],
-        onChanged: (id) {
-          if (id != null) {
-            context.read<CourtListBloc>().add(CourtBranchSelected(id));
-          }
-        },
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                current == null
+                    ? 'Chọn chi nhánh'
+                    : 'Chi nhánh ${current.name}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onSurface,
+                ),
+              ),
+            ),
+            OwnerPill(
+              'Đổi chi nhánh',
+              trailing: Icon(
+                Icons.keyboard_arrow_down,
+                size: 14,
+                color: colors.onSurface,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+/// Thẻ sân: ảnh theo môn, trạng thái, tên, giá, lối tắt Lịch/Giá/Khung giờ.
 class CourtCard extends StatelessWidget {
   const CourtCard({
     super.key,
@@ -250,91 +306,214 @@ class CourtCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
-    return FcCard(
-      onTap: onTap,
-      padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.sm, Gap.xs),
+    final kind = sportKindOf(typeName);
+    final price = court.defaultPricePerHour;
+    return OwnerCard(
+      radius: 23,
+      padding: EdgeInsets.zero,
+      clip: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  court.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.titleMedium,
+          InkWell(
+            onTap: onTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 120,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      SportPhoto(kind: kind),
+                      if (typeName.isNotEmpty)
+                        Positioned(
+                          top: 12,
+                          left: 12,
+                          child: OwnerPhotoChip(
+                            label: typeName,
+                            icon: SportIcon(
+                              kind,
+                              size: 13,
+                              color: const Color(0xFF354064),
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        right: 12,
+                        bottom: 12,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 5,
+                            ),
+                            child: Text(
+                              CourtStatusBadge.label(court.status),
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: switch (court.status) {
+                                  CourtStatus.active => const Color(0xFF12815A),
+                                  CourtStatus.maintenance => const Color(
+                                    0xFF8A610C,
+                                  ),
+                                  CourtStatus.inactive => const Color(
+                                    0xFF3D4A63,
+                                  ),
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              CourtStatusBadge(court.status),
-              const SizedBox(width: Gap.sm),
-            ],
-          ),
-          Text(
-            typeName,
-            style: textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(13, 13, 13, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          court.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: colors.onSurface,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        price == null
+                            ? 'Chưa đặt giá'
+                            : '${formatVnd(price)}/giờ',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: price == null ? colors.error : colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: Gap.xs),
-          Text(
-            court.defaultPricePerHour == null
-                ? 'Chưa đặt giá'
-                : '${formatVnd(court.defaultPricePerHour!)}/giờ',
-            style: court.defaultPricePerHour == null
-                ? textTheme.bodyMedium?.copyWith(
-                    color: colors.error,
-                    fontStyle: FontStyle.italic,
-                  )
-                : textTheme.bodyMedium,
-          ),
-          const SizedBox(height: Gap.xs),
-          Wrap(
-            spacing: Gap.xs,
-            children: [
-              if (onCalendar != null)
-                TextButton.icon(
-                  key: Key('court-calendar-${court.id}'),
-                  onPressed: onCalendar,
-                  icon: const Icon(Icons.calendar_month_outlined, size: 18),
-                  label: const Text('Lịch'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 13),
+            child: Row(
+              children: [
+                if (onCalendar != null) ...[
+                  Expanded(
+                    child: _SoftAction(
+                      key: Key('court-calendar-${court.id}'),
+                      label: 'Lịch',
+                      icon: Icons.calendar_month_outlined,
+                      onTap: onCalendar!,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: _SoftAction(
+                    key: Key('court-pricing-${court.id}'),
+                    label: 'Giá',
+                    icon: Icons.payments_outlined,
+                    onTap: onPricing,
+                  ),
                 ),
-              TextButton.icon(
-                key: Key('court-pricing-${court.id}'),
-                onPressed: onPricing,
-                icon: const Icon(Icons.payments_outlined, size: 18),
-                label: const Text('Giá'),
-              ),
-              TextButton.icon(
-                onPressed: onSlotTemplate,
-                icon: const Icon(Icons.view_timeline_outlined, size: 18),
-                label: const Text('Khung giờ'),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _SoftAction(
+                    label: 'Khung giờ',
+                    icon: Icons.view_timeline_outlined,
+                    onTap: onSlotTemplate,
+                  ),
+                ),
+              ],
+            ),
           ),
           const Spacer(),
-          Row(
-            children: [
-              const Expanded(child: Text('Bảo trì')),
-              if (updating)
-                const Padding(
-                  padding: EdgeInsets.all(14),
-                  child: SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(13, 0, 6, 4),
+            child: Row(
+              children: [
+                const Expanded(child: OwnerNote('Bảo trì')),
+                if (updating)
+                  const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else
+                  Switch(
+                    key: Key('court-maintenance-${court.id}'),
+                    value: court.status == CourtStatus.maintenance,
+                    onChanged: onMaintenanceChanged,
                   ),
-                )
-              else
-                Switch(
-                  key: Key('court-maintenance-${court.id}'),
-                  value: court.status == CourtStatus.maintenance,
-                  onChanged: onMaintenanceChanged,
-                ),
-            ],
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SoftAction extends StatelessWidget {
+  const _SoftAction({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: colors.surfaceContainer,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: colors.primary),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                    color: colors.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
