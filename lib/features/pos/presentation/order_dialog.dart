@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
 import '../../../core/error/failure.dart';
 import '../../operations/domain/counter.dart';
 import '../domain/pos.dart';
@@ -83,51 +85,75 @@ class _OrderDialogState extends State<OrderDialog> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(_order.code),
-    content: SingleChildScrollView(
-      child: Column(
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final handOver = _order.mayHandOver;
+    return Wp3bDialog(
+      icon: handOver ? Icons.receipt_long_outlined : Icons.hourglass_top,
+      tone: handOver ? context.fc.success : context.fc.warning,
+      title: _order.code,
+      message: orderStatus(_order.status),
+      content: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            orderStatus(_order.status),
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          Text(
-            _order.mayHandOver ? 'Có thể giao hàng theo hóa đơn.' : 'CHƯA GIAO HÀNG. Chờ xác nhận gộp booking; không thu lại bằng lệnh mới.',
-          ),
-          const Divider(),
-          ..._order.lines.map(
-            (l) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text('${l.quantity} × ${l.name} · ${moneyLabel(l.total)}'),
+            handOver ? 'Có thể giao hàng theo hóa đơn.' : 'CHƯA GIAO HÀNG. Chờ xác nhận gộp booking; không thu lại bằng lệnh mới.',
+            textAlign: TextAlign.center,
+            style: text.bodyMedium?.copyWith(
+              color: handOver ? colors.onSurfaceVariant : colors.error,
+              fontWeight: handOver ? FontWeight.w500 : FontWeight.w700,
             ),
           ),
-          Text(
-            'Tổng: ${moneyLabel(_order.total)}',
-            style: Theme.of(context).textTheme.titleLarge,
+          const SizedBox(height: Gap.lg),
+          Wp3bInfoBlock(
+            children: [
+              ..._order.lines.map(
+                (l) => Wp3bInfoRow(
+                  '${l.quantity} × ${l.name}',
+                  moneyLabel(l.total),
+                ),
+              ),
+              Divider(height: 16, color: colors.outlineVariant),
+              Wp3bInfoRow('Tổng', moneyLabel(_order.total), strong: true),
+            ],
           ),
-          if (_loading) const LinearProgressIndicator(),
-          if (_error != null) Text(_error!),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.only(top: Gap.md),
+              child: LinearProgressIndicator(),
+            ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Gap.md),
+              child: Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colors.error),
+              ),
+            ),
           if (_attempts >= 30 && _order.status == 'PENDING_CHARGE')
-            const Text(
-              'Đã dừng tự làm mới. Kiểm tra lại hóa đơn để đối soát; không xuất đơn mới cho cùng lần bán.',
+            Padding(
+              padding: const EdgeInsets.only(top: Gap.md),
+              child: Text(
+                'Đã dừng tự làm mới. Kiểm tra lại hóa đơn để đối soát; không xuất đơn mới cho cùng lần bán.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colors.onSurfaceVariant),
+              ),
             ),
         ],
       ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: _loading ? null : _refresh,
-        child: const Text('Kiểm tra trạng thái'),
-      ),
-      FilledButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Đóng'),
-      ),
-    ],
-  );
+      actions: [
+        Wp3bAction('Đóng', onPressed: () => Navigator.pop(context)),
+        Wp3bAction(
+          'Kiểm tra trạng thái',
+          kind: Wp3bActionKind.tonal,
+          onPressed: _loading ? null : _refresh,
+        ),
+      ],
+    );
+  }
 }
 
 class OrderHistory extends StatefulWidget {

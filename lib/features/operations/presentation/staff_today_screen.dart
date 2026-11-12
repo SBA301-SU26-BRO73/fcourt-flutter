@@ -69,17 +69,22 @@ class _ViewState extends State<_View> {
     final who = s.name.isEmpty ? 'Khách vãng lai' : s.name;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nhận sân'),
-        content: Text('$who · ${order.courtName}\n${s.start}–${s.end}'),
+      builder: (ctx) => Wp3bDialog(
+        icon: Icons.login_rounded,
+        title: 'Nhận sân',
+        content: Wp3bInfoBlock(
+          children: [
+            Wp3bInfoRow('Khách', who),
+            Wp3bInfoRow('Sân', order.courtName),
+            Wp3bInfoRow('Giờ', '${s.start}–${s.end}'),
+          ],
+        ),
         actions: [
-          TextButton(
+          Wp3bAction('Nhận sân', onPressed: () => Navigator.pop(ctx, true)),
+          Wp3bAction(
+            'Hủy',
+            kind: Wp3bActionKind.text,
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Nhận sân'),
           ),
         ],
       ),

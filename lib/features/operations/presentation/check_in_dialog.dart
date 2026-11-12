@@ -5,6 +5,7 @@ import '../../../core/network/command_key.dart';
 import '../domain/check_in_failure.dart';
 import '../domain/schedule.dart';
 import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
 
 class CheckInDialog extends StatefulWidget {
   const CheckInDialog({
@@ -85,20 +86,18 @@ class _CheckInDialogState extends State<CheckInDialog> {
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          icon: const Icon(
-            Icons.check_circle,
-            color: ChartColors.success,
-            size: 40,
-          ),
-          title: Text(p.offline ? 'HỢP LỆ (OFFLINE)' : 'Nhận sân thành công'),
-          content: Text(
-            '${p.name}\n${p.courtName}\n${displayDate(p.date)} · ${p.start}–${p.end}${p.offline ? '\nĐã ghi trên máy này. Đang chờ đối soát máy chủ.' : ''}',
+        builder: (context) => Wp3bDialog(
+          icon: Icons.check_circle_outline,
+          tone: context.fc.success,
+          title: 'HỢP LỆ (OFFLINE)',
+          content: _TicketBlock(
+            preview: p,
+            note: 'Đã ghi trên máy này. Đang chờ đối soát máy chủ.',
           ),
           actions: [
-            FilledButton(
+            Wp3bAction(
+              'Hoàn tất nhận sân',
               onPressed: () => Navigator.pop(context),
-              child: const Text('Hoàn tất nhận sân'),
             ),
           ],
         ),
@@ -112,56 +111,97 @@ class _CheckInDialogState extends State<CheckInDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: !_busy,
-    child: AlertDialog(
-      title: Text(_error == null ? 'Xác nhận nhận sân' : 'Chưa thể nhận sân'),
-      icon: Icon(
-        _error == null ? Icons.verified_outlined : Icons.error_outline,
-        color: _error == null
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.error,
-      ),
-      content: SingleChildScrollView(
-        child: Column(
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final failed = _error != null;
+    return PopScope(
+      canPop: !_busy,
+      child: Wp3bDialog(
+        icon: failed ? Icons.error_outline : Icons.verified_outlined,
+        tone: failed ? context.fc.danger : null,
+        title: failed ? 'Chưa thể nhận sân' : 'Xác nhận nhận sân',
+        content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (_busy) const LinearProgressIndicator(),
-            if (_preview case final p?)
-              Text(
-                '${p.name}\n${p.courtName}\n${displayDate(p.date)} · ${p.start}–${p.end}',
+            if (_busy)
+              const Padding(
+                padding: EdgeInsets.only(bottom: Gap.md),
+                child: LinearProgressIndicator(),
               ),
-            if (_error != null)
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+            if (_preview case final p?) _TicketBlock(preview: p),
+            if (failed)
+              Padding(
+                padding: const EdgeInsets.only(top: Gap.md),
+                child: Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            if (_submitted && _error != null)
-              const Text(
-                'Chưa rõ kết quả? Thử lại cùng lệnh để đối soát, không quét lại vé.',
+            if (_submitted && failed)
+              Padding(
+                padding: const EdgeInsets.only(top: Gap.sm),
+                child: Text(
+                  'Chưa rõ kết quả? Thử lại cùng lệnh để đối soát, không quét lại vé.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: colors.onSurfaceVariant),
+                ),
               ),
           ],
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context, false),
-          child: const Text('Đóng'),
-        ),
-        if (_preview == null)
-          FilledButton(
-            onPressed: _busy ? null : _load,
-            child: const Text('Kiểm tra lại'),
-          ),
-        if (_preview != null)
-          FilledButton(
-            onPressed: _busy || _done ? null : _confirm,
-            child: Text(
+        actions: [
+          if (_preview == null)
+            Wp3bAction('Kiểm tra lại', onPressed: _busy ? null : _load),
+          if (_preview != null)
+            Wp3bAction(
               _submitted ? 'Thử lại lệnh nhận sân' : 'Xác nhận nhận sân',
+              onPressed: _busy || _done ? null : _confirm,
+            ),
+          Wp3bAction(
+            'Đóng',
+            kind: Wp3bActionKind.text,
+            onPressed: _busy ? null : () => Navigator.pop(context, false),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TicketBlock extends StatelessWidget {
+  const _TicketBlock({required this.preview, this.note});
+  final TicketPreview preview;
+  final String? note;
+  @override
+  Widget build(BuildContext context) {
+    final p = preview;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wp3bInfoBlock(
+          children: [
+            Wp3bInfoRow('Khách', p.name),
+            Wp3bInfoRow('Sân', p.courtName),
+            Wp3bInfoRow('Giờ', '${displayDate(p.date)} · ${p.start}–${p.end}'),
+          ],
+        ),
+        if (note != null)
+          Padding(
+            padding: const EdgeInsets.only(top: Gap.md),
+            child: Text(
+              note!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
       ],
-    ),
-  );
+    );
+  }
 }

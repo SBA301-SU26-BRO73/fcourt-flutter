@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/theme/tokens.dart';
+import '../../../../app/widgets/wp3b_widgets.dart';
 import '../../domain/entities/court_owner.dart';
 import '../../domain/repositories/court_owner_approval_repository.dart';
 
@@ -85,47 +87,41 @@ class _ReasonDialogState extends State<_ReasonDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return AlertDialog(
-      title: Text(widget.title),
+    return Wp3bDialog(
+      icon: widget.destructive
+          ? Icons.person_off_outlined
+          : Icons.how_to_reg_outlined,
+      tone: widget.destructive ? context.fc.danger : context.fc.success,
+      title: widget.title,
+      message: widget.message,
       content: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.message),
-            const SizedBox(height: 16),
-            TextFormField(
-              key: const Key('owner-decision-reason'),
-              controller: _controller,
-              autofocus: widget.required,
-              maxLength: maxReasonLength,
-              maxLines: 3,
-              minLines: 1,
-              decoration: InputDecoration(
-                labelText: widget.fieldLabel,
-                border: const OutlineInputBorder(),
-              ),
-              validator: _validate,
-            ),
-          ],
+        child: Wp3bField(
+          widget.fieldLabel,
+          child: TextFormField(
+            key: const Key('owner-decision-reason'),
+            controller: _controller,
+            autofocus: widget.required,
+            maxLength: maxReasonLength,
+            maxLines: 3,
+            minLines: 2,
+            decoration: InputDecoration(hintText: widget.fieldLabel),
+            validator: _validate,
+          ),
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Hủy'),
-        ),
-        FilledButton(
-          style: widget.destructive
-              ? FilledButton.styleFrom(
-                  backgroundColor: colors.error,
-                  foregroundColor: colors.onError,
-                )
-              : null,
+        Wp3bAction(
+          widget.confirmLabel,
+          kind: widget.destructive
+              ? Wp3bActionKind.danger
+              : Wp3bActionKind.primary,
           onPressed: _submit,
-          child: Text(widget.confirmLabel),
+        ),
+        Wp3bAction(
+          'Hủy',
+          kind: Wp3bActionKind.text,
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ],
     );

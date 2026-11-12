@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
 import '../../../core/error/failure.dart';
 import '../../../core/network/command_key.dart';
 import '../domain/counter.dart';
@@ -77,47 +79,81 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: !_busy,
-    child: AlertDialog(
-      title: const Text('Xác nhận trả sân'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return PopScope(
+      canPop: !_busy,
+      child: Wp3bDialog(
+        icon: Icons.logout_rounded,
+        title: 'Xác nhận trả sân',
+        message:
             'Đơn #${widget.bookingId}\nMáy chủ xác nhận hoàn tất và giải phóng sân. Kiểm tra các khoản phát sinh trước khi trả sân.',
-          ),
-          if (_quote case final q?)
-            Text(
-              'Dự tính phụ thu quá giờ: ${moneyLabel(q.surcharge)}\nDịch vụ gộp booking: ${moneyLabel(q.posAmount)}\nCần thu thêm: ${moneyLabel(q.surcharge + q.posAmount)}\nGiá trị đơn sau phụ thu: ${moneyLabel(q.total)}\nKhông thu lại tiền sân đã thanh toán. Phí phát sinh theo từng 30 phút và giá slot tương ứng.',
-            ),
-          if (_error != null)
-            Text(
-              _error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context),
-          child: const Text('Hủy'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_quote case final q?) ...[
+              Wp3bInfoBlock(
+                children: [
+                  Wp3bInfoRow(
+                    'Dự tính phụ thu quá giờ',
+                    moneyLabel(q.surcharge),
+                  ),
+                  Wp3bInfoRow('Dịch vụ gộp booking', moneyLabel(q.posAmount)),
+                  Wp3bInfoRow(
+                    'Cần thu thêm',
+                    moneyLabel(q.surcharge + q.posAmount),
+                    strong: true,
+                  ),
+                  Wp3bInfoRow('Giá trị đơn sau phụ thu', moneyLabel(q.total)),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: Gap.md),
+                child: Text(
+                  'Không thu lại tiền sân đã thanh toán. Phí phát sinh theo từng 30 phút và giá slot tương ứng.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: Gap.md),
+                child: Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
         ),
-        FilledButton(
-          onPressed: _busy
-              ? null
-              : _quote == null
-              ? _load
-              : _submit,
-          child: Text(
+        actions: [
+          Wp3bAction(
             _busy
                 ? 'Đang trả sân…'
                 : _quote == null
                 ? 'Kiểm tra lại phí'
                 : 'Xác nhận trả sân',
+            onPressed: _busy
+                ? null
+                : _quote == null
+                ? _load
+                : _submit,
           ),
-        ),
-      ],
-    ),
-  );
+          Wp3bAction(
+            'Hủy',
+            kind: Wp3bActionKind.text,
+            onPressed: _busy ? null : () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
 }
