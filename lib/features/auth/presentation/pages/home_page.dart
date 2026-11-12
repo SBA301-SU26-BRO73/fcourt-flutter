@@ -11,8 +11,11 @@ import '../../domain/entities/user_role.dart';
 import '../bloc/auth_bloc.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key, this.discoveryRepository});
+  const HomePage({super.key, this.discoveryRepository, this.adminTodo});
   final DiscoveryRepository? discoveryRepository;
+
+  /// Khối "Việc cần làm" của chủ sân; thay cho banner chào ở đầu trang chủ.
+  final Widget? adminTodo;
 
   static String titleFor(UserRole role) => switch (role) {
     UserRole.customer => 'Đặt sân',
@@ -107,63 +110,69 @@ class HomePage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: Gap.xl),
-                  SizedBox(
-                    width: double.infinity,
-                    child: HeroPanel(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Eyebrow(
-                            user.role == UserRole.customer
-                                ? 'SẴN SÀNG CHO TRẬN ĐẤU TIẾP THEO'
-                                : 'KHÔNG GIAN LÀM VIỆC CỦA BẠN',
-                            icon: Icons.bolt_rounded,
-                            color: fc.onBrandMuted,
-                          ),
-                          const SizedBox(height: Gap.lg),
-                          Text(
-                            switch (user.role) {
-                              UserRole.customer => 'Ra sân. Hết mình.',
-                              UserRole.staff => 'Sẵn sàng cho ca làm mới.',
-                              UserRole.admin => 'Quản lý sân, dễ dàng hơn.',
-                              UserRole.superAdmin =>
-                                'Kết nối toàn bộ hệ thống.',
-                            },
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: Gap.md),
-                          Text(
-                            switch (user.role) {
-                              UserRole.customer => 'Khám phá sân phù hợp, chọn giờ yêu thích và đặt lịch cho buổi chơi của bạn.',
-                              UserRole.staff => 'Theo dõi lịch sân, nhận khách và xử lý đơn bán lẻ tại một nơi.',
-                              UserRole.admin => 'Theo dõi hoạt động, quản lý đơn đặt và phát triển cụm sân của bạn.',
-                              UserRole.superAdmin => 'Duyệt chủ sân, quản lý danh mục và theo dõi số liệu nền tảng.',
-                            },
-                            style: theme.textTheme.bodyMedium?.copyWith(
+                  if (user.role == UserRole.admin && adminTodo != null) ...[
+                    adminTodo!,
+                    const SizedBox(height: Gap.xl),
+                  ] else ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: HeroPanel(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Eyebrow(
+                              user.role == UserRole.customer
+                                  ? 'SẴN SÀNG CHO TRẬN ĐẤU TIẾP THEO'
+                                  : 'KHÔNG GIAN LÀM VIỆC CỦA BẠN',
+                              icon: Icons.bolt_rounded,
                               color: fc.onBrandMuted,
-                              height: 1.6,
                             ),
-                          ),
-                          const SizedBox(height: Gap.screen),
-                          FilledButton.icon(
-                            key: user.role == UserRole.superAdmin
-                                ? const ValueKey('home-super-admin-overview')
-                                : null,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF06443F),
+                            const SizedBox(height: Gap.lg),
+                            Text(
+                              switch (user.role) {
+                                UserRole.customer => 'Ra sân. Hết mình.',
+                                UserRole.staff => 'Sẵn sàng cho ca làm mới.',
+                                UserRole.admin => 'Quản lý sân, dễ dàng hơn.',
+                                UserRole.superAdmin =>
+                                  'Kết nối toàn bộ hệ thống.',
+                              },
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                color: Colors.white,
+                              ),
                             ),
-                            onPressed: () => context.push(entries.first.route),
-                            icon: Icon(entries.first.icon),
-                            label: Text(entries.first.title),
-                          ),
-                        ],
+                            const SizedBox(height: Gap.md),
+                            Text(
+                              switch (user.role) {
+                                UserRole.customer => 'Khám phá sân phù hợp, chọn giờ yêu thích và đặt lịch cho buổi chơi của bạn.',
+                                UserRole.staff => 'Theo dõi lịch sân, nhận khách và xử lý đơn bán lẻ tại một nơi.',
+                                UserRole.admin => 'Theo dõi hoạt động, quản lý đơn đặt và phát triển cụm sân của bạn.',
+                                UserRole.superAdmin => 'Duyệt chủ sân, quản lý danh mục và theo dõi số liệu nền tảng.',
+                              },
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: fc.onBrandMuted,
+                                height: 1.6,
+                              ),
+                            ),
+                            const SizedBox(height: Gap.screen),
+                            FilledButton.icon(
+                              key: user.role == UserRole.superAdmin
+                                  ? const ValueKey('home-super-admin-overview')
+                                  : null,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF06443F),
+                              ),
+                              onPressed: () =>
+                                  context.push(entries.first.route),
+                              icon: Icon(entries.first.icon),
+                              label: Text(entries.first.title),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: Gap.xl),
+                    const SizedBox(height: Gap.xl),
+                  ],
                   if (user.role == UserRole.customer) ...[
                     TextField(
                       maxLength: 200,

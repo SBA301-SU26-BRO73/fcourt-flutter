@@ -49,13 +49,15 @@ void main() {
       final fake = ManualOps();
       await tester.pumpWidget(
         MaterialApp(
-          home: Builder(
-            builder: (context) => TextButton(
-              onPressed: () => showDialog<bool>(
-                context: context,
-                builder: (_) => ManualCheckIn(repository: fake),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showDialog<bool>(
+                  context: context,
+                  builder: (_) => ManualCheckIn(repository: fake),
+                ),
+                child: const Text('Open'),
               ),
-              child: const Text('Open'),
             ),
           ),
         ),
@@ -71,9 +73,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(fake.channel, isTrue);
       expect(fake.submitted, 'FC-89234');
-      expect(find.text('Nhận sân thành công'), findsOneWidget);
-      await tester.tap(find.text('Hoàn tất nhận sân'));
-      await tester.pumpAndSettle();
+      expect(find.textContaining('Nhận sân thành công'), findsOneWidget);
+      expect(find.text('Hoàn tất nhận sân'), findsNothing);
       expect(find.byType(ManualCheckIn), findsNothing);
     },
   );
