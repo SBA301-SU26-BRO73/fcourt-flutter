@@ -1,3 +1,4 @@
+import 'package:fcourt/core/storage/guest_booking_store.dart';
 import 'package:dio/dio.dart';
 import 'package:fcourt/features/booking/data/repositories/guest_booking_lookup_repository_impl.dart';
 import 'package:fcourt/features/booking/domain/entities/guest_booking_lookup.dart';
@@ -77,6 +78,32 @@ void main() {
     expect(find.text('Sân 1'), findsOneWidget);
     expect(find.text('Trạng thái: Đã xác nhận'), findsOneWidget);
     expect(find.text('12345678'), findsOneWidget);
+  });
+
+  testWidgets('lookup page prefills the code and phone saved on this device', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GuestBookingLookupPage(
+          repository: _LookupRepository(() async => _booking),
+          store: InMemoryGuestBookingStore(
+            const GuestBookingSession(
+              bookingId: 5,
+              holdToken: 'tok',
+              phone: '0912345678',
+              bookingCode: 'FC12345678',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final fields = tester
+        .widgetList<EditableText>(find.byType(EditableText))
+        .map((field) => field.controller.text)
+        .toList();
+    expect(fields, ['FC12345678', '0912345678']);
   });
 }
 

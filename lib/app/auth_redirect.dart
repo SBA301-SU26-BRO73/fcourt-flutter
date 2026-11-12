@@ -31,12 +31,22 @@ const publicRoutes = {
 };
 
 /// Khách chưa đăng nhập được xem chi nhánh, sân và lưới slot (BE mở `GET /api/public/**`);
-/// giữ chỗ và đặt sân vẫn bắt đăng nhập.
+/// đặt sân của khách đi qua [isGuestBookingRoute].
 bool isGuestBrowseRoute(String location) =>
     location == '/branches' ||
     RegExp(r'^/branches/[0-9]+$').hasMatch(location) ||
     RegExp(r'^/branches/[0-9]+/slots$').hasMatch(location) ||
     RegExp(r'^/courts/[0-9]+/slots$').hasMatch(location);
+
+/// Khách vãng lai đặt sân bằng SĐT + `holdToken` (BE mở `POST /api/bookings` và
+/// `/api/payments/**` cho khách, xem M23): tóm tắt, tạo đơn, thanh toán, biên lai, vé.
+bool isGuestBookingRoute(String location) => const {
+  '/booking/summary',
+  '/booking/confirm',
+  '/payments/checkout',
+  '/payments/receipt',
+  '/payments/ticket',
+}.contains(location);
 
 /// Quyết định chuyển hướng theo trạng thái đăng nhập; `null` nghĩa là ở lại.
 ///
@@ -57,7 +67,9 @@ String? authRedirect(
     case AuthStatus.unknown:
       return location == AppRoutes.splash ? null : AppRoutes.splash;
     case AuthStatus.unauthenticated:
-      return publicRoutes.contains(location) || isGuestBrowseRoute(location)
+      return publicRoutes.contains(location) ||
+              isGuestBrowseRoute(location) ||
+              isGuestBookingRoute(location)
           ? null
           : AppRoutes.login;
     case AuthStatus.offlineStaff:

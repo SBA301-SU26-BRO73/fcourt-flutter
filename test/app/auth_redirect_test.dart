@@ -174,17 +174,31 @@ void main() {
         );
       }
       for (final path in [
-        '/booking/summary',
-        '/booking/confirm',
         '/bookings',
         '/bookings/5',
-        '/payments/checkout',
+        '/payments/history',
         '/branches/abc',
         '/courts/9/slots/x',
       ]) {
         expect(
           authRedirect(AuthStatus.unauthenticated, path),
           AppRoutes.login,
+          reason: path,
+        );
+      }
+    });
+
+    test('guest can walk the booking and payment routes without logging in', () {
+      for (final path in [
+        '/booking/summary',
+        '/booking/confirm',
+        '/payments/checkout',
+        '/payments/receipt',
+        '/payments/ticket',
+      ]) {
+        expect(
+          authRedirect(AuthStatus.unauthenticated, path),
+          isNull,
           reason: path,
         );
       }
