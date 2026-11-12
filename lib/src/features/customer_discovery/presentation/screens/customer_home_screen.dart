@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +7,7 @@ import '../../../../../app/widgets/fc_widgets.dart';
 import '../../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/discovery_repository.dart';
 import '../discovery_cubit.dart';
+import '../widgets/discovery_filter_sheet.dart';
 import '../widgets/discovery_widgets.dart';
 
 class CustomerHomeScreen extends StatelessWidget {
@@ -48,11 +47,6 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
   @override
   Widget build(BuildContext context) {
     final user = context.select((AuthBloc bloc) => bloc.state.user);
-    final colors = Theme.of(context).colorScheme;
-    final pill = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(Radii.pill),
-      borderSide: BorderSide(color: colors.outline),
-    );
     return Scaffold(
       body: Column(
         children: [
@@ -63,28 +57,40 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
               child: Row(
                 children: [
                   Expanded(
-                    child: TextField(
+                    child: SearchBar(
                       key: const ValueKey('discovery-search'),
                       controller: _query,
+                      hintText: 'Tìm sân, địa điểm',
+                      elevation: const WidgetStatePropertyAll(0),
                       textInputAction: TextInputAction.search,
+                      onChanged: (_) => setState(() {}),
                       onSubmitted: (_) => _search(),
-                      decoration: InputDecoration(
-                        hintText: 'Tìm sân, địa điểm',
-                        prefixIcon: const Icon(Icons.search_outlined),
-                        suffixIcon: IconButton(
-                          tooltip: 'Tìm sân',
-                          onPressed: _search,
-                          icon: const Icon(Icons.arrow_forward_outlined),
-                        ),
-                        border: pill,
-                        enabledBorder: pill,
-                        focusedBorder: pill.copyWith(
-                          borderSide: BorderSide(
-                            color: colors.primary,
-                            width: 2,
+                      leading: const Icon(Icons.search_outlined),
+                      trailing: [
+                        IconButton(
+                          tooltip: 'Bộ lọc khu vực và giá',
+                          icon: const Icon(Icons.tune),
+                          onPressed: () => showModalBottomSheet<void>(
+                            useRootNavigator: true,
+                            context: context,
+                            isScrollControlled: true,
+                            useSafeArea: true,
+                            builder: (_) => BlocProvider.value(
+                              value: context.read<DiscoveryCubit>(),
+                              child: const DiscoveryFilterSheet(),
+                            ),
                           ),
                         ),
-                      ),
+                        if (_query.text.isNotEmpty)
+                          IconButton(
+                            tooltip: 'Xóa tìm kiếm',
+                            icon: const Icon(Icons.close),
+                            onPressed: () {
+                              _query.clear();
+                              _search();
+                            },
+                          ),
+                      ],
                     ),
                   ),
                   const AccountActions(),
@@ -175,23 +181,49 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
                                     : constraints.crossAxisExtent >= 620
                                     ? 3
                                     : 2;
-                                final scale = MediaQuery.textScalerOf(context)
-                                    .scale(1);
-                                return SliverGrid(
+                                // Cards size to their content: each row is as tall as its
+                                // tallest card, with no fixed extent and no empty gap.
+                                final rows =
+                                    (state.branches.length + columns - 1) ~/
+                                    columns;
+                                return SliverList(
                                   delegate: SliverChildBuilderDelegate(
-                                    (context, index) => _VenueTile(
-                                      branch: state.branches[index],
-                                    ),
-                                    childCount: state.branches.length,
-                                  ),
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: columns,
-                                        crossAxisSpacing: 12,
-                                        mainAxisSpacing: 14,
-                                        mainAxisExtent:
-                                            285 + math.max(0, scale - 1) * 90,
+                                    (context, row) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: Gap.md,
                                       ),
+                                      child: IntrinsicHeight(
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            for (
+                                              var c = 0;
+                                              c < columns;
+                                              c++
+                                            ) ...[
+                                              if (c > 0)
+                                                const SizedBox(width: Gap.md),
+                                              Expanded(
+                                                child:
+                                                    row * columns + c <
+                                                        state.branches.length
+                                                    ? _VenueTile(
+                                                        branch:
+                                                            state.branches[row *
+                                                                    columns +
+                                                                c],
+                                                        sport: state.sport,
+                                                      )
+                                                    : const SizedBox.shrink(),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    childCount: rows,
+                                  ),
                                 );
                               },
                             ),
@@ -231,11 +263,17 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
 }
 
 class _VenueTile extends StatelessWidget {
-  const _VenueTile({required this.branch});
+  const _VenueTile({required this.branch, this.sport});
   final Branch branch;
+  final DiscoverySport? sport;
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final address = [
+      branch.address,
+      branch.city,
+    ].where((s) => s.isNotEmpty).join(', ');
     return FcCard(
       padding: EdgeInsets.zero,
       clip: true,
@@ -243,93 +281,81 @@ class _VenueTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 116,
-            width: double.infinity,
+          AspectRatio(
+            aspectRatio: 16 / 9,
             child: branch.imageUrl == null
-                ? const CourtArtwork(height: 116)
+                ? CourtArtwork(sport: sport)
                 : Image.network(
                     branch.imageUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        const CourtArtwork(height: 116),
+                    errorBuilder: (_, _, _) => CourtArtwork(sport: sport),
                   ),
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          Padding(
+            padding: const EdgeInsets.all(Gap.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  branch.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall,
+                ),
+                if (address.isNotEmpty) ...[
+                  const SizedBox(height: Gap.xs),
                   Text(
-                    branch.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    [
-                      branch.address,
-                      branch.city,
-                    ].where((s) => s.isNotEmpty).join(', '),
+                    address,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
                   ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.star_rounded,
-                        color: branch.reviewCount > 0
-                            ? ChartColors.gold
-                            : colors.outline,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        branch.reviewCount > 0
-                            ? branch.averageRating.toStringAsFixed(1)
-                            : 'Mới',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      const Spacer(),
-                      Icon(
-                        Icons.grid_view_rounded,
-                        size: 14,
+                ],
+                const SizedBox(height: Gap.sm),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.star_rounded,
+                      color: branch.reviewCount > 0
+                          ? ChartColors.gold
+                          : colors.outline,
+                      size: 18,
+                    ),
+                    const SizedBox(width: Gap.xs),
+                    Text(
+                      branch.reviewCount > 0
+                          ? branch.averageRating.toStringAsFixed(1)
+                          : 'Mới',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.grid_view_rounded,
+                      size: 14,
+                      color: colors.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: Gap.xs),
+                    Text(
+                      '${branch.courtCount} sân',
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
-                      const SizedBox(width: 3),
-                      Text(
-                        '${branch.courtCount} sân',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    branchPrice(branch),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: colors.primary,
                     ),
+                  ],
+                ),
+                const SizedBox(height: Gap.xs),
+                Text(
+                  branchPrice(branch),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colors.primary,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],

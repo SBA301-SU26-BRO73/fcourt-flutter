@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/tokens.dart';
+
 class PromoCodeInput extends StatefulWidget {
   const PromoCodeInput({
     super.key,
@@ -67,9 +69,11 @@ class _PromoCodeInputState extends State<PromoCodeInput> {
         ),
       ),
       if (widget.onApply != null && !widget.applied)
+        const SizedBox(height: Gap.sm),
+      if (widget.onApply != null && !widget.applied)
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton(
+          child: FilledButton.tonal(
             onPressed: widget.loading
                 ? null
                 : () => widget.onApply!(_code.text),

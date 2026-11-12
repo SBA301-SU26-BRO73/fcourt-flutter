@@ -218,6 +218,7 @@ class _SummaryFormState extends State<_SummaryForm> {
                           enabled: !locked,
                           decoration: const InputDecoration(
                             labelText: 'Họ tên người đặt',
+                            counterText: '',
                           ),
                           textCapitalization: TextCapitalization.words,
                           autofillHints: const [AutofillHints.name],

@@ -123,7 +123,34 @@ class _NotificationsView extends StatelessWidget {
                               ),
                       );
                     }
-                    return _NotificationTile(item: state.items[index]);
+                    final item = state.items[index];
+                    final day = _dayLabel(item.createdAt);
+                    final first =
+                        index == 0 ||
+                        _dayLabel(state.items[index - 1].createdAt) != day;
+                    final tile = _NotificationTile(item: item);
+                    if (!first) return tile;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: Gap.sm,
+                            bottom: Gap.sm,
+                          ),
+                          child: Text(
+                            day,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                        ),
+                        tile,
+                      ],
+                    );
                   },
                 ),
               );
@@ -197,4 +224,15 @@ class _NotificationTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Hôm nay" / "Hôm qua" / `dd/MM/yyyy`, so notifications read as a timeline.
+String _dayLabel(DateTime at) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(at.year, at.month, at.day);
+  final diff = today.difference(day).inDays;
+  if (diff == 0) return 'Hôm nay';
+  if (diff == 1) return 'Hôm qua';
+  return DateFormat('dd/MM/yyyy').format(at);
 }

@@ -42,6 +42,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
   bool _offline = false;
   String? _error;
   Timer? _ticker;
+  final _search = TextEditingController();
   final Set<int> _reviewed = {};
   @override
   void initState() {
@@ -58,6 +59,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
   void dispose() {
     _generation++;
     _ticker?.cancel();
+    _search.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -225,15 +227,17 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: Gap.screen),
-              child: Row(
-                children: [
-                  for (int i = 0; i < filters.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
+              child: SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: Gap.xs,
+                  children: [
+                    for (int i = 0; i < filters.length; i++)
+                      ChoiceChip(
+                        labelPadding: const EdgeInsets.symmetric(horizontal: 2),
                         label: Text(
                           [
                             'Tất cả',
@@ -257,8 +261,8 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                           }
                         },
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -304,6 +308,25 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                         ),
                     ],
                   ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: Gap.sm),
+                    child: TextField(
+                      controller: _search,
+                      onChanged: (_) => setState(() {}),
+                      textInputAction: TextInputAction.search,
+                      decoration: InputDecoration(
+                        hintText: 'Tìm theo mã đơn',
+                        prefixIcon: const Icon(Icons.search_outlined),
+                        suffixIcon: _search.text.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Xóa tìm kiếm',
+                                icon: const Icon(Icons.close),
+                                onPressed: () => setState(_search.clear),
+                              ),
+                      ),
+                    ),
+                  ),
                   if (_error != null) ...[
                     Text(_error!),
                     TextButton(
@@ -311,6 +334,11 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                       child: const Text('Thử lại'),
                     ),
                   ],
+                  if (!_loading && _items.isNotEmpty && items.isEmpty)
+                    const EmptyState(
+                      icon: Icons.search_off_outlined,
+                      message: 'Không có đơn khớp mã đã nhập',
+                    ),
                   if (!_loading && _items.isEmpty && _error == null)
                     const EmptyState(
                       icon: Icons.event_note_outlined,
@@ -341,7 +369,9 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const IconBadge(Icons.sports_tennis),
+                                  const IconBadge(
+                                    Icons.event_available_outlined,
+                                  ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(

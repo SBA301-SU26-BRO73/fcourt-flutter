@@ -1,4 +1,5 @@
 import '../../../../../app/widgets/fc_widgets.dart';
+import '../../../../../app/widgets/sport_icon.dart';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -223,7 +224,7 @@ class _BranchDetailContent extends StatelessWidget {
                             else
                               const Text('Chi nhánh chưa có sân hoạt động.'),
                             const SizedBox(height: 24),
-                            if (maps != null) ...[
+                            if (maps != null && data.location != null) ...[
                               BranchMapCard(
                                 key: ValueKey(branchId),
                                 location: data.location,
@@ -232,19 +233,13 @@ class _BranchDetailContent extends StatelessWidget {
                               ),
                               const SizedBox(height: 16),
                             ],
-                            Wrap(
-                              spacing: 16,
-                              runSpacing: 8,
-                              children: [
-                                LabelIcon(
-                                  Icons.location_on_outlined,
-                                  data.distanceKm == null
-                                      ? 'Khoảng cách chưa cập nhật'
-                                      : '${data.distanceKm!.toStringAsFixed(1)} km',
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
+                            if (data.distanceKm != null) ...[
+                              LabelIcon(
+                                Icons.location_on_outlined,
+                                '${data.distanceKm!.toStringAsFixed(1)} km',
+                              ),
+                              const SizedBox(height: Gap.xl),
+                            ],
                             Text(
                               branchPrice(data),
                               style: Theme.of(context).textTheme.titleLarge
@@ -257,28 +252,7 @@ class _BranchDetailContent extends StatelessWidget {
                             const Text(
                               'Giá tham khảo; giá chính xác được xác nhận khi chọn lịch.',
                             ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Tiện ích sân',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 12),
-                            const Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: [
-                                LabelIcon(Icons.wifi, 'Wifi · Chưa cập nhật'),
-                                LabelIcon(
-                                  Icons.local_parking,
-                                  'Bãi xe · Chưa cập nhật',
-                                ),
-                                LabelIcon(
-                                  Icons.local_cafe_outlined,
-                                  'Quầy nước · Chưa cập nhật',
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: Gap.xl),
                           ],
                         ),
                       ),
@@ -374,20 +348,20 @@ class _BranchCourtsState extends State<_BranchCourts> {
           for (final court in courts)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Card(
-                clipBehavior: Clip.antiAlias,
+              child: FcCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Gap.md,
+                  vertical: Gap.xs,
+                ),
+                onTap: () => context.push(
+                  '/branches/${widget.branchId}/slots?court=${court.id}&branchName=${Uri.encodeQueryComponent(widget.branch.name)}',
+                ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  leading: const IconBadge(Icons.sports_tennis, size: 42),
+                  contentPadding: EdgeInsets.zero,
+                  leading: _SportBadge(_sportName(court.courtTypeId)),
                   title: Text(court.name),
                   subtitle: Text(_courtPrice(court)),
                   trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => context.push(
-                    '/branches/${widget.branchId}/slots?court=${court.id}&branchName=${Uri.encodeQueryComponent(widget.branch.name)}',
-                  ),
                 ),
               ),
             ),
@@ -395,4 +369,29 @@ class _BranchCourtsState extends State<_BranchCourts> {
       );
     },
   );
+}
+
+String? _sportName(int courtTypeId) {
+  for (final sport in DiscoverySport.values) {
+    if (sport.typeId == courtTypeId) return sport.label;
+  }
+  return null;
+}
+
+class _SportBadge extends StatelessWidget {
+  const _SportBadge(this.sport);
+  final String? sport;
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(Radii.md),
+      ),
+      child: SportIcon.named(sport, size: 22, color: colors.onPrimaryContainer),
+    );
+  }
 }

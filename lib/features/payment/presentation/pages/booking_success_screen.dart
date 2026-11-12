@@ -8,7 +8,7 @@ import 'ticket_brightness_scope.dart';
 import '../../domain/entities/booking_ticket.dart';
 import '../../domain/entities/payment_checkout.dart';
 import '../../domain/repositories/ticket_repository.dart';
-import '../../../../app/theme/tokens.dart';
+import '../../../../app/widgets/fc_widgets.dart';
 
 class BookingSuccessScreen extends StatefulWidget {
   const BookingSuccessScreen({
@@ -140,15 +140,23 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
               padding: const EdgeInsets.all(24),
               children: [
                 if (_loading) const Center(child: CircularProgressIndicator()),
-                if (_error != null) ...[
-                  Text(_error!, textAlign: TextAlign.center),
-                  TextButton(
-                    onPressed: _loading ? null : _load,
-                    child: const Text('Tải lại vé'),
+                if (_error != null)
+                  EmptyState(
+                    icon: Icons.confirmation_number_outlined,
+                    title: 'Chưa tải được vé',
+                    message: _error!,
+                    action: FilledButton.icon(
+                      onPressed: _loading ? null : _load,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Tải lại vé'),
+                    ),
                   ),
-                ],
                 if (ticket != null) ...[
-                  Icon(Icons.check_circle_outline, color: context.fc.success.color, size: 56),
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: context.fc.success.color,
+                    size: 56,
+                  ),
                   Text(
                     'Đặt sân thành công!',
                     style: Theme.of(context).textTheme.headlineSmall,
@@ -230,14 +238,17 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                       ),
                     ),
                   ),
+                  const SizedBox(height: Gap.lg),
                   const Text(
                     'Xuất trình mã QR này tại quầy hoặc đọc mã số vé cho nhân viên để nhận sân.',
                   ),
+                  const SizedBox(height: Gap.lg),
                   FilledButton.icon(
                     onPressed: _saving ? null : _save,
                     icon: const Icon(Icons.download),
                     label: Text(_saving ? 'Đang lưu…' : 'Lưu vé vào máy'),
                   ),
+                  const SizedBox(height: Gap.sm),
                   OutlinedButton(
                     onPressed: widget.onHistory,
                     child: const Text('Xem trong lịch sử đặt sân'),

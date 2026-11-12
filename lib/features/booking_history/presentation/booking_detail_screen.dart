@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../app/widgets/fc_widgets.dart';
 import '../../../core/error/failure.dart';
 import '../domain/booking.dart';
 
@@ -141,9 +142,26 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   bool _canPay(Booking b) =>
       widget.onPay != null && b.status == 'PENDING_PAYMENT';
 
+  StatusTone _statusTone(BuildContext context, String status) =>
+      switch (status) {
+        'CANCELLED' => context.fc.danger,
+        'COMPLETED' => context.fc.success,
+        'CONFIRMED' || 'CHECKED_IN' => context.fc.info,
+        _ => context.fc.warning,
+      };
+
+  IconData _statusIcon(String status) => switch (status) {
+    'CANCELLED' => Icons.cancel_outlined,
+    'COMPLETED' => Icons.check_circle_outline,
+    'CONFIRMED' || 'CHECKED_IN' => Icons.event_available,
+    _ => Icons.schedule,
+  };
+
   @override
   Widget build(BuildContext context) {
     final b = _booking;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Chi tiết đặt sân')),
       bottomNavigationBar:
@@ -156,7 +174,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           : SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(Gap.md),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -198,17 +216,23 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                         icon: const Icon(Icons.star_outline),
                         label: const Text('Đánh giá sân'),
                       ),
-                    if (_policy?.allowed == true)
-                      TextButton(
+                    if (_policy?.allowed == true) ...[
+                      const SizedBox(height: Gap.sm),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colors.error,
+                          side: BorderSide(color: colors.error),
+                        ),
                         onPressed: _cancel,
                         child: const Text('Hủy đặt sân'),
                       ),
+                    ],
                   ],
                 ),
               ),
             ),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(Gap.lg),
         children: [
           if (_loading) const Center(child: CircularProgressIndicator()),
           if (_error != null) ...[
@@ -216,47 +240,54 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             TextButton(onPressed: _load, child: const Text('Thử lại')),
           ],
           if (b != null) ...[
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer
-                    .withValues(alpha: .45),
-                borderRadius: BorderRadius.circular(24),
-              ),
+            FcCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    b.branchName,
-                    style: Theme.of(context).textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                  Wrap(
+                    spacing: Gap.sm,
+                    runSpacing: Gap.sm,
+                    children: [
+                      StatusPill(
+                        b.label,
+                        tone: _statusTone(context, b.status),
+                        icon: _statusIcon(b.status),
+                      ),
+                      StatusPill(
+                        'Thanh toán: ${switch (b.paymentStatus) {
+                          'CONFIRMED' => 'Đã thanh toán',
+                          'REJECTED' => 'Bị từ chối',
+                          'PENDING' when b.status == 'PENDING_PAYMENT' => 'Chưa gửi biên lai',
+                          'PENDING' => 'Chờ duyệt',
+                          _ => 'Chưa ghi nhận',
+                        }}',
+                        tone: switch (b.paymentStatus) {
+                          'CONFIRMED' => context.fc.success,
+                          'REJECTED' => context.fc.danger,
+                          'PENDING' => context.fc.warning,
+                          _ => context.fc.neutral,
+                        },
+                        icon: Icons.payments_outlined,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Gap.md),
+                  Text(b.branchName, style: theme.textTheme.headlineSmall),
+                  const SizedBox(height: Gap.xs),
+                  Text(b.courtName, style: theme.textTheme.titleMedium),
+                  const SizedBox(height: Gap.sm),
                   Text(
-                    b.courtName,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    b.label,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w800,
+                    'Mã đơn: ${b.code}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text('Mã đơn: ${b.code}'),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Thông tin buổi chơi',
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            Card(
+            const SizedBox(height: Gap.lg),
+            FcCard(
+              padding: const EdgeInsets.symmetric(vertical: Gap.xs),
               child: Column(
                 children: [
                   ListTile(
@@ -266,13 +297,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       DateFormat('dd/MM/yyyy').format(DateTime.parse(b.date)),
                     ),
                   ),
-                  const Divider(indent: 16, endIndent: 16),
+                  const Divider(indent: Gap.lg, endIndent: Gap.lg),
                   ListTile(
                     leading: const Icon(Icons.schedule),
                     title: const Text('Khung giờ'),
                     subtitle: Text(mergeSlotRanges(b.slots).join(' · ')),
                   ),
-                  const Divider(indent: 16, endIndent: 16),
+                  const Divider(indent: Gap.lg, endIndent: Gap.lg),
                   ListTile(
                     leading: const Icon(Icons.payments_outlined),
                     title: const Text('Tổng tiền'),
@@ -282,51 +313,66 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                         symbol: 'đ',
                         decimalDigits: 0,
                       ).format(b.amount),
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                      style: theme.textTheme.titleMedium,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Thanh toán: ${switch (b.paymentStatus) {
-                'CONFIRMED' => 'Đã thanh toán',
-                'REJECTED' => 'Bị từ chối',
-                'PENDING' when b.status == 'PENDING_PAYMENT' => 'Chưa gửi biên lai',
-                'PENDING' => 'Chờ duyệt',
-                _ => 'Chưa ghi nhận',
-              }}',
-            ),
-            const SizedBox(height: 20),
-            if (b.address != null) ...[
-              Text(b.address!),
-              OutlinedButton.icon(
-                onPressed: () => _open(
-                  Uri.https('www.google.com', '/maps/search/', {
-                    'api': '1',
-                    'query': b.address!,
-                  }),
+            if (b.address != null ||
+                b.phone != null &&
+                    RegExp(r'^\+?[0-9]{9,15}$').hasMatch(b.phone!)) ...[
+              const SizedBox(height: Gap.lg),
+              FcCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Địa điểm', style: theme.textTheme.titleSmall),
+                    if (b.address != null) ...[
+                      const SizedBox(height: Gap.sm),
+                      Text(b.address!),
+                      const SizedBox(height: Gap.md),
+                      OutlinedButton.icon(
+                        onPressed: () => _open(
+                          Uri.https('www.google.com', '/maps/search/', {
+                            'api': '1',
+                            'query': b.address!,
+                          }),
+                        ),
+                        icon: const Icon(Icons.map),
+                        label: const Text('Chỉ đường đến sân'),
+                      ),
+                    ],
+                    if (b.phone != null &&
+                        RegExp(r'^\+?[0-9]{9,15}$').hasMatch(b.phone!))
+                      TextButton.icon(
+                        onPressed: () =>
+                            _open(Uri(scheme: 'tel', path: b.phone)),
+                        icon: const Icon(Icons.phone),
+                        label: Text('Liên hệ chủ sân: ${b.phone}'),
+                      ),
+                  ],
                 ),
-                icon: const Icon(Icons.map),
-                label: const Text('Chỉ đường đến sân'),
               ),
             ],
-            if (b.phone != null &&
-                RegExp(r'^\+?[0-9]{9,15}$').hasMatch(b.phone!))
-              TextButton.icon(
-                onPressed: () => _open(Uri(scheme: 'tel', path: b.phone)),
-                icon: const Icon(Icons.phone),
-                label: Text('Liên hệ chủ sân: ${b.phone}'),
+            if (_policy != null && !_policy!.allowed) ...[
+              const SizedBox(height: Gap.lg),
+              Text(
+                _policy!.reason,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
               ),
-            if (_policy != null && !_policy!.allowed) Text(_policy!.reason),
+            ],
             if (b.status == 'CANCELLED' &&
                 b.paymentStatus == 'CONFIRMED' &&
-                widget.onRefund != null)
+                widget.onRefund != null) ...[
+              const SizedBox(height: Gap.lg),
               FilledButton(
                 onPressed: () => widget.onRefund!(b.id),
                 child: const Text('Yêu cầu / theo dõi hoàn tiền'),
               ),
+            ],
           ],
         ],
       ),
