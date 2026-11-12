@@ -4,59 +4,135 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/failure.dart';
 import '../domain/court_slot.dart';
-import '../domain/slot_repository.dart';
 import '../domain/slot_invalidations.dart';
-
-/// Transient notice (SnackBar) about a schedule change seen by a background
-/// resync. Compared by identity so the same text can be shown twice.
-class SlotAlert {
-  const SlotAlert(this.message);
-  final String message;
-}
+import '../domain/slot_options.dart';
+import '../domain/slot_repository.dart';
 
 class SlotPickerState {
-  const SlotPickerState({
+  SlotPickerState({
     required this.date,
-    this.slots = const [],
-    this.selectedIds = const {},
+    required this.courts,
+    this.slotsByCourt = const {},
+    this.courtFilter,
+    this.durationMinutes = 60,
+    this.showUnavailable = false,
+    this.selectedStart,
     this.loading = true,
     this.error,
     this.notice,
-    this.alert,
   });
+
   final DateTime date;
-  final List<CourtSlot> slots;
-  final Set<int> selectedIds;
+  final List<PickerCourt> courts;
+  final Map<int, List<CourtSlot>> slotsByCourt;
+
+  /// Null means "Tất cả sân": the picker suggests a free court by itself.
+  final int? courtFilter;
+  final int durationMinutes;
+  final bool showUnavailable;
+  final int? selectedStart;
   final bool loading;
   final String? error, notice;
-  final SlotAlert? alert;
-  List<CourtSlot> get selected =>
-      slots.where((s) => selectedIds.contains(s.id)).toList();
-  int get totalMinor =>
-      selected.fold(0, (total, slot) => total + slot.priceMinor);
+
+  late final List<StartOption> options = buildStartOptions(
+    courts: courts,
+    slotsByCourt: slotsByCourt,
+    courtFilter: courtFilter,
+    durationMinutes: durationMinutes,
+  );
+
+  /// Options the list shows: free ones, plus blocked ones on request.
+  List<StartOption> get visibleOptions =>
+      showUnavailable ? options : options.where((o) => o.available).toList();
+
+  int get availableCount => options.where((o) => o.available).length;
+
+  StartOption? get selectedOption {
+    for (final o in options) {
+      if (o.startMinute == selectedStart && o.available) return o;
+    }
+    return null;
+  }
+
+  PickerCourt? get selectedCourt {
+    final id = selectedOption?.suggestedCourtId;
+    return courts.where((c) => c.id == id).firstOrNull;
+  }
+
+  int get totalMinor => selectedOption?.priceMinor ?? 0;
+
+  SlotPickerState copyWith({
+    DateTime? date,
+    Map<int, List<CourtSlot>>? slotsByCourt,
+    Object? courtFilter = _keep,
+    int? durationMinutes,
+    bool? showUnavailable,
+    Object? selectedStart = _keep,
+    bool? loading,
+    Object? error = _keep,
+    Object? notice = _keep,
+  }) => SlotPickerState(
+    date: date ?? this.date,
+    courts: courts,
+    slotsByCourt: slotsByCourt ?? this.slotsByCourt,
+    courtFilter: identical(courtFilter, _keep)
+        ? this.courtFilter
+        : courtFilter as int?,
+    durationMinutes: durationMinutes ?? this.durationMinutes,
+    showUnavailable: showUnavailable ?? this.showUnavailable,
+    selectedStart: identical(selectedStart, _keep)
+        ? this.selectedStart
+        : selectedStart as int?,
+    loading: loading ?? this.loading,
+    error: identical(error, _keep) ? this.error : error as String?,
+    notice: identical(notice, _keep) ? this.notice : notice as String?,
+  );
+
+  static const _keep = Object();
 }
 
+/// Drives the start-time picker: one schedule per court of the branch, merged
+/// into start times for the chosen duration. Realtime invalidations and a slow
+/// poll keep the schedules fresh (SCRUM-108).
 class SlotPickerCubit extends Cubit<SlotPickerState> {
   SlotPickerCubit(
     this.repository, {
-    required this.courtId,
+    required List<PickerCourt> courts,
+    int? initialCourtId,
     DateTime? date,
     DateTime Function()? now,
-    SlotInvalidations? invalidations,
+    SlotInvalidations Function(int courtId)? invalidationsFor,
     this.pollInterval = const Duration(seconds: 15),
     this.healthyPollFactor = 4,
-  }) : _invalidations = invalidations,
+  }) : assert(courts.isNotEmpty),
        _now = now ?? DateTime.now,
-       super(SlotPickerState(date: date ?? venueToday(now?.call()))) {
-    _subscription = invalidations?.changes.listen((change) {
-      if (change == null || change.date == slotDateKey(state.date)) {
-        _resync();
+       super(
+         SlotPickerState(
+           date: date ?? venueToday(now?.call()),
+           courts: List.unmodifiable(courts),
+           courtFilter: courts.any((c) => c.id == initialCourtId)
+               ? initialCourtId
+               : null,
+         ),
+       ) {
+    if (invalidationsFor != null) {
+      for (final court in courts) {
+        final source = invalidationsFor(court.id);
+        _invalidations.add(source);
+        _subscriptions.add(
+          source.changes.listen((change) {
+            if (change == null || change.date == slotDateKey(state.date)) {
+              _resync();
+            }
+          }),
+        );
       }
-    });
-    // Safety resync: Redis Pub/Sub is not durable, so even a healthy socket is
-    // reconciled, just less often (pollInterval * healthyPollFactor).
+    }
+    // Redis Pub/Sub is not durable, so even a healthy socket is reconciled,
+    // just less often (pollInterval * healthyPollFactor).
     _poll = Timer.periodic(pollInterval, (_) {
-      if (_invalidations?.connected == true &&
+      if (_invalidations.isNotEmpty &&
+          _invalidations.every((i) => i.connected) &&
           ++_quietTicks < healthyPollFactor) {
         return;
       }
@@ -68,17 +144,15 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
       (_) => expirePastSlots(),
     );
   }
+
   final SlotRepository repository;
-  final int courtId;
   final Duration pollInterval;
   final int healthyPollFactor;
-  int _quietTicks = 0;
   final DateTime Function() _now;
-  late final Timer _expiry;
-  int _revision = 0;
-  final SlotInvalidations? _invalidations;
-  StreamSubscription<SlotChange?>? _subscription;
-  late final Timer _poll;
+  final List<SlotInvalidations> _invalidations = [];
+  final List<StreamSubscription<SlotChange?>> _subscriptions = [];
+  late final Timer _poll, _expiry;
+  int _quietTicks = 0, _revision = 0;
   bool _resyncBusy = false, _resyncAgain = false;
 
   Future<void> _resync() async {
@@ -98,6 +172,7 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
     }
   }
 
+  /// Reloads the schedules of every court for [date] (default: current day).
   Future<void> refresh([DateTime? date]) async {
     await _load(date);
     if (_resyncAgain && !isClosed) await _resync();
@@ -106,45 +181,38 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
   Future<void> _load(DateTime? date, {bool silent = false}) async {
     final revision = ++_revision;
     final nextDate = date ?? state.date;
-    final previous = slotDateKey(nextDate) == slotDateKey(state.date)
-        ? state.selectedIds
-        : <int>{};
-    if (!silent) emit(SlotPickerState(date: nextDate));
-    try {
-      final response = await repository.getSlots(courtId, nextDate);
-      if (isClosed || revision != _revision) return;
-      final slots = response
-          .map((s) => s.isPast(nextDate, _now()) ? s.expired : s)
-          .toList();
-      final selectedBefore = silent ? state.selectedIds : previous;
-      final alert = silent && !state.loading && state.error == null
-          ? slotChangeAlert(state.slots, slots)
-          : null;
-      final ids = slots
-          .where(
-            (s) =>
-                s.status == SlotStatus.available &&
-                selectedBefore.contains(s.id),
-          )
-          .map((s) => s.id)
-          .toSet();
+    final sameDay = slotDateKey(nextDate) == slotDateKey(state.date);
+    if (!silent) {
       emit(
-        SlotPickerState(
+        state.copyWith(
           date: nextDate,
-          slots: List.unmodifiable(slots),
-          selectedIds: Set.unmodifiable(ids),
-          loading: false,
-          notice: ids.length < selectedBefore.length
-              ? 'Một số khung giờ đã thay đổi. Vui lòng chọn lại.'
-              : null,
-          alert: alert == null ? null : SlotAlert(alert),
+          slotsByCourt: const {},
+          selectedStart: sameDay ? state.selectedStart : null,
+          loading: true,
+          error: null,
+          notice: null,
         ),
       );
+    }
+    try {
+      final loaded = await Future.wait([
+        for (final court in state.courts)
+          repository
+              .getSlots(court.id, nextDate)
+              .then((slots) => MapEntry(court.id, slots)),
+      ]);
+      if (isClosed || revision != _revision) return;
+      final byCourt = {
+        for (final entry in loaded)
+          entry.key: List<CourtSlot>.unmodifiable(
+            entry.value.map((s) => s.isPast(nextDate, _now()) ? s.expired : s),
+          ),
+      };
+      _emitSlots(byCourt, nextDate);
     } catch (error) {
       if (isClosed || revision != _revision || silent) return;
       emit(
-        SlotPickerState(
-          date: nextDate,
+        state.copyWith(
           loading: false,
           error: error is Failure
               ? error.message
@@ -154,105 +222,131 @@ class SlotPickerCubit extends Cubit<SlotPickerState> {
     }
   }
 
-  /// Describes the first slot whose status changed between two schedule reads,
-  /// e.g. "Khung giờ 18:00 vừa có người giữ chỗ". Null when nothing changed.
-  static String? slotChangeAlert(
-    List<CourtSlot> before,
-    List<CourtSlot> after,
-  ) {
-    final previous = {for (final s in before) s.id: s.status};
-    final changed = <CourtSlot>[];
-    for (final slot in after) {
-      final was = previous[slot.id];
-      if (was == null || was == slot.status) continue;
-      if ({
-        was,
-        slot.status,
-      }.any((v) => v == SlotStatus.expired || v == SlotStatus.unknown)) {
-        continue;
-      }
-      changed.add(slot);
+  void _emitSlots(
+    Map<int, List<CourtSlot>> byCourt,
+    DateTime date, {
+    String? lostMessage,
+  }) {
+    var next = state.copyWith(
+      date: date,
+      slotsByCourt: byCourt,
+      loading: false,
+      error: null,
+    );
+    if (next.selectedStart != null && next.selectedOption == null) {
+      next = next.copyWith(
+        selectedStart: null,
+        notice: lostMessage ?? 'Khung giờ bạn chọn vừa thay đổi. Chọn lại nhé.',
+      );
     }
-    if (changed.isEmpty) return null;
-    final first = changed.first;
-    final time =
-        '${((first.startMinute ~/ 60) % 24).toString().padLeft(2, '0')}:'
-        '${(first.startMinute % 60).toString().padLeft(2, '0')}';
-    final privateEvent =
-        first.status == SlotStatus.outOfService &&
-        first.restriction?.isPrivateEvent == true;
-    final what = privateEvent
-        ? 'vừa được chủ sân Bao sân'
-        : switch (first.status) {
-            SlotStatus.hold => 'vừa có người giữ chỗ',
-            SlotStatus.booked => 'vừa được đặt',
-            SlotStatus.outOfService => 'vừa tạm ngừng phục vụ (bảo trì)',
-            _ => 'vừa trống lại',
-          };
-    final more = changed.length > 1
-        ? ' (và ${changed.length - 1} khung giờ khác)'
-        : '';
-    return 'Khung giờ $time $what$more';
+    emit(next);
   }
 
-  /// Returns true only when an available slot was actually toggled.
-  bool toggle(int slotId) {
-    expirePastSlots();
-    if (state.loading || state.error != null) return false;
-    final slot = state.slots.where((s) => s.id == slotId).firstOrNull;
-    if (slot == null || slot.status != SlotStatus.available) return false;
-    final selected = {...state.selectedIds};
-    if (!selected.remove(slotId)) selected.add(slotId);
+  void selectDate(DateTime date) {
+    if (slotDateKey(date) == slotDateKey(state.date) && !state.loading) return;
+    refresh(date);
+  }
+
+  /// Jumps to the next day of [days] (wraps around); used by the empty state.
+  void selectNextDay(List<DateTime> days) {
+    final index = days.indexWhere(
+      (d) => slotDateKey(d) == slotDateKey(state.date),
+    );
+    selectDate(days[(index + 1) % days.length]);
+  }
+
+  void selectCourt(int? courtId) {
+    if (courtId == state.courtFilter) return;
     emit(
-      SlotPickerState(
-        date: state.date,
-        slots: state.slots,
-        selectedIds: Set.unmodifiable(selected),
-        loading: false,
+      state.copyWith(courtFilter: courtId, selectedStart: null, notice: null),
+    );
+  }
+
+  void selectDuration(int minutes) {
+    if (minutes == state.durationMinutes) return;
+    emit(
+      state.copyWith(
+        durationMinutes: minutes,
+        selectedStart: null,
+        notice: null,
       ),
     );
+  }
+
+  void toggleUnavailable() =>
+      emit(state.copyWith(showUnavailable: !state.showUnavailable));
+
+  /// Selects (or deselects) a start time. Returns true when it is selected.
+  bool selectStart(int startMinute) {
+    expirePastSlots();
+    if (state.loading || state.error != null) return false;
+    if (state.selectedStart == startMinute) {
+      emit(state.copyWith(selectedStart: null, notice: null));
+      return false;
+    }
+    final option = state.options
+        .where((o) => o.startMinute == startMinute && o.available)
+        .firstOrNull;
+    if (option == null) return false;
+    emit(state.copyWith(selectedStart: startMinute, notice: null));
     return true;
   }
 
   void clear() {
-    if (state.loading || state.error != null) return;
-    emit(SlotPickerState(date: state.date, slots: state.slots, loading: false));
+    if (state.selectedStart == null) return;
+    emit(state.copyWith(selectedStart: null));
   }
 
   void expirePastSlots() {
     if (state.loading || state.error != null || isClosed) return;
-    final expired = state.slots
-        .where(
-          (s) => s.status != SlotStatus.expired && s.isPast(state.date, _now()),
-        )
-        .map((s) => s.id)
-        .toSet();
-    if (expired.isEmpty) return;
-    emit(
-      SlotPickerState(
-        date: state.date,
-        loading: false,
-        slots: List.unmodifiable(
-          state.slots.map((s) => expired.contains(s.id) ? s.expired : s),
+    var changed = false;
+    final byCourt = {
+      for (final entry in state.slotsByCourt.entries)
+        entry.key: List<CourtSlot>.unmodifiable(
+          entry.value.map((s) {
+            if (s.status != SlotStatus.expired &&
+                s.isPast(state.date, _now())) {
+              changed = true;
+              return s.expired;
+            }
+            return s;
+          }),
         ),
-        selectedIds: Set.unmodifiable(state.selectedIds.difference(expired)),
-        notice: state.selectedIds.intersection(expired).isNotEmpty
-            ? 'Khung giờ đã bắt đầu được bỏ khỏi lựa chọn.'
-            : state.notice,
-      ),
+    };
+    if (!changed) return;
+    _emitSlots(
+      byCourt,
+      state.date,
+      lostMessage: 'Khung giờ đã bắt đầu được bỏ khỏi lựa chọn.',
     );
   }
 
-  SlotSelection get selection =>
-      SlotSelection(courtId: courtId, date: state.date, slots: state.selected);
+  /// The slots to hold for the selected start; null when nothing is selected.
+  SlotSelection? get selection {
+    expirePastSlots();
+    final option = state.selectedOption;
+    final courtId = option?.suggestedCourtId;
+    if (option == null || courtId == null) return null;
+    final cells = bookableCells(
+      state.slotsByCourt[courtId] ?? const [],
+      option.startMinute,
+      option.durationMinutes,
+    );
+    if (cells == null) return null;
+    return SlotSelection(courtId: courtId, date: state.date, slots: cells);
+  }
 
   @override
   Future<void> close() async {
     _revision++;
     _poll.cancel();
-    await _subscription?.cancel();
-    await _invalidations?.close();
     _expiry.cancel();
+    for (final subscription in _subscriptions) {
+      await subscription.cancel();
+    }
+    for (final source in _invalidations) {
+      await source.close();
+    }
     return super.close();
   }
 }

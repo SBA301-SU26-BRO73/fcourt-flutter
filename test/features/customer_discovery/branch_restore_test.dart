@@ -54,9 +54,10 @@ void main() {
             ),
           ),
           GoRoute(
-            path: '/courts/:id/slots',
-            builder: (_, state) =>
-                Scaffold(body: Text('slots:${state.pathParameters['id']}')),
+            path: '/branches/:id/slots',
+            builder: (_, state) => Scaffold(
+              body: Text('slots:${state.uri.queryParameters['court']}'),
+            ),
           ),
         ],
       );

@@ -89,7 +89,10 @@ import '../src/features/customer_discovery/presentation/discovery_cubit.dart';
 import '../src/features/customer_discovery/presentation/screens/customer_home_screen.dart';
 import '../src/features/customer_discovery/presentation/screens/branch_list_screen.dart';
 import '../src/features/customer_discovery/presentation/screens/branch_detail_screen.dart';
+import '../src/features/customer_slots/presentation/branch_slot_picker_page.dart';
 import '../src/features/customer_slots/presentation/slot_picker_screen.dart';
+import '../src/features/customer_slots/domain/slot_invalidations.dart';
+import '../src/features/customer_slots/domain/slot_options.dart';
 import '../src/features/customer_slots/domain/court_slot.dart';
 import '../features/booking/presentation/pages/booking_summary_screen.dart';
 import '../features/payment/domain/entities/payment_checkout.dart';
@@ -146,6 +149,61 @@ GoRouter createRouter(
       ratingOpen = false;
     }
   }
+
+  const slotSocket = String.fromEnvironment('SLOT_WEBSOCKET_URL');
+  SlotInvalidations Function(int)? slotInvalidations = slotSocket.isEmpty
+      ? null
+      : (courtId) => StompSlotInvalidations(slotSocket, courtId);
+  DateTime? slotDate(GoRouterState state) {
+    final text = state.uri.queryParameters['date'];
+    final parsed = text == null ? null : DateTime.tryParse(text);
+    return parsed != null && slotDateKey(parsed) == text ? parsed : null;
+  }
+
+  /// Picker -> booking summary; guests go through login and come back here.
+  void Function(SlotSelection, String)? slotContinue(
+    BuildContext context,
+    GoRouterState state,
+  ) => dependencies.bookingRepository is! BookingCreationRepository
+      ? null
+      : (selection, courtName) {
+          try {
+            final user = authBloc.state.user;
+            if (user == null) {
+              context.push(
+                Uri(
+                  path: AppRoutes.login,
+                  queryParameters: {'from': state.uri.toString()},
+                ).toString(),
+              );
+              return;
+            }
+            context.push(
+              '/booking/summary',
+              extra: BookingSummaryArguments(
+                selection: bookingSelectionFromSlots(
+                  selection,
+                  branchName:
+                      state.uri.queryParameters['branchName'] ??
+                      'Chi nhánh đã chọn',
+                  courtName: courtName,
+                ),
+                customerName: user.fullName ?? '',
+                phone: user.phone ?? '',
+                onHeld: (checkout) =>
+                    context.push('/booking/confirm', extra: checkout),
+              ),
+            );
+          } on ArgumentError {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Vui lòng chọn các khung giờ liên tiếp với giá hợp lệ.',
+                ),
+              ),
+            );
+          }
+        };
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
@@ -726,67 +784,50 @@ GoRouter createRouter(
                   ),
                 );
               }
-              final dateText = state.uri.queryParameters['date'];
-              final parsed = dateText == null
-                  ? null
-                  : DateTime.tryParse(dateText);
-              const slotSocket = String.fromEnvironment('SLOT_WEBSOCKET_URL');
+              // Deep link to a single court: the picker with one court.
               return SlotPickerScreen(
-                invalidations: slotSocket.isEmpty
-                    ? null
-                    : StompSlotInvalidations(slotSocket, courtId),
                 repository: repository,
-                courtId: courtId,
-                courtName: state.uri.queryParameters['courtName'],
+                courts: [
+                  PickerCourt(
+                    id: courtId,
+                    name:
+                        state.uri.queryParameters['courtName'] ??
+                        'Sân #$courtId',
+                  ),
+                ],
                 branchName: state.uri.queryParameters['branchName'],
-                onContinue:
-                    dependencies.bookingRepository is! BookingCreationRepository
-                    ? null
-                    : (selection) {
-                        try {
-                          final user = authBloc.state.user;
-                          if (user == null) {
-                            context.push(
-                              Uri(
-                                path: AppRoutes.login,
-                                queryParameters: {'from': state.uri.toString()},
-                              ).toString(),
-                            );
-                            return;
-                          }
-                          context.push(
-                            '/booking/summary',
-                            extra: BookingSummaryArguments(
-                              selection: bookingSelectionFromSlots(
-                                selection,
-                                branchName:
-                                    state.uri.queryParameters['branchName'] ??
-                                    'Chi nhánh đã chọn',
-                                courtName:
-                                    state.uri.queryParameters['courtName'] ??
-                                    'Sân #$courtId',
-                              ),
-                              customerName: user.fullName ?? '',
-                              phone: user.phone ?? '',
-                              onHeld: (checkout) => context.push(
-                                '/booking/confirm',
-                                extra: checkout,
-                              ),
-                            ),
-                          );
-                        } on ArgumentError {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Vui lòng chọn các khung giờ liên tiếp với giá hợp lệ.',
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                date: parsed != null && slotDateKey(parsed) == dateText
-                    ? parsed
-                    : null,
+                invalidationsFor: slotInvalidations,
+                onContinue: slotContinue(context, state),
+                date: slotDate(state),
+              );
+            },
+          ),
+          FcRoute(
+            path: '/branches/:branchId/slots',
+            builder: (context, state) {
+              final branchId = int.tryParse(
+                state.pathParameters['branchId'] ?? '',
+              );
+              final repository = dependencies.slotRepository;
+              if (branchId == null || branchId <= 0 || repository == null) {
+                return Scaffold(
+                  appBar: AppBar(title: const Text('Chọn giờ chơi')),
+                  body: const Center(
+                    child: Text('Vui lòng chọn chi nhánh hợp lệ để xem lịch.'),
+                  ),
+                );
+              }
+              return BranchSlotPickerPage(
+                branchId: branchId,
+                discovery: dependencies.discoveryRepository,
+                slots: repository,
+                branchName: state.uri.queryParameters['branchName'],
+                initialCourtId: int.tryParse(
+                  state.uri.queryParameters['court'] ?? '',
+                ),
+                date: slotDate(state),
+                invalidationsFor: slotInvalidations,
+                onContinue: slotContinue(context, state),
               );
             },
           ),

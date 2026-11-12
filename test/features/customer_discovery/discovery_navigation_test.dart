@@ -1,3 +1,5 @@
+import '../customer_slots/slot_test_support.dart';
+
 import 'package:fcourt/app/app.dart';
 import 'package:fcourt/features/auth/domain/usecases/logout.dart';
 import 'package:fcourt/features/auth/domain/usecases/restore_session.dart';
@@ -119,6 +121,7 @@ void main() {
             authRepository: auth,
             catalogRepository: MockCatalogRepository(),
             discoveryRepository: discovery,
+            slotRepository: FakeSlots({}),
           ),
         ),
       );
@@ -134,13 +137,9 @@ void main() {
       expect(find.text('Sân Khác'), findsNothing);
       await tester.tap(find.text('Đặt sân ngay'));
       await tester.pumpAndSettle();
-      expect(
-        find.descendant(
-          of: find.byType(SnackBar),
-          matching: find.textContaining('Chi nhánh chưa có sân hoạt động.'),
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Chi nhánh chưa có sân hoạt động'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(find.widgetWithText(TextField, 'Đường A'), findsOneWidget);

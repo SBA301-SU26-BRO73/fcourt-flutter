@@ -1,244 +1,331 @@
-import 'dart:ui' show SemanticsAction, SemanticsActionEvent;
+import 'dart:io';
+import 'dart:ui' as ui;
 
+import 'package:fcourt/app/theme/app_theme.dart';
 import 'package:fcourt/src/features/customer_slots/domain/court_slot.dart';
+import 'package:fcourt/src/features/customer_slots/domain/slot_options.dart';
 import 'package:fcourt/src/features/customer_slots/domain/slot_repository.dart';
+import 'package:fcourt/src/features/customer_slots/domain/slot_restriction.dart';
 import 'package:fcourt/src/features/customer_slots/presentation/slot_picker_screen.dart';
-import 'package:fcourt/src/features/customer_slots/presentation/widgets/slot_grid_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-CourtSlot makeSlot(int id, SlotStatus status, {int price = 7500000}) =>
-    CourtSlot(
-      id: id,
-      startMinute: 390 + id * 30,
-      endMinute: 420 + id * 30,
-      priceMinor: price,
-      status: status,
-    );
+import 'slot_test_support.dart';
 
-class FakeSlots implements SlotRepository {
-  final calls = <DateTime>[];
-  @override
-  Future<List<CourtSlot>> getSlots(int courtId, DateTime date) async {
-    calls.add(date);
-    return [
-      makeSlot(1, SlotStatus.available),
-      makeSlot(2, SlotStatus.available, price: 9000000),
-      makeSlot(3, SlotStatus.booked),
-      makeSlot(4, SlotStatus.hold),
-      makeSlot(5, SlotStatus.outOfService),
-    ];
-  }
+final day = DateTime(2030, 1, 1);
+
+void _noop(SlotSelection selection, String courtName) {}
+
+Widget app(
+  SlotRepository repository, {
+  Brightness brightness = Brightness.light,
+  List<PickerCourt> courts = const [court1, court2],
+  void Function(SlotSelection, String)? onContinue = _noop,
+  Key? boundary,
+}) => MaterialApp(
+  key: UniqueKey(),
+  debugShowCheckedModeBanner: false,
+  theme: brightness == Brightness.dark ? AppTheme.dark() : AppTheme.light(),
+  home: RepaintBoundary(
+    key: boundary,
+    child: SlotPickerScreen(
+      repository: repository,
+      courts: courts,
+      branchName: 'Sân Cầu Lông Ba Đình',
+      date: day,
+      now: () => DateTime.utc(2029, 12, 31),
+      onContinue: onContinue,
+    ),
+  ),
+);
+
+/// Builds the first frame, lets the fake repository answer and settles motion.
+Future<void> settle(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump();
+  await tester.pumpAndSettle();
 }
 
+void phone(WidgetTester tester) {
+  tester.view.physicalSize = const Size(390 * 2, 844 * 2);
+  tester.view.devicePixelRatio = 2;
+  addTearDown(tester.view.reset);
+}
+
+/// Day with a booked morning slot and a lunch break, like a real branch.
+FakeSlots busyDay() => FakeSlots({
+  1: daySlots(
+    1,
+    blocked: {
+      8 * 60: SlotStatus.booked,
+      8 * 60 + 30: SlotStatus.booked,
+      18 * 60: SlotStatus.hold,
+    },
+  ),
+  2: daySlots(2),
+});
+
 void main() {
-  testWidgets(
-    'assistive tap selects an available slot and unavailable slots have no tap action',
-    (tester) async {
-      final semantics = tester.ensureSemantics();
-      final selected = <int>{};
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SlotGridPicker(
-              slots: [
-                makeSlot(1, SlotStatus.available),
-                makeSlot(2, SlotStatus.booked),
-              ],
-              selectedIds: selected,
-              onToggle: (id) {
-                selected.add(id);
-                return true;
+  for (final brightness in Brightness.values) {
+    group('${brightness.name} mode', () {
+      testWidgets('shows day strip, courts, durations and grouped starts', (
+        tester,
+      ) async {
+        phone(tester);
+        await tester.pumpWidget(app(busyDay(), brightness: brightness));
+        await tester.pump();
+        await settle(tester);
+        expect(find.text('Chọn giờ chơi'), findsOneWidget);
+        expect(find.text('Sân Cầu Lông Ba Đình'), findsOneWidget);
+        expect(find.text('NGÀY CHƠI'), findsOneWidget);
+        expect(find.text('Tất cả sân'), findsOneWidget);
+        expect(find.text('Sân 2'), findsOneWidget);
+        for (final label in ['1 giờ', '1,5 giờ', '2 giờ']) {
+          expect(find.text(label), findsOneWidget);
+        }
+        expect(find.text('Sáng'), findsOneWidget);
+        expect(find.text('Chưa chọn giờ'), findsOneWidget);
+        expect(find.text('Còn Sân 1, Sân 2'), findsWidgets);
+        // 08:00 is booked on court 1 only, so court 2 is the only one left.
+        expect(find.text('Còn Sân 2'), findsWidgets);
+      });
+
+      testWidgets(
+        'two-hour game takes three taps and hands over court + slots',
+        (tester) async {
+          phone(tester);
+          SlotSelection? picked;
+          String? courtName;
+          await tester.pumpWidget(
+            app(
+              busyDay(),
+              brightness: brightness,
+              onContinue: (selection, name) {
+                picked = selection;
+                courtName = name;
               },
             ),
-          ),
-        ),
-      );
-      final available = tester.getSemantics(
-        find.byKey(const ValueKey('slot-1')),
-      );
-      final booked = tester.getSemantics(find.byKey(const ValueKey('slot-2')));
-      expect(
-        available.getSemanticsData().hasAction(SemanticsAction.tap),
-        isTrue,
-      );
-      expect(booked.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
-      tester.binding.performSemanticsAction(
-        SemanticsActionEvent(
-          type: SemanticsAction.tap,
-          nodeId: available.id,
-          viewId: tester.view.viewId,
-        ),
-      );
-      await tester.pump();
-      expect(selected, {1});
-      semantics.dispose();
-    },
-  );
-
-  testWidgets(
-    'touch toggles only available slots, emits haptics and exposes readable states',
-    (tester) async {
-      final haptics = <MethodCall>[];
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        (call) async {
-          if (call.method == 'HapticFeedback.vibrate') haptics.add(call);
-          return null;
+          );
+          await settle(tester);
+          FilledButton continueButton() =>
+              tester.widget<FilledButton>(find.byType(FilledButton));
+          expect(continueButton().onPressed, isNull);
+          await tester.tap(find.text('2 giờ')); // tap 1
+          await settle(tester);
+          await tester.tap(find.text('07:00 – 09:00')); // tap 2
+          await settle(tester);
+          expect(find.textContaining('Sân 2 (gợi ý) · 2 giờ'), findsOneWidget);
+          expect(find.text('100.000 đ'), findsWidgets);
+          await tester.tap(find.text('Tiếp tục')); // tap 3
+          expect(courtName, 'Sân 2', reason: 'court 1 is booked at 08:00');
+          expect(picked!.courtId, 2);
+          expect(picked!.slots.length, 4);
+          expect(picked!.totalMinor, 4 * 2500000);
         },
       );
-      addTearDown(
-        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          SystemChannels.platform,
-          null,
-        ),
+
+      testWidgets('court chip narrows the list and clears the selection', (
+        tester,
+      ) async {
+        phone(tester);
+        await tester.pumpWidget(app(busyDay(), brightness: brightness));
+        await settle(tester);
+        await tester.tap(find.text('07:00 – 08:00'));
+        await settle(tester);
+        expect(find.textContaining('(gợi ý)'), findsOneWidget);
+        await tester.tap(find.text('Sân 2'));
+        await settle(tester);
+        expect(find.text('Chưa chọn giờ'), findsOneWidget);
+        expect(find.text('Còn Sân 1, Sân 2'), findsNothing);
+      });
+
+      testWidgets('blocked starts are hidden until the switch is on', (
+        tester,
+      ) async {
+        phone(tester);
+        await tester.pumpWidget(app(busyDay(), brightness: brightness));
+        await settle(tester);
+        await tester.tap(find.text('Sân 1'));
+        await settle(tester);
+        expect(find.text('08:00 – 09:00'), findsNothing);
+        await tester.tap(find.text('Hiện giờ đã đặt / đã qua'));
+        await settle(tester);
+        expect(find.text('08:00 – 09:00'), findsOneWidget);
+        expect(find.text('Đã đặt'), findsWidgets);
+        await tester.tap(find.text('08:00 – 09:00'));
+        await settle(tester);
+        expect(find.text('Chưa chọn giờ'), findsOneWidget);
+      });
+
+      testWidgets('empty day offers Xem ngày khác', (tester) async {
+        phone(tester);
+        final repository = FakeSlots({
+          1: daySlots(1, to: 8 * 60),
+          2: daySlots(2, to: 8 * 60),
+        });
+        await tester.pumpWidget(app(repository, brightness: brightness));
+        await settle(tester);
+        await tester.tap(find.text('2 giờ'));
+        await settle(tester);
+        expect(find.text('Không còn giờ trống'), findsOneWidget);
+        repository.calls.clear();
+        await tester.tap(find.text('Xem ngày khác'));
+        await settle(tester);
+        expect(repository.calls.toSet(), {1, 2});
+      });
+    });
+  }
+
+  testWidgets('single court hides the court chips', (tester) async {
+    phone(tester);
+    await tester.pumpWidget(
+      app(FakeSlots({1: daySlots(1)}), courts: const [court1]),
+    );
+    await settle(tester);
+    expect(find.text('SÂN'), findsNothing);
+    expect(find.text('Tất cả sân'), findsNothing);
+    expect(find.text('Còn trống'), findsWidgets);
+  });
+
+  testWidgets('skeleton shows while loading and touch targets are 48dp', (
+    tester,
+  ) async {
+    phone(tester);
+    await tester.pumpWidget(app(busyDay()));
+    expect(find.bySemanticsLabel('Đang tải giờ trống'), findsOneWidget);
+    await settle(tester);
+    for (final label in ['Tất cả sân', '1 giờ']) {
+      final pill = find.ancestor(
+        of: find.text(label),
+        matching: find.byType(AnimatedContainer),
       );
-      final selected = <int>{};
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StatefulBuilder(
-              builder: (context, setState) => SlotGridPicker(
-                slots: [
-                  for (var i = 0; i < SlotStatus.values.length; i++)
-                    makeSlot(i + 1, SlotStatus.values[i]),
-                ],
-                selectedIds: selected,
-                onToggle: (id) {
-                  setState(() {
-                    if (!selected.remove(id)) selected.add(id);
-                  });
-                  return true;
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.byKey(const ValueKey('slot-1')));
-      await tester.pump();
-      expect(selected, {1});
-      expect(find.text('Đã chọn'), findsOneWidget);
-      for (var id = 2; id <= 6; id++) {
-        await tester.tap(find.byKey(ValueKey('slot-$id')));
+      expect(tester.getSize(pill.first).height, greaterThanOrEqualTo(48));
+    }
+    final tile = find.ancestor(
+      of: find.text('07:00 – 08:00'),
+      matching: find.byType(AnimatedContainer),
+    );
+    expect(tester.getSize(tile.first).height, greaterThanOrEqualTo(64));
+    expect(
+      tester.getSize(find.byType(FilledButton)).height,
+      greaterThanOrEqualTo(48),
+    );
+  });
+
+  testWidgets('private event lock shows contact card and stays unselectable', (
+    tester,
+  ) async {
+    phone(tester);
+    const contact = SlotRestriction(
+      isPrivateEvent: true,
+      contactName: 'Bộ phận sự kiện',
+      contactPhone: '0901234567',
+    );
+    final slots = [
+      for (final s in daySlots(1, to: 10 * 60))
+        s.startMinute < 8 * 60
+            ? CourtSlot(
+                id: s.id,
+                startMinute: s.startMinute,
+                endMinute: s.endMinute,
+                priceMinor: s.priceMinor,
+                status: SlotStatus.outOfService,
+                restriction: contact,
+              )
+            : s,
+    ];
+    await tester.pumpWidget(app(FakeSlots({1: slots}), courts: const [court1]));
+    await settle(tester);
+    expect(find.text('Liên hệ sự kiện'), findsOneWidget);
+    await tester.tap(find.text('Hiện giờ đã đặt / đã qua'));
+    await settle(tester);
+    expect(find.text('Bao sân'), findsWidgets);
+    await tester.tap(find.text('07:00 – 08:00'));
+    await settle(tester);
+    expect(find.text('Chưa chọn giờ'), findsOneWidget);
+  });
+
+  // Screenshots for the PR: SLOT_PICKER_SHOTS=<dir> flutter test <this file>.
+  final shotDir = Platform.environment['SLOT_PICKER_SHOTS'];
+  testWidgets('preview screenshots (light and dark)', skip: shotDir == null, (
+    tester,
+  ) async {
+    phone(tester);
+    await _loadFonts();
+    for (final brightness in Brightness.values) {
+      Future<GlobalKey> mount(SlotRepository repository) async {
+        final key = GlobalKey();
+        await tester.pumpWidget(
+          app(repository, brightness: brightness, boundary: key),
+        );
+        return key;
       }
-      await tester.pump();
-      expect(selected, {1});
-      expect(haptics.length, 1);
-      expect(haptics.single.arguments, 'HapticFeedbackType.selectionClick');
-      await tester.tap(find.byKey(const ValueKey('slot-1')));
-      await tester.pump();
-      expect(selected, isEmpty);
-      expect(haptics.length, 2);
-      expect(
-        tester.getSize(find.byKey(const ValueKey('slot-1'))).height,
-        greaterThanOrEqualTo(48),
-      );
-      expect(find.text('Đã đặt'), findsOneWidget);
-      expect(find.text('Đang giữ'), findsOneWidget);
-      expect(find.text('Ngừng phục vụ'), findsOneWidget);
-    },
-  );
 
-  testWidgets(
-    'bottom bar updates total and hands off exact selected IDs and date',
-    (tester) async {
-      tester.view.physicalSize = const Size(412, 915);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final repository = FakeSlots();
-      SlotSelection? selection;
-      final date = venueToday().add(const Duration(days: 1));
-      await tester.pumpWidget(
-        MaterialApp(
-          home: SlotPickerScreen(
-            repository: repository,
-            courtId: 9,
-            courtName: 'Sân kiểm thử',
-            date: date,
-            onContinue: (value) => selection = value,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('slot-1')),
-        150,
-        scrollable: find.byWidgetPredicate(
-          (widget) =>
-              widget is Scrollable &&
-              widget.axisDirection == AxisDirection.down,
-        ),
-      );
-      await tester.tap(find.byKey(const ValueKey('slot-1')));
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('slot-2')));
-      await tester.pump();
-      expect(find.text('2 slot · 60 phút'), findsOneWidget);
-      expect(find.text('165.000 đ'), findsOneWidget);
-      await tester.tap(find.text('Tiếp tục'));
-      await tester.pump();
-      expect(selection?.courtId, 9);
-      expect(selection?.slots.map((s) => s.id), [1, 2]);
-      expect(selection?.totalMinor, 16500000);
-      expect(selection?.date, date);
-      await tester.tap(find.text('Bỏ chọn tất cả'));
-      await tester.pump();
-      expect(find.text('0 slot · 0 phút'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
+      String file(String name) =>
+          '$shotDir/slot-picker-${brightness.name}-$name.png';
 
-  testWidgets(
-    'changing day clears selection and small screens support large text without overflow',
-    (tester) async {
-      tester.view.physicalSize = const Size(320, 640);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final repository = FakeSlots();
-      await tester.pumpWidget(
-        MaterialApp(
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context)
-                .copyWith(textScaler: const TextScaler.linear(1.6)),
-            child: child!,
-          ),
-          home: SlotPickerScreen(
-            repository: repository,
-            courtId: 1,
-            date: venueToday().add(const Duration(days: 1)),
-          ),
-        ),
+      var key = await mount(busyDay());
+      await settle(tester);
+      await _shot(tester, key, file('1-start'));
+      await tester.tap(find.text('2 giờ'));
+      await settle(tester);
+      await tester.tap(find.text('07:00 – 09:00'));
+      await settle(tester);
+      await _shot(tester, key, file('2-selected'));
+      await tester.tap(find.text('Sân 1'));
+      await settle(tester);
+      await tester.tap(find.text('Hiện giờ đã đặt / đã qua'));
+      await settle(tester);
+      await tester.drag(find.byType(ListView).first, const Offset(0, -330));
+      await settle(tester);
+      await _shot(tester, key, file('3-show-booked'));
+      key = await mount(
+        FakeSlots({1: daySlots(1, to: 8 * 60), 2: daySlots(2, to: 8 * 60)}),
       );
-      await tester.pumpAndSettle();
-      final verticalScroll = find.byWidgetPredicate(
-        (widget) =>
-            widget is Scrollable && widget.axisDirection == AxisDirection.down,
-      );
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('slot-1')),
-        150,
-        scrollable: verticalScroll,
-      );
-      await tester.tap(find.byKey(const ValueKey('slot-1')));
-      await tester.pump();
-      expect(find.text('1 slot · 30 phút'), findsOneWidget);
-      final today = find.byKey(
-        ValueKey('slot-date-${slotDateKey(venueToday())}'),
-      );
-      tester.state<ScrollableState>(verticalScroll).position.jumpTo(0);
-      await tester.pumpAndSettle();
-      await Scrollable.ensureVisible(tester.element(today), alignment: .5);
-      await tester.pumpAndSettle();
-      await tester.tap(today);
-      await tester.pumpAndSettle();
-      expect(find.text('0 slot · 0 phút'), findsOneWidget);
-      expect(repository.calls.length, 2);
-      expect(tester.takeException(), isNull);
+      await settle(tester);
+      await tester.tap(find.text('2 giờ'));
+      await settle(tester);
+      await _shot(tester, key, file('4-no-slots'));
+      key = await mount(PendingSlots());
+      await tester.pump(const Duration(milliseconds: 100));
+      await _shot(tester, key, file('5-skeleton'));
       await tester.pumpWidget(const SizedBox());
-    },
-  );
+    }
+  });
+}
+
+Future<void> _loadFonts() async {
+  final root = Platform.environment['FLUTTER_ROOT'];
+  if (root != null) {
+    final icons = File(
+      '$root/bin/cache/artifacts/material_fonts/materialicons-regular.otf',
+    );
+    if (icons.existsSync()) {
+      final loader = FontLoader('MaterialIcons')
+        ..addFont(Future.value(ByteData.sublistView(icons.readAsBytesSync())));
+      await loader.load();
+    }
+  }
+  final loader = FontLoader('BeVietnamPro');
+  for (final name in ['Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold']) {
+    final bytes = File('assets/fonts/BeVietnamPro-$name.ttf').readAsBytesSync();
+    loader.addFont(
+      Future.value(ByteData.sublistView(Uint8List.fromList(bytes))),
+    );
+  }
+  await loader.load();
+}
+
+Future<void> _shot(WidgetTester tester, GlobalKey key, String path) async {
+  await tester.runAsync(() async {
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    final image = await boundary.toImage(pixelRatio: 2);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    File(path)
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(data!.buffer.asUint8List());
+  });
 }
