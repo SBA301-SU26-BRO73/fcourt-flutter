@@ -78,11 +78,13 @@ class _CountdownTimerWidgetState extends State<CountdownTimerWidget>
       child: Text(
         '${(remaining ~/ 60).toString().padLeft(2, '0')}:${(remaining % 60).toString().padLeft(2, '0')}',
         key: const ValueKey('hold-countdown'),
-        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          fontFeatures: const [FontFeature.tabularFigures()],
           color: warning
               ? Theme.of(context).colorScheme.error
-              : Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.bold,
+              : Theme.of(context).colorScheme.onPrimaryContainer,
         ),
       ),
     );

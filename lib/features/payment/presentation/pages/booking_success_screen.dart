@@ -1,15 +1,13 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import 'ticket_brightness_scope.dart';
-
-import '../../domain/entities/booking_ticket.dart';
 import '../../domain/entities/payment_checkout.dart';
 import '../../domain/repositories/ticket_repository.dart';
-import '../../../../app/widgets/fc_widgets.dart';
+import '../../../../app/theme/tokens.dart';
+import '../widgets/ticket_panel.dart';
+import 'ticket_brightness_scope.dart';
 
+/// Ticket page shown after a successful payment: confirmation, the entry
+/// ticket (QR), "Lưu vé" and a way to the order list.
 class BookingSuccessScreen extends StatefulWidget {
   const BookingSuccessScreen({
     super.key,
@@ -28,238 +26,137 @@ class BookingSuccessScreen extends StatefulWidget {
   State<BookingSuccessScreen> createState() => _BookingSuccessScreenState();
 }
 
-class _BookingSuccessScreenState extends State<BookingSuccessScreen>
-    with WidgetsBindingObserver {
-  BookingTicket? _ticket;
-  String? _error;
-  bool _loading = false, _saving = false, _paused = false;
-  Timer? _retry;
-  int _generation = 0;
-  int _syncRetries = 0;
-  static const _maxSyncRetries = 15;
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _load();
-  }
-
-  @override
-  void dispose() {
-    _generation++;
-    _retry?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
+class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
+  late final TicketLoader _loader = TicketLoader(
+    repository: widget.repository,
+    saver: widget.saver,
+    arguments: widget.arguments,
+  )..addListener(_onChange);
+  String? _shownMessage;
 
   @override
   void didUpdateWidget(BookingSuccessScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.arguments.bookingId != widget.arguments.bookingId ||
-        oldWidget.arguments.holdToken != widget.arguments.holdToken) {
-      _generation++;
-      _loading = false;
-      _saving = false;
-      _retry?.cancel();
-      _load();
+    _loader.update(widget.arguments);
+  }
+
+  void _onChange() {
+    final message = _loader.saveMessage;
+    if (message != null && message != _shownMessage && mounted) {
+      _shownMessage = message;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     }
+    if (_loader.saving) _shownMessage = null;
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    _paused = state != AppLifecycleState.resumed;
-    _retry?.cancel();
-    if (!_paused) _load();
-  }
-
-  Future<void> _load({bool automatic = false}) async {
-    if (_loading || _paused) return;
-    if (!automatic) _syncRetries = 0;
-    final generation = _generation;
-    _retry?.cancel();
-    setState(() {
-      _loading = true;
-      _ticket = null;
-      _error = null;
-    });
-    try {
-      final ticket = await widget.repository.load(widget.arguments);
-      if (mounted && generation == _generation) {
-        setState(() => _ticket = ticket);
-      }
-    } on PaymentFailure catch (e) {
-      if (mounted && generation == _generation) {
-        setState(() => _error = e.message);
-        if (e is TicketNotReady && !_paused && _syncRetries < _maxSyncRetries) {
-          _syncRetries++;
-          _retry = Timer(
-            const Duration(seconds: 4),
-            () => _load(automatic: true),
-          );
-        }
-      }
-    } finally {
-      if (mounted && generation == _generation) {
-        setState(() => _loading = false);
-      }
-    }
-  }
-
-  Future<void> _save() async {
-    final ticket = _ticket;
-    if (ticket == null || _saving) return;
-    final generation = _generation;
-    setState(() => _saving = true);
-    try {
-      await widget.saver.save(ticket);
-      if (mounted && generation == _generation) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã lưu vé PNG vào thư viện ảnh')),
-        );
-      }
-    } on PaymentFailure catch (e) {
-      if (mounted && generation == _generation) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
-      }
-    } finally {
-      if (mounted && generation == _generation) setState(() => _saving = false);
-    }
+  void dispose() {
+    _loader
+      ..removeListener(_onChange)
+      ..dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final ticket = _ticket;
+    final theme = Theme.of(context);
+    final success = context.fc.success;
     return Scaffold(
       appBar: AppBar(title: const Text('Vé đặt sân')),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                if (_loading) const Center(child: CircularProgressIndicator()),
-                if (_error != null)
-                  EmptyState(
-                    icon: Icons.confirmation_number_outlined,
-                    title: 'Chưa tải được vé',
-                    message: _error!,
-                    action: FilledButton.icon(
-                      onPressed: _loading ? null : _load,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Tải lại vé'),
-                    ),
-                  ),
-                if (ticket != null) ...[
-                  Icon(
-                    Icons.check_circle_outline,
-                    color: context.fc.success.color,
-                    size: 56,
-                  ),
-                  Text(
-                    'Đặt sân thành công!',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  TicketBrightnessScope(
-                    controller:
-                        widget.brightness ?? DeviceTicketBrightness.instance,
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
+            child: ListenableBuilder(
+              listenable: _loader,
+              builder: (context, _) {
+                final ticket = _loader.ticket;
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  children: [
+                    if (ticket != null) ...[
+                      Center(
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: success.container,
+                          ),
+                          child: Icon(
+                            Icons.check_rounded,
+                            size: 34,
+                            color: success.color,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Đặt sân thành công!',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontSize: 20,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${ticket.branchName} · ${ticket.courtName}',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      Text(
+                        '${ticket.date} · ${ticket.slots.join(' · ')}',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      Text(
+                        'Mã đơn: ${ticket.bookingCode}',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    TicketCard(loader: _loader, brightness: widget.brightness),
+                    if (ticket != null) ...[
+                      const SizedBox(height: 17),
+                      FilledButton(
+                        onPressed: _loader.saving ? null : _loader.save,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            const Icon(Icons.download, size: 18),
+                            const SizedBox(width: 8),
                             Text(
-                              ticket.branchName,
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            Text(ticket.courtName),
-                            Text(ticket.date),
-                            Text(ticket.slots.join(' · ')),
-                            Text('Mã đơn: ${ticket.bookingCode}'),
-                            const SizedBox(height: 12),
-                            ColoredBox(
-                              color: Colors.white,
-                              child: Image.memory(
-                                ticket.png,
-                                width: 300,
-                                height: 300,
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.none,
-                                semanticLabel: 'Mã QR check-in tại sân',
-                                errorBuilder: (_, _, _) => const SizedBox(
-                                  height: 300,
-                                  child: Center(
-                                    child: Text(
-                                      'Chưa hiển thị được QR. Hãy tải lại vé.',
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const Text('Mã check-in'),
-                            SelectableText(
-                              ticket.checkInCode,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            TextButton.icon(
-                              onPressed: () async {
-                                try {
-                                  await Clipboard.setData(
-                                    ClipboardData(text: ticket.checkInCode),
-                                  );
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Đã sao chép mã vé'),
-                                      ),
-                                    );
-                                  }
-                                } on PlatformException {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Chưa sao chép được mã vé. Vui lòng thử lại.',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              icon: const Icon(Icons.copy),
-                              label: const Text('Sao chép mã vé'),
+                              _loader.saving ? 'Đang lưu…' : 'Lưu vé vào máy',
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: Gap.lg),
-                  const Text(
-                    'Xuất trình mã QR này tại quầy hoặc đọc mã số vé cho nhân viên để nhận sân.',
-                  ),
-                  const SizedBox(height: Gap.lg),
-                  FilledButton.icon(
-                    onPressed: _saving ? null : _save,
-                    icon: const Icon(Icons.download),
-                    label: Text(_saving ? 'Đang lưu…' : 'Lưu vé vào máy'),
-                  ),
-                  const SizedBox(height: Gap.sm),
-                  OutlinedButton(
-                    onPressed: widget.onHistory,
-                    child: const Text('Xem trong lịch sử đặt sân'),
-                  ),
-                  if (widget.onHistory == null)
-                    const Text(
-                      'Lịch sử đặt sân chưa khả dụng',
-                      textAlign: TextAlign.center,
-                    ),
-                ],
-              ],
+                      const SizedBox(height: 10),
+                      OutlinedButton(
+                        onPressed: widget.onHistory,
+                        child: const Text('Xem trong lịch sử đặt sân'),
+                      ),
+                      if (widget.onHistory == null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Lịch sử đặt sân chưa khả dụng',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                    ],
+                  ],
+                );
+              },
             ),
           ),
         ),

@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../core/error/failure.dart';
-import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
+import '../../payment/presentation/widgets/payment_parts.dart';
 import '../../transactions/presentation/transaction_widgets.dart';
 import '../domain/refund.dart';
 import '../domain/vietnam_banks.dart';
@@ -188,7 +190,7 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
           ],
         ),
         body: ListView(
-          padding: const EdgeInsets.all(Gap.lg),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
             if (_loading) const Center(child: CircularProgressIndicator()),
             if (_error != null) ...[
@@ -199,10 +201,22 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
               ),
             ],
             if (state != null)
-              FcCard(
+              PayPanel(
                 child: Row(
                   children: [
-                    const IconBadge(Icons.payments_outlined),
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colors.primaryContainer,
+                      ),
+                      child: Icon(
+                        Icons.payments_outlined,
+                        size: 21,
+                        color: colors.onPrimaryContainer,
+                      ),
+                    ),
                     const SizedBox(width: Gap.md),
                     Expanded(
                       child: Column(
@@ -227,16 +241,16 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
             if (request != null) ...[
               const SizedBox(height: Gap.lg),
               if (request.status == 'REJECTED') ...[
-                StatusPill(
+                TintTag(
                   'Bị từ chối: ${request.note ?? 'Vui lòng liên hệ chủ sân'}',
                   tone: context.fc.danger,
                   icon: Icons.block_outlined,
                 ),
                 const SizedBox(height: Gap.lg),
               ],
-              FcCard(child: _RefundProgress(step: request.step)),
+              PayPanel(child: _RefundProgress(step: request.step)),
               const SizedBox(height: Gap.lg),
-              FcCard(
+              PayPanel(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

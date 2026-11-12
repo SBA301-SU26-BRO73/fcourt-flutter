@@ -85,7 +85,7 @@ void main() {
     final router = await _pump(tester, repository);
     addTearDown(router.dispose);
     expect(find.text('Sân A'), findsOneWidget);
-    expect(find.text('120.000 đ/giờ'), findsOneWidget);
+    expect(find.text('120.000đ/giờ'), findsOneWidget);
     await tester.tap(find.text('Sân B'));
     await tester.pumpAndSettle();
     expect(find.text('slots:8:32:Chi nhánh A'), findsOneWidget);
@@ -103,7 +103,7 @@ void main() {
       await tester.tap(find.text('Thử lại'));
       await tester.pumpAndSettle();
       expect(repository.calls, 2);
-      await tester.tap(find.text('Đặt sân ngay'));
+      await tester.tap(find.text('Đặt sân'));
       await tester.pumpAndSettle();
       expect(find.text('slots:8:null:Chi nhánh A'), findsOneWidget);
     },
@@ -115,7 +115,7 @@ void main() {
     final repository = _Courts()..data = const [_a, _b];
     final router = await _pump(tester, repository);
     addTearDown(router.dispose);
-    await tester.tap(find.text('Đặt sân ngay'));
+    await tester.tap(find.text('Đặt sân'));
     await tester.pumpAndSettle();
     expect(find.text('Chọn sân để xem lịch'), findsNothing);
     expect(find.text('slots:8:null:Chi nhánh A'), findsOneWidget);

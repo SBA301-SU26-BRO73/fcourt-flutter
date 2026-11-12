@@ -1,17 +1,14 @@
-import '../../../../../app/widgets/fc_widgets.dart';
-import '../../../../../app/widgets/sport_icon.dart';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../app/theme/tokens.dart';
+import '../../../../../app/widgets/wp3b_widgets.dart';
 import '../../../../../core/error/failure.dart';
-
 import '../../../../../features/maps/domain/branch_location.dart';
 import '../../../../../features/maps/presentation/branch_map_card.dart';
 import '../../../../../features/reviews/domain/review.dart';
 import '../../../../../features/reviews/presentation/review_list_widget.dart';
-
 import '../../../branch_gallery/domain/branch_image.dart';
 import '../../../branch_gallery/presentation/branch_gallery_section.dart';
 import '../../domain/discovery_repository.dart';
@@ -108,18 +105,26 @@ class _BranchDetailScreenState extends State<BranchDetailScreen> {
   }
 }
 
+void _back(BuildContext context) =>
+    context.canPop() ? context.pop() : context.go('/discover');
+
 AppBar _branchAppBar(BuildContext context) => AppBar(
   title: const Text('Chi tiết chi nhánh'),
-  leading: BackButton(
-    onPressed: () => context.canPop() ? context.pop() : context.go('/discover'),
-  ),
+  leading: BackButton(onPressed: () => _back(context)),
 );
 
 String _courtPrice(Court court) => court.defaultPricePerHour == null
-    ? 'Giá theo khung giờ · Chọn sân để xem lịch'
-    : '${NumberFormat.decimalPattern('vi').format(court.defaultPricePerHour)} đ/giờ';
+    ? 'Giá theo khung giờ'
+    : '${NumberFormat.decimalPattern('vi').format(court.defaultPricePerHour)}đ/giờ';
 
-class _BranchDetailContent extends StatelessWidget {
+String? _sportName(int courtTypeId) {
+  for (final sport in DiscoverySport.values) {
+    if (sport.typeId == courtTypeId) return sport.label;
+  }
+  return null;
+}
+
+class _BranchDetailContent extends StatefulWidget {
   const _BranchDetailContent({
     required this.branchId,
     this.branch,
@@ -138,9 +143,50 @@ class _BranchDetailContent extends StatelessWidget {
   final DiscoveryRepository? discoveryRepository;
 
   @override
+  State<_BranchDetailContent> createState() => _BranchDetailContentState();
+}
+
+class _BranchDetailContentState extends State<_BranchDetailContent> {
+  Future<List<Court>>? _courts;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCourts();
+  }
+
+  @override
+  void didUpdateWidget(_BranchDetailContent old) {
+    super.didUpdateWidget(old);
+    if (old.branchId != widget.branchId ||
+        old.discoveryRepository != widget.discoveryRepository) {
+      _loadCourts();
+    }
+  }
+
+  void _loadCourts() {
+    _courts = widget.discoveryRepository?.courtsOfBranch(widget.branchId);
+  }
+
+  void _openReviews() {
+    final reviews = widget.reviews;
+    if (reviews == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => SizedBox(
+        height: MediaQuery.sizeOf(context).height * .8,
+        child: ReviewListWidget(repository: reviews, branchId: widget.branchId),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final data = branch;
-    if (data == null || data.id != branchId) {
+    final data = widget.branch;
+    if (data == null || data.id != widget.branchId) {
       return Scaffold(
         appBar: _branchAppBar(context),
         body: Center(
@@ -159,239 +205,406 @@ class _BranchDetailContent extends StatelessWidget {
         ),
       );
     }
-    const artwork = CourtArtwork(height: 210, label: 'Ảnh sân chưa cập nhật');
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final price = data.minPrice == null
+        ? 'Chưa cập nhật'
+        : 'Từ ${NumberFormat.decimalPattern('vi').format(data.minPrice)}đ';
+    final address = [
+      data.address,
+      data.district,
+      data.city,
+    ].whereType<String>().where((s) => s.isNotEmpty).join(', ');
     return Scaffold(
       appBar: _branchAppBar(context),
-      body: DefaultTabController(
-        length: 2,
-        child: Column(
-          children: [
-            const TabBar(
-              tabs: [
-                Tab(text: 'Thông tin'),
-                Tab(text: 'Đánh giá'),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  SafeArea(
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 760),
-                        child: ListView(
-                          padding: const EdgeInsets.all(20),
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: FutureBuilder<List<Court>>(
+              future: _courts,
+              builder: (context, snapshot) {
+                final courts = snapshot.data;
+                final sport = courts == null || courts.isEmpty
+                    ? null
+                    : _sportName(courts.first.courtTypeId);
+                final placeholder = SportPhoto(sport: sport);
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    20,
+                    2,
+                    20,
+                    FloatingBottomBar.clearance,
+                  ),
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(25),
+                      child: SizedBox(
+                        height: 304,
+                        child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(Radii.lg),
-                              child: galleryRepository == null
-                                  ? artwork
-                                  : BranchGallerySection(
-                                      repository: galleryRepository!,
-                                      branchId: branchId,
-                                      placeholder: artwork,
-                                    ),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              data.name,
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              [data.address, data.district, data.city]
-                                  .whereType<String>()
-                                  .where((s) => s.isNotEmpty)
-                                  .join(', '),
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Chọn sân trong chi nhánh',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 12),
-                            if (discoveryRepository != null)
-                              _BranchCourts(
-                                repository: discoveryRepository!,
-                                branchId: branchId,
-                                branch: data,
-                              )
-                            else
-                              const Text('Chi nhánh chưa có sân hoạt động.'),
-                            const SizedBox(height: 24),
-                            if (maps != null && data.location != null) ...[
-                              BranchMapCard(
-                                key: ValueKey(branchId),
-                                location: data.location,
-                                name: data.name,
-                                platform: maps!,
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            if (data.distanceKm != null) ...[
-                              LabelIcon(
-                                Icons.location_on_outlined,
-                                '${data.distanceKm!.toStringAsFixed(1)} km',
-                              ),
-                              const SizedBox(height: Gap.xl),
-                            ],
-                            Text(
-                              branchPrice(data),
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary,
+                            widget.galleryRepository == null
+                                ? placeholder
+                                : BranchGallerySection(
+                                    repository: widget.galleryRepository!,
+                                    branchId: widget.branchId,
+                                    placeholder: placeholder,
+                                    height: 304,
                                   ),
+                            Positioned(
+                              left: 12,
+                              right: 12,
+                              top: 12,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  CircleIconButton(
+                                    icon: Icons.chevron_left,
+                                    tooltip: 'Quay lại',
+                                    onImage: true,
+                                    onPressed: () => _back(context),
+                                  ),
+                                  if (widget.maps != null &&
+                                      data.location != null)
+                                    CircleIconButton(
+                                      icon: Icons.map_outlined,
+                                      tooltip: 'Xem bản đồ',
+                                      onImage: true,
+                                      onPressed: () => _showMap(data),
+                                    ),
+                                ],
+                              ),
                             ),
-                            const Text(
-                              'Giá tham khảo; giá chính xác được xác nhận khi chọn lịch.',
-                            ),
-                            const SizedBox(height: Gap.xl),
+                            if (sport != null)
+                              Positioned(
+                                left: 14,
+                                bottom: 14,
+                                child: IgnorePointer(
+                                  child: _SportChip(sport: sport),
+                                ),
+                              ),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                  reviews == null
-                      ? const Center(child: Text('Đánh giá chưa khả dụng'))
-                      : ReviewListWidget(
-                          repository: reviews!,
-                          branchId: branchId,
+                    const SizedBox(height: 22),
+                    Text(
+                      data.name,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontSize: 24,
+                        height: 1.3,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -.9,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (address.isNotEmpty)
+                      _InfoLine(icon: Icons.place_outlined, text: address),
+                    if (data.distanceKm != null)
+                      _InfoLine(
+                        icon: Icons.near_me_outlined,
+                        text:
+                            '${data.distanceKm!.toStringAsFixed(1).replaceAll('.', ',')} km',
+                      ),
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            size: 17,
+                            color: context.fc.success.color,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text.rich(
+                              TextSpan(
+                                children: data.reviewCount > 0
+                                    ? [
+                                        TextSpan(
+                                          text: data.averageRating
+                                              .toStringAsFixed(1)
+                                              .replaceAll('.', ','),
+                                          style: TextStyle(
+                                            color: context.fc.success.color,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text:
+                                              ' · ${data.reviewCount} đánh giá',
+                                        ),
+                                      ]
+                                    : const [
+                                        TextSpan(text: 'Chưa có đánh giá'),
+                                      ],
+                              ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          if (widget.reviews != null)
+                            InkWell(
+                              onTap: _openReviews,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                child: Text(
+                                  'Xem đánh giá',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: colors.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Divider(
+                      height: 39,
+                      thickness: 1,
+                      color: colors.outlineVariant,
+                    ),
+                    Text(
+                      'Chọn sân',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (widget.discoveryRepository == null)
+                      const _CourtsNote('Chi nhánh chưa có sân hoạt động.')
+                    else if (snapshot.connectionState ==
+                        ConnectionState.waiting)
+                      const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (snapshot.hasError)
+                      _CourtsError(
+                        error: snapshot.error!,
+                        onRetry: () => setState(_loadCourts),
+                      )
+                    else if (courts == null || courts.isEmpty)
+                      const _CourtsNote('Chi nhánh chưa có sân hoạt động.')
+                    else
+                      for (final court in courts)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 7),
+                          child: _CourtRow(
+                            court: court,
+                            onTap: () => context.push(
+                              '/branches/${widget.branchId}/slots?court=${court.id}&branchName=${Uri.encodeQueryComponent(data.name)}',
+                            ),
+                          ),
                         ),
-                ],
-              ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Giá tham khảo; giá chính xác được xác nhận khi chọn lịch.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: FilledButton.icon(
-            icon: const Icon(Icons.calendar_month_outlined),
-            label: const Text('Đặt sân ngay'),
-            onPressed: discoveryRepository == null
-                ? null
-                : () => context.push(
-                    '/branches/$branchId/slots?branchName=${Uri.encodeQueryComponent(data.name)}',
-                  ),
           ),
         ),
+      ),
+      bottomNavigationBar: FloatingBottomBar(
+        caption: 'Giá sân',
+        priceText: price,
+        priceUnit: data.minPrice == null ? null : '/giờ',
+        actionLabel: 'Đặt sân',
+        onAction: widget.discoveryRepository == null
+            ? null
+            : () => context.push(
+                '/branches/${widget.branchId}/slots?branchName=${Uri.encodeQueryComponent(data.name)}',
+              ),
+      ),
+    );
+  }
+
+  void _showMap(Branch data) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (_) => Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      child: BranchMapCard(
+        key: ValueKey(widget.branchId),
+        location: data.location,
+        name: data.name,
+        platform: widget.maps!,
+      ),
+    ),
+  );
+}
+
+class _SportChip extends StatelessWidget {
+  const _SportChip({required this.sport});
+  final String sport;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SportIcon.named(sport, size: 13, color: const Color(0xFF354064)),
+        const SizedBox(width: 4),
+        Text(
+          sport,
+          style: const TextStyle(
+            color: Color(0xFF354064),
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _InfoLine extends StatelessWidget {
+  const _InfoLine({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5.5),
+      child: Row(
+        children: [
+          Icon(icon, size: 17, color: muted),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: muted),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _BranchCourts extends StatefulWidget {
-  const _BranchCourts({
-    required this.repository,
-    required this.branchId,
-    required this.branch,
-  });
-  final DiscoveryRepository repository;
-  final int branchId;
-  final Branch branch;
-
+class _CourtsNote extends StatelessWidget {
+  const _CourtsNote(this.text);
+  final String text;
   @override
-  State<_BranchCourts> createState() => _BranchCourtsState();
-}
-
-class _BranchCourtsState extends State<_BranchCourts> {
-  late Future<List<Court>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  void _load() {
-    _future = widget.repository.courtsOfBranch(widget.branchId);
-  }
-
-  @override
-  Widget build(BuildContext context) => FutureBuilder<List<Court>>(
-    future: _future,
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Padding(
-          padding: EdgeInsets.all(12),
-          child: Center(child: CircularProgressIndicator()),
-        );
-      }
-      if (snapshot.hasError) {
-        final message = snapshot.error is Failure
-            ? (snapshot.error as Failure).message
-            : 'Không tải được danh sách sân. Vui lòng thử lại.';
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message),
-            TextButton.icon(
-              onPressed: () => setState(_load),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Thử lại'),
-            ),
-          ],
-        );
-      }
-      final courts = snapshot.data ?? const <Court>[];
-      if (courts.isEmpty) return const Text('Chi nhánh chưa có sân hoạt động.');
-      return Column(
-        children: [
-          for (final court in courts)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: FcCard(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Gap.md,
-                  vertical: Gap.xs,
-                ),
-                onTap: () => context.push(
-                  '/branches/${widget.branchId}/slots?court=${court.id}&branchName=${Uri.encodeQueryComponent(widget.branch.name)}',
-                ),
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: _SportBadge(_sportName(court.courtTypeId)),
-                  title: Text(court.name),
-                  subtitle: Text(_courtPrice(court)),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                ),
-              ),
-            ),
-        ],
-      );
-    },
+  Widget build(BuildContext context) => Text(
+    text,
+    style: Theme.of(context).textTheme.bodySmall
+        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
   );
 }
 
-String? _sportName(int courtTypeId) {
-  for (final sport in DiscoverySport.values) {
-    if (sport.typeId == courtTypeId) return sport.label;
-  }
-  return null;
+class _CourtsError extends StatelessWidget {
+  const _CourtsError({required this.error, required this.onRetry});
+  final Object error;
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _CourtsNote(
+        error is Failure
+            ? (error as Failure).message
+            : 'Không tải được danh sách sân. Vui lòng thử lại.',
+      ),
+      TextButton.icon(
+        onPressed: onRetry,
+        icon: const Icon(Icons.refresh),
+        label: const Text('Thử lại'),
+      ),
+    ],
+  );
 }
 
-class _SportBadge extends StatelessWidget {
-  const _SportBadge(this.sport);
-  final String? sport;
+/// Mock-up "slot" row: 16dp corners, 1dp line, 12/14 padding.
+class _CourtRow extends StatelessWidget {
+  const _CourtRow({required this.court, required this.onTap});
+  final Court court;
+  final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        color: colors.primaryContainer,
-        borderRadius: BorderRadius.circular(Radii.md),
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Material(
+      color: colors.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colors.outlineVariant),
       ),
-      child: SportIcon.named(sport, size: 22, color: colors.onPrimaryContainer),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.primaryContainer,
+                ),
+                child: Center(
+                  child: SportIcon.named(
+                    _sportName(court.courtTypeId),
+                    size: 20,
+                    color: colors.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      court.name,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _courtPrice(court),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

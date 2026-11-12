@@ -135,14 +135,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Sân Đúng'), findsOneWidget);
       expect(find.text('Sân Khác'), findsNothing);
-      await tester.tap(find.text('Đặt sân ngay'));
+      await tester.tap(find.text('Đặt sân'));
       await tester.pumpAndSettle();
       expect(find.text('Chi nhánh chưa có sân hoạt động'), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(TextField, 'Đường A'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+        'Đường A',
+      );
       expect(tester.takeException(), isNull);
     },
   );

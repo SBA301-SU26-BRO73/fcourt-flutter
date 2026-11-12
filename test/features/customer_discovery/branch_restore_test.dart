@@ -67,7 +67,7 @@ void main() {
       expect(find.text('Chi nhánh từ API'), findsOneWidget);
       expect(find.text('Sân số 1'), findsOneWidget);
       expect(
-        find.text('Giá theo khung giờ · Chọn sân để xem lịch'),
+        find.text('Giá theo khung giờ'),
         findsOneWidget,
       );
       expect(

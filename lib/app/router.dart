@@ -556,20 +556,8 @@ GoRouter createRouter(
                         '/payments/checkout',
                         extra: CheckoutArguments(bookingId: id),
                       ),
-                onTicket:
-                    dependencies.ticketRepository == null ||
-                        dependencies.ticketSaver == null
-                    ? null
-                    : (id) => showDialog<void>(
-                        context: context,
-                        builder: (_) => Dialog.fullscreen(
-                          child: BookingSuccessScreen(
-                            repository: dependencies.ticketRepository!,
-                            saver: dependencies.ticketSaver!,
-                            arguments: CheckoutArguments(bookingId: id),
-                          ),
-                        ),
-                      ),
+                ticketRepository: dependencies.ticketRepository,
+                ticketSaver: dependencies.ticketSaver,
               );
             },
           ),
