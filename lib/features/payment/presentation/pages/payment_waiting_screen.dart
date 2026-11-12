@@ -41,7 +41,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
   PaymentReceipt? _receipt;
   Timer? _timer, _limitTimer;
   DateTime? _deadline;
-  bool _timedOut = false, _rejectionShown = false;
+  bool _timedOut = false, _rejectionShown = false, _autoPicked = false;
   int _failures = 0;
   String? _error;
   bool _busy = false, _loading = true, _paused = false, _navigated = false;
@@ -59,6 +59,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
     _deadline = null;
     _timedOut = false;
     _rejectionShown = false;
+    _autoPicked = false;
     _failures = 0;
     _session = widget.repository.open(widget.arguments);
     _loading = true;
@@ -122,6 +123,14 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
       _error = null;
       _failures = 0;
     });
+    // No receipt yet: open the gallery straight away, so "Gửi biên lai" on the
+    // checkout page is the only tap before choosing the image.
+    if (receipt == null && _image == null && !_autoPicked) {
+      _autoPicked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _receipt == null && _image == null) unawaited(_pick());
+      });
+    }
     if (receipt?.status == ReceiptStatus.pending && _deadline == null) {
       _deadline = DateTime.now().add(const Duration(minutes: 10));
       _limitTimer = Timer(const Duration(minutes: 10), _stopPolling);
@@ -426,7 +435,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                       child: const Text('Xem hỗ trợ thanh toán'),
                     ),
                 ] else ...[
-                  const Text('Chọn ảnh biên lai chuyển khoản. Tối đa 5 MB.'),
+                  const Text('Ảnh chuyển khoản, tối đa 5 MB. Chọn xong sẽ tự gửi.'),
                   const SizedBox(height: 16),
                   if (_image != null)
                     Padding(
@@ -458,7 +467,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                       child: FilledButton.icon(
                         onPressed: _busy ? null : _pick,
                         icon: const Icon(Icons.upload),
-                        label: const Text('Tải biên lai lên'),
+                        label: const Text('Chọn ảnh biên lai'),
                       ),
                     ),
                   ],

@@ -66,6 +66,18 @@ class Picker implements ReceiptPicker {
       ReceiptImage(Uint8List.fromList([1, 2, 3]));
 }
 
+class CountingPicker implements ReceiptPicker {
+  int picks = 0;
+  bool cancel = false;
+  @override
+  Future<ReceiptImage?> recover() async => null;
+  @override
+  Future<ReceiptImage?> pick({required bool camera}) async {
+    picks++;
+    return cancel ? null : ReceiptImage(Uint8List.fromList([1, 2, 3]));
+  }
+}
+
 void main() {
   test('status uses header-only token and rejects mismatched booking or unknown state', () async {
     var body = <String, dynamic>{'id': 1, 'bookingId': 42, 'status': 'PENDING'};
@@ -133,7 +145,6 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.tap(find.text('Tải biên lai lên'));
       await tester.pump();
       await tester.pump();
       expect(find.textContaining('Đang chờ chủ sân'), findsOneWidget);
@@ -147,6 +158,58 @@ void main() {
       expect(session.closed, true);
     },
   );
+  testWidgets('opens the picker by itself and uploads without extra taps', (
+    tester,
+  ) async {
+    final session = Session();
+    final picker = CountingPicker();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PaymentWaitingScreen(
+          repository: Repo(session),
+          picker: picker,
+          arguments: args,
+          onConfirmed: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    expect(picker.picks, 1);
+    expect(session.result, pending);
+    expect(find.text('Tải biên lai lên'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+  testWidgets('cancelled picker keeps a retry button, failed upload says retry', (
+    tester,
+  ) async {
+    final session = Session();
+    final picker = CountingPicker()..cancel = true;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PaymentWaitingScreen(
+          repository: Repo(session),
+          picker: picker,
+          arguments: args,
+          onConfirmed: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    expect(picker.picks, 1);
+    expect(find.text('Chọn ảnh biên lai'), findsOneWidget);
+    picker.cancel = false;
+    await tester.tap(find.text('Chọn ảnh biên lai'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    expect(picker.picks, 2);
+    expect(session.result, pending);
+    await tester.pumpWidget(const SizedBox());
+  });
   testWidgets(
     'after sending the receipt the user leaves to home, not back to checkout',
     (tester) async {
@@ -166,7 +229,6 @@ void main() {
       );
       await tester.pump();
       expect(find.text('Về trang chủ'), findsNothing);
-      await tester.tap(find.text('Tải biên lai lên'));
       await tester.pump();
       await tester.pump();
       await tester.tap(find.text('Về trang chủ'));
