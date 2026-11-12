@@ -42,6 +42,7 @@ class FakeBookingRepository implements BookingRepository {
 }
 
 void main() {
+  summaryContactTests();
   test('validates Vietnam mobile prefixes and rejects malformed numbers', () {
     for (final phone in [
       '0312345678',
@@ -221,7 +222,7 @@ void main() {
       expect(find.text('18:00 – 18:30'), findsOneWidget);
       expect(find.textContaining('160.000'), findsOneWidget);
       expect(find.text('Minh'), findsOneWidget);
-      final button = find.text('Tiến hành giữ chỗ & thanh toán');
+      final button = find.text('Giữ chỗ 5 phút & thanh toán');
       await tester.scrollUntilVisible(
         button,
         150,
@@ -251,12 +252,12 @@ void main() {
       ),
     );
     await tester.scrollUntilVisible(
-      find.text('Tiến hành giữ chỗ & thanh toán'),
+      find.text('Giữ chỗ 5 phút & thanh toán'),
       150,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Tiến hành giữ chỗ & thanh toán'));
+    await tester.tap(find.text('Giữ chỗ 5 phút & thanh toán'));
     await tester.pumpAndSettle();
     expect(find.text('Vui lòng nhập họ tên'), findsOneWidget);
     expect(find.textContaining('Nhập SĐT 10 số'), findsOneWidget);
@@ -282,24 +283,45 @@ void main() {
       ),
     );
     await tester.scrollUntilVisible(
-      find.text('Tiến hành giữ chỗ & thanh toán'),
+      find.text('Giữ chỗ 5 phút & thanh toán'),
       150,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Tiến hành giữ chỗ & thanh toán'));
+    await tester.tap(find.text('Giữ chỗ 5 phút & thanh toán'));
     await tester.pumpAndSettle();
     expect(find.text('Khung giờ vừa có người đặt'), findsOneWidget);
     expect(find.text('Minh'), findsOneWidget);
     repository.failure = null;
     await tester.scrollUntilVisible(
-      find.text('Tiến hành giữ chỗ & thanh toán'),
+      find.text('Giữ chỗ 5 phút & thanh toán'),
       150,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Tiến hành giữ chỗ & thanh toán'));
+    await tester.tap(find.text('Giữ chỗ 5 phút & thanh toán'));
     await tester.pumpAndSettle();
     expect(repository.calls, 2);
+  });
+}
+
+void summaryContactTests() {
+  testWidgets('summary asks for name and phone only when profile lacks them', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BookingSummaryScreen(
+          repository: FakeBookingRepository(),
+          arguments: BookingSummaryArguments(
+            selection: selection(),
+            onHeld: (_) {},
+          ),
+        ),
+      ),
+    );
+    expect(find.byType(TextFormField), findsNWidgets(2));
+    expect(find.byKey(const ValueKey('summary-contact')), findsNothing);
+    await tester.pumpWidget(const SizedBox());
   });
 }

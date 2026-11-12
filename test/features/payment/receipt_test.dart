@@ -170,7 +170,7 @@ void main() {
       await tester.pump();
       await tester.pump();
       await tester.tap(find.text('Về trang chủ'));
-      await tester.tap(find.text('Xem đơn đặt sân'));
+      await tester.tap(find.text('Xem đơn của tôi'));
       await tester.tap(find.byTooltip('Về trang chủ'));
       expect(home, 2);
       expect(booking, 1);

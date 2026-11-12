@@ -58,7 +58,7 @@ void main() {
       await pumpCheckout(tester, store, payments, onFree: () => confirmed++);
       expect(find.text('QR:0'), findsNothing);
       expect(find.text('QR:160000'), findsNothing);
-      expect(find.byTooltip('Sao chép Số tiền'), findsNothing);
+      expect(find.byKey(const ValueKey('copy-transfer-content')), findsNothing);
       await tester.ensureVisible(find.text('Xác nhận đơn miễn phí'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xác nhận đơn miễn phí'));
@@ -132,7 +132,7 @@ void main() {
       await pumpCheckout(tester, store, PromoPayments(store), settle: false);
       await tester.pump();
       expect(find.text('QR:160000'), findsNothing);
-      expect(find.byTooltip('Sao chép Số tiền'), findsNothing);
+      expect(find.byKey(const ValueKey('copy-transfer-content')), findsNothing);
       expect(find.text('Tôi đã chuyển khoản · Gửi biên lai'), findsNothing);
       expect(
         tester.widget<PromoCodeInput>(find.byType(PromoCodeInput)).loading,
