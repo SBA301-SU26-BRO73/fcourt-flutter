@@ -71,6 +71,16 @@ class _CheckInDialogState extends State<CheckInDialog> {
         _done = true;
       });
       final p = _preview!;
+      if (!p.offline) {
+        // Online: một hộp xác nhận duy nhất, kết quả báo bằng thông báo ngắn.
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text('Nhận sân thành công · ${p.name} · ${p.courtName}'),
+          ),
+        );
+        Navigator.pop(context, true);
+        return;
+      }
       await showDialog<void>(
         context: context,
         barrierDismissible: false,

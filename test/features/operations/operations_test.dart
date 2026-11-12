@@ -136,13 +136,15 @@ void main() {
     final fake = FakeOperations();
     await tester.pumpWidget(
       MaterialApp(
-        home: Builder(
-          builder: (context) => TextButton(
-            onPressed: () => showDialog<bool>(
-              context: context,
-              builder: (_) => CheckInDialog(repository: fake, code: 'qr'),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => CheckInDialog(repository: fake, code: 'qr'),
+              ),
+              child: const Text('Open'),
             ),
-            child: const Text('Open'),
           ),
         ),
       ),
@@ -161,9 +163,31 @@ void main() {
     fake.error = null;
     await tester.tap(find.text('Thử lại lệnh nhận sân'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Hoàn tất nhận sân'));
-    await tester.pumpAndSettle();
+    expect(find.text('Hoàn tất nhận sân'), findsNothing);
+    expect(find.textContaining('Nhận sân thành công'), findsOneWidget);
     expect(find.byType(CheckInDialog), findsNothing);
+  });
+  testWidgets('schedule search filters sessions by name or phone', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(home: SchedulePage(repository: FakeOperations())),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Khoa'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('schedule-search')),
+      'zzz',
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Khoa'), findsNothing);
+    expect(find.text('Không có khách phù hợp.'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('schedule-search')),
+      'kho',
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Khoa'), findsOneWidget);
   });
   testWidgets('schedule shows court and waiting session', (tester) async {
     await tester.pumpWidget(

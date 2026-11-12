@@ -15,7 +15,9 @@ import '../features/reviews/presentation/rating_bottom_sheet.dart';
 
 import '../features/subscription/presentation/subscription_cubit.dart';
 import '../features/subscription/presentation/subscription_screen.dart';
+import '../features/admin_bookings/domain/admin_booking_status.dart';
 import '../features/admin_bookings/presentation/admin_booking_cubit.dart';
+import '../features/admin_dashboard/presentation/widgets/owner_todo_panel.dart';
 import '../features/admin_bookings/presentation/admin_booking_management_screen.dart';
 import '../features/vouchers/presentation/voucher_cubit.dart';
 import '../features/vouchers/presentation/voucher_management_screen.dart';
@@ -593,6 +595,7 @@ GoRouter createRouter(
                   repository,
                   facility.branchRepository,
                   facility.courtRepository,
+                  defaultStatus: AdminBookingStatus.awaitingConfirmation,
                 )..initialize(),
                 child: AdminBookingManagementScreen(
                   onReviewPayment: dependencies.adminPaymentRepository == null
@@ -633,6 +636,24 @@ GoRouter createRouter(
                   )
                 : HomePage(
                     discoveryRepository: dependencies.discoveryRepository,
+                    adminTodo:
+                        authBloc.state.role == UserRole.admin &&
+                            dependencies.adminFacility != null
+                        ? OwnerTodoPanel(
+                            loader: OwnerTodoLoader(
+                              branches:
+                                  dependencies.adminFacility!.branchRepository,
+                              payments: dependencies.adminPaymentRepository,
+                              refunds: dependencies.adminRefunds,
+                              bookings: dependencies.adminBookings,
+                            ),
+                            onReceipts: (id) =>
+                                context.push('/admin/branches/$id/payments'),
+                            onRefunds: (id) =>
+                                context.push('/admin/branches/$id/refunds'),
+                            onToday: () => context.go('/admin/bookings'),
+                          )
+                        : null,
                   ),
           ),
           FcRoute(

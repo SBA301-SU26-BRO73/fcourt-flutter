@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../discovery_cubit.dart';
 import '../widgets/discovery_widgets.dart';
 import '../widgets/discovery_filter_sheet.dart';
@@ -26,9 +27,15 @@ class _BranchListScreenState extends State<BranchListScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      automaticallyImplyLeading: false,
+      automaticallyImplyLeading: _isGuest(context),
       title: const Text('Khám phá sân'),
       actions: [
+        if (_isGuest(context))
+          TextButton(
+            key: const ValueKey('guest-lookup'),
+            onPressed: () => context.push('/lookup'),
+            child: const Text('Tra cứu đơn'),
+          ),
         BlocBuilder<DiscoveryCubit, DiscoveryState>(
           builder: (context, state) => TextButton.icon(
             icon: const Icon(Icons.tune),
@@ -189,4 +196,13 @@ class _BranchListScreenState extends State<BranchListScreen> {
       ),
     ),
   );
+}
+
+/// Khách chưa đăng nhập (hoặc chưa có AuthBloc, ví dụ trong test): hiện lối tra cứu đơn.
+bool _isGuest(BuildContext context) {
+  try {
+    return context.read<AuthBloc>().state.user == null;
+  } catch (_) {
+    return false;
+  }
 }
