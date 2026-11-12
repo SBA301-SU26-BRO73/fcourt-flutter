@@ -1,3 +1,4 @@
+import 'package:fcourt/app/theme/tokens.dart';
 import 'package:fcourt/features/transactions/data/customer_transactions_impl.dart';
 import 'package:fcourt/features/transactions/presentation/transaction_widgets.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +27,7 @@ void main() {
     await pumpTile(tester, 'PENDING');
     final text = tester.widget<Text>(find.textContaining('300.000'));
     expect(text.data, isNot(startsWith('+')));
-    expect(text.style?.color, isNot(Colors.green));
+    expect(text.style?.color, isNot(FcTokens.light.success.color));
   });
 
   testWidgets('successful payment keeps the plus sign and green', (
@@ -35,7 +36,7 @@ void main() {
     await pumpTile(tester, 'SUCCESS');
     final text = tester.widget<Text>(find.textContaining('300.000'));
     expect(text.data, startsWith('+'));
-    expect(text.style?.color, Colors.green);
+    expect(text.style?.color, FcTokens.light.success.color);
   });
 
   testWidgets('cards are separated vertically', (tester) async {

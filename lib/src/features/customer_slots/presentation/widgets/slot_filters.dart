@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/court_slot.dart';
-import 'slot_picker_palette.dart';
+import '../../../../../app/theme/slot_picker_palette.dart';
 
 const _weekdayShort = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const _weekdayLong = [

@@ -9,7 +9,7 @@ import 'slot_picker_cubit.dart';
 import 'widgets/slot_filters.dart';
 import 'widgets/slot_lock_contacts.dart';
 import 'widgets/slot_option_views.dart';
-import 'widgets/slot_picker_palette.dart';
+import '../../../../app/theme/slot_picker_palette.dart';
 
 /// Start-time picker: day strip, court chips, duration, then the list of free
 /// start times grouped by part of the day. Picking a 2-hour game takes three

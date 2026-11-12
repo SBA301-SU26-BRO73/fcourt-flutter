@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/analytics.dart';
 import 'compact_currency.dart';
+import '../../../../app/theme/tokens.dart';
 
 /// Biểu đồ đường doanh thu theo ngày/tuần/tháng. Chạm vào một điểm để xem số
 /// tiền chi tiết trong tooltip.
@@ -13,7 +14,7 @@ class RevenueLineChart extends StatelessWidget {
 
   final RevenueChart chart;
 
-  static const lineColor = Color(0xFF2E7D32);
+  static const lineColor = ChartColors.success;
 
   @override
   Widget build(BuildContext context) {

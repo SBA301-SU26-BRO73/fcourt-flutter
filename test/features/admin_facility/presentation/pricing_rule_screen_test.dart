@@ -1,3 +1,4 @@
+import 'package:fcourt/app/theme/tokens.dart';
 import 'package:fcourt/features/admin_facility/domain/entities/clock_time.dart';
 import 'package:fcourt/features/admin_facility/domain/entities/pricing_rule.dart';
 import 'package:fcourt/features/admin_facility/domain/usecases/court_usecases.dart';
@@ -74,8 +75,8 @@ void main() {
     final offPeakMaterial = tester.widget<Material>(
       find.byKey(const Key('pricing-segment-1')),
     );
-    expect(peakMaterial.color, const Color(0xFFF57C00));
-    expect(offPeakMaterial.color, const Color(0xFF2E7D32));
+    expect(peakMaterial.color, ChartColors.peak);
+    expect(offPeakMaterial.color, ChartColors.success);
     expect(find.byKey(const Key('pricing-summary')), findsOneWidget);
     expect(
       find.textContaining('Cao điểm 17:00–21:00: 150.000 đ/giờ'),

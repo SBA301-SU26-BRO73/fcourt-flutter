@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../admin_dashboard/presentation/widgets/compact_currency.dart';
 import '../../domain/entities/platform_overview.dart';
+import '../../../../app/theme/tokens.dart';
 
 /// Biểu đồ đường đôi: tài khoản mới và dòng tiền GMV theo tháng. Hai chuỗi khác
 /// đơn vị nên mỗi chuỗi được chuẩn hóa theo mức cao nhất của chính nó để so xu
@@ -12,8 +13,8 @@ class GrowthLineChart extends StatelessWidget {
 
   final List<MonthlyPoint> points;
 
-  static const accountsColor = Color(0xFF1565C0);
-  static const gmvColor = Color(0xFF2E7D32);
+  static const accountsColor = ChartColors.info;
+  static const gmvColor = ChartColors.success;
 
   /// `2026-10` → `10/26`.
   static String monthLabel(String month) =>

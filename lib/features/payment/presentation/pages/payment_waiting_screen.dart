@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/payment_checkout.dart';
 import '../../domain/entities/payment_receipt.dart';
 import '../../domain/repositories/receipt_repository.dart';
+import '../../../../app/theme/tokens.dart';
 
 class PaymentWaitingScreen extends StatefulWidget {
   const PaymentWaitingScreen({
@@ -373,8 +374,8 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                                       step < 2 ||
                                           _receipt?.status ==
                                               ReceiptStatus.confirmed
-                                      ? Colors.green
-                                      : Colors.grey,
+                                      ? context.fc.success.color
+                                      : Theme.of(context).colorScheme.outline,
                                 ),
                                 Text(
                                   [

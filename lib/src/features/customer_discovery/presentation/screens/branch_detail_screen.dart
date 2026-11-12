@@ -182,7 +182,7 @@ class _BranchDetailContent extends StatelessWidget {
                           padding: const EdgeInsets.all(20),
                           children: [
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(Radii.xl),
+                              borderRadius: BorderRadius.circular(Radii.lg),
                               child: galleryRepository == null
                                   ? artwork
                                   : BranchGallerySection(

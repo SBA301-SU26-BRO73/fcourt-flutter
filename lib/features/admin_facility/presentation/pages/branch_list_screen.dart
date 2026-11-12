@@ -44,7 +44,7 @@ class BranchListScreen extends StatelessWidget {
         behavior: SnackBarBehavior.floating,
         content: Row(
           children: [
-            const Icon(Icons.celebration, color: Colors.amber),
+            const Icon(Icons.celebration_outlined),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

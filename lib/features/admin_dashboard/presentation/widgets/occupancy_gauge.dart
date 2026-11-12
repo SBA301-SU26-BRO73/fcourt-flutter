@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'compact_currency.dart';
+import '../../../../app/theme/tokens.dart';
 
 /// Đồng hồ nửa vòng tròn thể hiện tỷ lệ lấp đầy. [rate] là tỉ lệ 0..1 (đúng
 /// quy ước `occupancyUnit = RATIO` của BE); phần trăm chỉ được tính khi hiển thị.
@@ -11,7 +12,7 @@ class OccupancyGauge extends StatelessWidget {
 
   final double rate;
 
-  static const fillColor = Color(0xFFEF6C00);
+  static const fillColor = ChartColors.peak;
 
   @override
   Widget build(BuildContext context) {

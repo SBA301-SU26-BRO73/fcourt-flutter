@@ -89,61 +89,45 @@ class _ProfilePageState extends State<ProfilePage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Gap.screen, Gap.sm, Gap.screen, 32),
         children: [
-          HeroPanel(
-            padding: const EdgeInsets.all(Gap.screen),
+          FcCard(
             child: Row(
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: .22),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: .55),
-                      width: 1.5,
-                    ),
-                  ),
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: colors.primaryContainer,
+                  foregroundColor: colors.onPrimaryContainer,
                   child: Text(
                     (user?.displayName.trim().isNotEmpty ?? false)
                         ? user!.displayName.trim()[0].toUpperCase()
                         : 'F',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: colors.onPrimaryContainer,
                     ),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: Gap.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         user?.displayName ?? 'Tài khoản',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium,
                       ),
-                      const SizedBox(height: 4),
                       Text(
                         user?.email ?? '',
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: context.fc.onBrandMuted),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF06443F),
-                    minimumSize: const Size(48, 44),
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                  ),
+                const SizedBox(width: Gap.sm),
+                FilledButton.tonal(
                   onPressed: () => context.push('/profile/edit'),
                   child: const Text('Hồ sơ'),
                 ),
@@ -153,8 +137,8 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: Gap.xxl),
           const SectionHeader('Tổng quát'),
           const SizedBox(height: Gap.md),
-          FrostedCard(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+          FcCard(
+            padding: const EdgeInsets.symmetric(vertical: Gap.xs),
             child: Column(
               children: [
                 if (user?.role == UserRole.customer) ...[
@@ -176,8 +160,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ListTile(
                   leading: const Icon(Icons.palette_outlined),
                   title: const Text('Cài đặt'),
-                  subtitle: const Text('Giao diện sáng, tối và theo hệ thống'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                                    trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => context.push('/settings'),
                 ),
                 const Divider(indent: 56, endIndent: 16),
@@ -194,7 +177,7 @@ class _ProfilePageState extends State<ProfilePage> {
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               foregroundColor: colors.error,
-              side: BorderSide(color: colors.error.withValues(alpha: .35)),
+              side: BorderSide(color: colors.error),
             ),
             onPressed: () =>
                 context.read<AuthBloc>().add(const AuthLogoutRequested()),

@@ -9,6 +9,7 @@ import '../../domain/entities/dashboard_stats.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../widgets/booking_status_pie_chart.dart';
 import '../widgets/compact_currency.dart';
+import '../../../../app/theme/tokens.dart';
 
 /// SCRUM-13: tổng quan doanh thu, lượt đặt, sân hoạt động và tỷ lệ lấp đầy.
 class AdminDashboardScreen extends StatelessWidget {
@@ -225,26 +226,26 @@ class _StatGrid extends StatelessWidget {
     final cards = [
       StatCard(
         icon: Icons.payments_outlined,
-        color: const Color(0xFF2E7D32),
+        color: ChartColors.success,
         label: 'Tổng doanh thu',
         value: formatCompactVnd(stats.totalRevenue),
         caption: 'Hôm nay ${formatCompactVnd(stats.todayRevenue)}',
       ),
       StatCard(
         icon: Icons.event_available_outlined,
-        color: const Color(0xFF1565C0),
+        color: ChartColors.info,
         label: 'Lượt đặt sân',
         value: '${stats.totalBookings}',
       ),
       StatCard(
         icon: Icons.sports_tennis,
-        color: const Color(0xFF6A1B9A),
+        color: ChartColors.accent,
         label: 'Sân hoạt động',
         value: '${stats.activeCourts}/${stats.totalCourts}',
       ),
       StatCard(
         icon: Icons.donut_large,
-        color: const Color(0xFFEF6C00),
+        color: ChartColors.peak,
         label: 'Tỷ lệ lấp đầy',
         value: formatPercent(stats.occupancyRate),
       ),

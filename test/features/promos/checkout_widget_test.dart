@@ -1,3 +1,4 @@
+import 'package:fcourt/app/theme/tokens.dart';
 import 'dart:async';
 
 import 'package:fcourt/features/payment/domain/entities/payment_checkout.dart';
@@ -144,7 +145,7 @@ void main() {
       final original = tester.widget<Text>(find.textContaining('Giá gốc:'));
       expect(original.style!.decoration, TextDecoration.lineThrough);
       final discount = tester.widget<Text>(find.textContaining('Khuyến mãi:'));
-      expect(discount.style!.color, const Color(0xFF2E7D32));
+      expect(discount.style!.color, ChartColors.success);
       expect(discount.data, contains('40.000'));
       await tester.scrollUntilVisible(
         find.text('QR:120000'),

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../domain/entities/payment_checkout.dart';
 import '../../domain/entities/pending_payment.dart';
 import '../../domain/repositories/admin_payment_repository.dart';
+import '../../../../app/theme/tokens.dart';
 
 class AdminPaymentApprovalScreen extends StatefulWidget {
   const AdminPaymentApprovalScreen({
@@ -297,7 +298,8 @@ class _ApprovalSheetState extends State<_ApprovalSheet> {
               width: double.infinity,
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.green.shade700,
+                  backgroundColor: context.fc.success.color,
+                  foregroundColor: context.fc.success.container,
                 ),
                 onPressed: _busy ? null : () => _decide(true),
                 child: const Text('Xác nhận nhận tiền'),
@@ -308,7 +310,8 @@ class _ApprovalSheetState extends State<_ApprovalSheet> {
               width: double.infinity,
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red.shade700,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
                 ),
                 onPressed: _busy
                     ? null

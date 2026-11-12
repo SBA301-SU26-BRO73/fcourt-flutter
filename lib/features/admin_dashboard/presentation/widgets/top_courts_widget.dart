@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/analytics.dart';
 import 'compact_currency.dart';
+import '../../../../app/theme/tokens.dart';
 
 /// Bảng xếp hạng Top sân: huy chương Vàng, Bạc, Đồng cho hạng 1-3.
 class TopCourtsWidget extends StatelessWidget {
@@ -9,9 +10,9 @@ class TopCourtsWidget extends StatelessWidget {
 
   final List<TopCourt> courts;
 
-  static const gold = Color(0xFFFFB300);
-  static const silver = Color(0xFF90A4AE);
-  static const bronze = Color(0xFFB87333);
+  static const gold = ChartColors.gold;
+  static const silver = ChartColors.neutral;
+  static const bronze = ChartColors.bronze;
 
   static Color? medalColor(int rank) => switch (rank) {
     1 => gold,

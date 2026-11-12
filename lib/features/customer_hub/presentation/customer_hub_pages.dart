@@ -142,7 +142,7 @@ class _NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final route = appRouteForLink(item.link);
-    return FrostedCard(
+    return FcCard(
       onTap: () {
         context.read<NotificationsCubit>().markRead(item.id);
         if (route != null) context.push(route);
