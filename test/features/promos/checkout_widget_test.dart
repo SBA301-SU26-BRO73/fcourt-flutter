@@ -1,10 +1,12 @@
 import 'package:fcourt/app/theme/tokens.dart';
+
 import 'dart:async';
 
 import 'package:fcourt/features/payment/domain/entities/payment_checkout.dart';
 import 'package:fcourt/features/payment/presentation/pages/payment_checkout_screen.dart';
 import 'package:fcourt/features/promos/domain/booking_promo.dart';
 import 'package:fcourt/features/promos/presentation/promo_code_input.dart';
+import 'package:fcourt/features/promos/presentation/promo_totals.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -90,7 +92,7 @@ void main() {
             .bookingId,
         43,
       );
-      expect(find.textContaining('Khuyến mãi:'), findsNothing);
+      expect(find.text('Khuyến mãi'), findsNothing);
       await tester.scrollUntilVisible(
         find.text('QR:160000'),
         150,
@@ -107,7 +109,7 @@ void main() {
         ..failure = const PromoFailure('Mã khuyến mãi không tồn tại');
       await pumpCheckout(tester, store, PromoPayments(store));
       await tester.pumpAndSettle();
-      final input = find.widgetWithText(TextField, 'Mã khuyến mãi');
+      final input = find.byType(TextField);
       final field = tester.widget<TextField>(input);
       expect(field.decoration!.errorText, 'Mã khuyến mãi không tồn tại');
       expect(
@@ -115,7 +117,7 @@ void main() {
         Theme.of(tester.element(input)).colorScheme.error,
       );
       expect(field.controller!.text, 'SAVE');
-      expect(find.textContaining('Khuyến mãi:'), findsNothing);
+      expect(find.text('Khuyến mãi'), findsNothing);
       await tester.scrollUntilVisible(
         find.text('QR:160000'),
         150,
@@ -142,10 +144,20 @@ void main() {
       store.applied.add(42);
       pending.complete(store.application(42));
       await tester.pumpAndSettle();
-      final original = tester.widget<Text>(find.textContaining('Giá gốc:'));
+      final original = tester.widget<Text>(
+        find.descendant(
+          of: find.byType(PromoTotals),
+          matching: find.textContaining('160.000'),
+        ),
+      );
       expect(original.style!.decoration, TextDecoration.lineThrough);
-      final discount = tester.widget<Text>(find.textContaining('Khuyến mãi:'));
-      expect(discount.style!.color, ChartColors.success);
+      final discount = tester.widget<Text>(
+        find.descendant(
+          of: find.byType(PromoTotals),
+          matching: find.textContaining('-40.000'),
+        ),
+      );
+      expect(discount.style!.color, FcTokens.light.success.color);
       expect(discount.data, contains('40.000'));
       await tester.scrollUntilVisible(
         find.text('QR:120000'),

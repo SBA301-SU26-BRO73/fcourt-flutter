@@ -440,9 +440,9 @@ class _BranchDetailContentState extends State<_BranchDetailContent> {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    showDragHandle: true,
-    builder: (_) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+    builder: (_) => Wp3bSheet(
+      title: 'Vị trí chi nhánh',
+      subtitle: data.name,
       child: BranchMapCard(
         key: ValueKey(widget.branchId),
         location: data.location,

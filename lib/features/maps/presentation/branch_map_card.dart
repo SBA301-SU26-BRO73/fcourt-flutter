@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
 import '../domain/branch_location.dart';
 import 'google_branch_map.dart';
 import 'open_street_branch_map.dart';
@@ -133,99 +135,117 @@ class _BranchMapCardState extends State<BranchMapCard> {
   Widget build(BuildContext context) {
     final location = widget.location;
     final revision = _revision;
+    final colors = Theme.of(context).colorScheme;
+    final muted = TextStyle(fontSize: 12, color: colors.onSurfaceVariant);
     void ready() {
       if (revision == _revision && !_fallback) _mapReady();
     }
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Vị trí chi nhánh', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
         if (location == null)
-          const Text('Chi nhánh chưa có tọa độ GPS hợp lệ.')
+          Text('Chi nhánh chưa có tọa độ GPS hợp lệ.', style: muted)
         else ...[
           if (!location.supportsTiles)
-            const Text(
+            Text(
               'Tọa độ nằm ngoài vùng hiển thị bản đồ. Bạn vẫn có thể chỉ đường.',
+              style: muted,
             )
           else if (_availability == null)
-            const SizedBox(
-              height: 260,
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else
             SizedBox(
               height: 260,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: _fallback
-                    ? widget.fallbackBuilder?.call(location, widget.name) ??
-                          OpenStreetBranchMap(
-                            key: ValueKey(location.coordinates),
-                            location: location,
-                            name: widget.name,
-                          )
-                    : Stack(
-                        children: [
-                          widget.nativeBuilder?.call(
-                                location,
-                                widget.name,
-                          ready,
-                              ) ??
-                              GoogleBranchMap(
-                                key: ValueKey(location.coordinates),
-                                location: location,
-                                name: widget.name,
-                          onReady: ready,
-                              ),
-                          if (!_ready)
-                            const Positioned(
-                              top: 8,
-                              left: 8,
-                              right: 8,
-                              child: LinearProgressIndicator(),
-                            ),
-                        ],
-                      ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(Radii.xl),
+                ),
+                child: const Center(child: CircularProgressIndicator()),
               ),
+            )
+          else
+            Container(
+              height: 260,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(Radii.xl),
+                border: Border.all(color: colors.outlineVariant),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: _fallback
+                  ? widget.fallbackBuilder?.call(location, widget.name) ??
+                        OpenStreetBranchMap(
+                          key: ValueKey(location.coordinates),
+                          location: location,
+                          name: widget.name,
+                        )
+                  : Stack(
+                      children: [
+                        widget.nativeBuilder?.call(
+                              location,
+                              widget.name,
+                              ready,
+                            ) ??
+                            GoogleBranchMap(
+                              key: ValueKey(location.coordinates),
+                              location: location,
+                              name: widget.name,
+                              onReady: ready,
+                            ),
+                        if (!_ready)
+                          const Positioned(
+                            top: 8,
+                            left: 8,
+                            right: 8,
+                            child: LinearProgressIndicator(),
+                          ),
+                      ],
+                    ),
             ),
           if (_fallback && location.supportsTiles) ...[
-            const Text('Bản đồ dự phòng OpenStreetMap'),
-            TextButton(
-              onPressed: _opening ? null : () => _open((p) => p.attribution()),
-              child: const Text('© OpenStreetMap contributors'),
+            const SizedBox(height: Gap.sm),
+            Text('Bản đồ dự phòng OpenStreetMap', style: muted),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: _opening
+                    ? null
+                    : () => _open((p) => p.attribution()),
+                child: const Text('© OpenStreetMap contributors'),
+              ),
             ),
           ],
-          Wrap(
-            spacing: 8,
-            children: [
-              FilledButton.icon(
-                onPressed: _opening
-                    ? null
-                    : () => _open((p) => p.directions(location)),
-                icon: const Icon(Icons.directions),
-                label: const Text('Chỉ đường đến sân'),
-              ),
-              TextButton(
-                onPressed: _opening
-                    ? null
-                    : () => _open((p) => p.openStreetMap(location)),
-                child: const Text('Mở OpenStreetMap'),
-              ),
-            ],
+          const SizedBox(height: Gap.lg),
+          Wp3bAction(
+            'Chỉ đường đến sân',
+            onPressed: _opening
+                ? null
+                : () => _open((p) => p.directions(location)),
+          ),
+          const SizedBox(height: Gap.sm),
+          Wp3bAction(
+            'Mở OpenStreetMap',
+            kind: Wp3bActionKind.tonal,
+            onPressed: _opening
+                ? null
+                : () => _open((p) => p.openStreetMap(location)),
           ),
           if (!_fallback && _availability != null && location.supportsTiles)
-            TextButton(
+            Wp3bAction(
+              'Xem bản đồ dự phòng',
+              kind: Wp3bActionKind.text,
               onPressed: _useFallback,
-              child: const Text('Xem bản đồ dự phòng'),
             ),
           if (_fallback)
-            TextButton(onPressed: _probe, child: const Text('Thử lại bản đồ')),
+            Wp3bAction(
+              'Thử lại bản đồ',
+              kind: Wp3bActionKind.text,
+              onPressed: _probe,
+            ),
         ],
         if (_error != null)
-          Text(
-            _error!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          Padding(
+            padding: const EdgeInsets.only(top: Gap.sm),
+            child: Text(_error!, style: TextStyle(color: colors.error)),
           ),
       ],
     );

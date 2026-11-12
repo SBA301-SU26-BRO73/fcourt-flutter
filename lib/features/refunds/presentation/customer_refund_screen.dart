@@ -230,7 +230,11 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                           ),
                           Text(
                             vnd(state.amount),
-                            style: theme.textTheme.headlineSmall,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: colors.primary,
+                            ),
                           ),
                         ],
                       ),
@@ -252,24 +256,19 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
               const SizedBox(height: Gap.lg),
               PayPanel(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
                       'Thông tin nhận tiền',
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: Gap.sm),
-                    Text(request.bankName, style: theme.textTheme.bodyLarge),
-                    Text(
-                      request.accountNumber,
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                    Text(
-                      request.accountName,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurfaceVariant,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
+                    const SizedBox(height: Gap.sm),
+                    _BankRow('Ngân hàng', request.bankName),
+                    _BankRow('Số tài khoản', request.accountNumber),
+                    _BankRow('Chủ tài khoản', request.accountName),
                   ],
                 ),
               ),
@@ -299,70 +298,79 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                       ),
                     ),
                     const SizedBox(height: Gap.lg),
-                    DropdownButtonFormField<String>(
-                      initialValue: _bank,
-                      isExpanded: true,
-                      decoration: const InputDecoration(labelText: 'Ngân hàng'),
-                      items: vietnamBanks
-                          .map(
-                            (b) => DropdownMenuItem(
-                              value: b.bin,
-                              child: Text(b.name),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: _busy
-                          ? null
-                          : (v) => setState(() => _bank = v!),
+                    Wp3bField(
+                      'Ngân hàng',
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _bank,
+                        isExpanded: true,
+                        items: vietnamBanks
+                            .map(
+                              (b) => DropdownMenuItem(
+                                value: b.bin,
+                                child: Text(b.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _busy
+                            ? null
+                            : (v) => setState(() => _bank = v!),
+                      ),
                     ),
                     const SizedBox(height: Gap.lg),
-                    TextFormField(
-                      controller: _account,
-                      enabled: !_busy,
-                      keyboardType: TextInputType.number,
-                      maxLength: 20,
-                      decoration: const InputDecoration(
-                        labelText: 'Số tài khoản',
-                        counterText: '',
+                    Wp3bField(
+                      'Số tài khoản',
+                      child: TextFormField(
+                        controller: _account,
+                        enabled: !_busy,
+                        keyboardType: TextInputType.number,
+                        maxLength: 20,
+                        decoration: const InputDecoration(
+                          hintText: 'Nhập số tài khoản',
+                          counterText: '',
+                        ),
+                        validator: (v) =>
+                            RegExp(r'^[0-9]{6,20}$').hasMatch(v?.trim() ?? '')
+                            ? null
+                            : 'Nhập số tài khoản từ 6–20 chữ số',
                       ),
-                      validator: (v) =>
-                          RegExp(r'^[0-9]{6,20}$').hasMatch(v?.trim() ?? '')
-                          ? null
-                          : 'Nhập số tài khoản từ 6–20 chữ số',
                     ),
                     const SizedBox(height: Gap.lg),
-                    TextFormField(
-                      controller: _name,
-                      enabled: !_busy,
-                      maxLength: 150,
-                      decoration: const InputDecoration(
-                        labelText: 'Tên người thụ hưởng',
-                        counterText: '',
+                    Wp3bField(
+                      'Tên người thụ hưởng',
+                      child: TextFormField(
+                        controller: _name,
+                        enabled: !_busy,
+                        maxLength: 150,
+                        decoration: const InputDecoration(
+                          hintText: 'NGUYEN VAN A',
+                          counterText: '',
+                        ),
+                        validator: (v) => (v?.trim().length ?? 0) >= 2
+                            ? null
+                            : 'Nhập tên người thụ hưởng',
                       ),
-                      validator: (v) => (v?.trim().length ?? 0) >= 2
-                          ? null
-                          : 'Nhập tên người thụ hưởng',
                     ),
                     const SizedBox(height: Gap.lg),
-                    TextFormField(
-                      controller: _reason,
-                      enabled: !_busy,
-                      maxLength: 500,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Lý do hoàn tiền',
-                        counterText: '',
+                    Wp3bField(
+                      'Lý do hoàn tiền',
+                      child: TextFormField(
+                        controller: _reason,
+                        enabled: !_busy,
+                        maxLength: 500,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          hintText: 'Nhập lý do hoàn tiền',
+                          counterText: '',
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Vui lòng nhập lý do'
+                            : null,
                       ),
-                      validator: (v) => v == null || v.trim().isEmpty
-                          ? 'Vui lòng nhập lý do'
-                          : null,
                     ),
                     const SizedBox(height: Gap.xl),
-                    FilledButton(
+                    Wp3bAction(
+                      _busy ? 'Đang gửi…' : 'Gửi yêu cầu hoàn tiền',
                       onPressed: _busy ? null : _request,
-                      child: Text(
-                        _busy ? 'Đang gửi…' : 'Gửi yêu cầu hoàn tiền',
-                      ),
                     ),
                   ],
                 ),
@@ -371,6 +379,57 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BankRow extends StatelessWidget {
+  const _BankRow(this.label, this.value);
+  final String label, value;
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant),
+          ),
+          const SizedBox(width: Gap.md),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Node extends StatelessWidget {
+  const _Node({required this.done, required this.current});
+  final bool done, current;
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: done ? colors.primary : colors.surface,
+        border: Border.all(
+          color: done || current ? colors.primary : colors.outlineVariant,
+          width: current ? 6 : 2,
+        ),
+      ),
+      child: done ? Icon(Icons.check, size: 14, color: colors.onPrimary) : null,
     );
   }
 }
@@ -402,15 +461,7 @@ class _RefundProgress extends StatelessWidget {
                   width: 24,
                   child: Column(
                     children: [
-                      Icon(
-                        index < step
-                            ? Icons.check_circle
-                            : index == step
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_unchecked,
-                        color: index <= step ? colors.primary : colors.outline,
-                        size: 24,
-                      ),
+                      _Node(done: index < step, current: index == step),
                       if (index < labels.length - 1)
                         Expanded(
                           child: Container(
