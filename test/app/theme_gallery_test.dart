@@ -79,9 +79,10 @@ Future<void> _fonts() async {
       await loader.load();
     }
   }
-  final loader = FontLoader('BeVietnamPro');
-  for (final name in ['Regular', 'Medium', 'Bold']) {
-    final bytes = File('assets/fonts/BeVietnamPro-$name.ttf').readAsBytesSync();
+  final loader = FontLoader('PlusJakartaSans');
+  for (final name in ['Regular', 'SemiBold', 'Bold']) {
+    final bytes = File('assets/fonts/PlusJakartaSans-$name.ttf')
+        .readAsBytesSync();
     loader.addFont(
       Future.value(ByteData.sublistView(Uint8List.fromList(bytes))),
     );
@@ -124,9 +125,7 @@ class _Gallery extends StatelessWidget {
                       Text('Đơn #2941 · Sân 1', style: t.titleSmall),
                       Text(
                         '13/11/2026 · 19:00–21:00',
-                        style: t.bodySmall?.copyWith(
-                          color: c.onSurfaceVariant,
-                        ),
+                        style: t.bodySmall?.copyWith(color: c.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -196,7 +195,13 @@ class _Gallery extends StatelessWidget {
                 ChoiceChip(
                   avatar: SportIcon(k, size: 18),
                   label: Text(
-                    ['Tennis', 'Cầu lông', 'Pickleball', 'Bóng đá', 'Bóng rổ'][i],
+                    [
+                      'Tennis',
+                      'Cầu lông',
+                      'Pickleball',
+                      'Bóng đá',
+                      'Bóng rổ',
+                    ][i],
                   ),
                   selected: i == 1,
                   onSelected: (_) {},
@@ -295,7 +300,7 @@ void main() {
         expect(_ratio(tone.color, tone.container), greaterThanOrEqualTo(4.5));
       }
     }
-    expect(AppTheme.dark().scaffoldBackgroundColor, const Color(0xFF0F1417));
+    expect(AppTheme.dark().scaffoldBackgroundColor, const Color(0xFF0E1A2B));
     expect(AppTheme.dark().useMaterial3, isTrue);
   });
 
@@ -400,9 +405,9 @@ void main() {
       await tester.pumpAndSettle();
       if (b == Brightness.dark) {
         await tester.runAsync(
-          () => ThemeScope.of(
-            tester.element(find.byType(Scaffold).first),
-          ).select(ThemeMode.dark),
+          () =>
+              ThemeScope.of(tester.element(find.byType(Scaffold).first))
+                  .select(ThemeMode.dark),
         );
         await tester.pumpAndSettle();
       }

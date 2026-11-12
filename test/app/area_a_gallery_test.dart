@@ -273,9 +273,10 @@ Future<void> _fonts() async {
       await loader.load();
     }
   }
-  final loader = FontLoader('BeVietnamPro');
-  for (final name in ['Regular', 'Medium', 'Bold']) {
-    final bytes = File('assets/fonts/BeVietnamPro-$name.ttf').readAsBytesSync();
+  final loader = FontLoader('PlusJakartaSans');
+  for (final name in ['Regular', 'SemiBold', 'Bold']) {
+    final bytes = File('assets/fonts/PlusJakartaSans-$name.ttf')
+        .readAsBytesSync();
     loader.addFont(
       Future.value(ByteData.sublistView(Uint8List.fromList(bytes))),
     );

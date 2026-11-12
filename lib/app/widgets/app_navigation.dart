@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/domain/entities/user_role.dart';
 import '../auth_redirect.dart';
+import 'floating_nav_bar.dart';
 
 /// Một tab của thanh điều hướng dưới.
 class NavDestination {
@@ -16,27 +17,27 @@ class NavDestination {
 List<NavDestination> navDestinations(UserRole role) => switch (role) {
   UserRole.customer => const [
     NavDestination('Khám phá', Icons.explore_outlined, AppRoutes.discover),
-    NavDestination('Đơn của tôi', Icons.confirmation_number_outlined, '/bookings'),
+    NavDestination(
+      'Đơn của tôi',
+      Icons.confirmation_number_outlined,
+      '/bookings',
+    ),
     NavDestination('Thông báo', Icons.notifications_outlined, '/notifications'),
     NavDestination('Tài khoản', Icons.person_outline, AppRoutes.profile),
   ],
   UserRole.admin => const [
-    NavDestination(
-      'Việc cần làm',
-      Icons.task_alt_outlined,
-      AppRoutes.home,
-    ),
+    NavDestination('Việc cần làm', Icons.task_alt_outlined, AppRoutes.home),
     NavDestination('Đơn', Icons.receipt_long_outlined, '/admin/bookings'),
-    NavDestination(
-      'Chi nhánh',
-      Icons.storefront_outlined,
-      '/admin/branches',
-    ),
+    NavDestination('Chi nhánh', Icons.storefront_outlined, '/admin/branches'),
     NavDestination('Tài khoản', Icons.person_outline, AppRoutes.profile),
   ],
   UserRole.staff => const [
     NavDestination('Tổng quan', Icons.home_outlined, AppRoutes.home),
-    NavDestination('Lịch sân', Icons.calendar_today_outlined, '/staff/schedule'),
+    NavDestination(
+      'Lịch sân',
+      Icons.calendar_today_outlined,
+      '/staff/schedule',
+    ),
     NavDestination('Thông báo', Icons.notifications_outlined, '/notifications'),
     NavDestination('Tài khoản', Icons.person_outline, AppRoutes.profile),
   ],
@@ -67,7 +68,7 @@ int navSelectedIndex(UserRole role, String location) {
   return 0;
 }
 
-/// Thanh điều hướng M3, nền đặc, mỗi tab một icon Material outlined và nhãn.
+/// Thanh điều hướng nổi bo tròn (FloatingNavBar), mỗi tab một icon outlined và nhãn.
 class AppNavigation extends StatelessWidget {
   const AppNavigation({
     super.key,
@@ -81,11 +82,18 @@ class AppNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final destinations = navDestinations(role);
-    return NavigationBar(
+    return FloatingNavBar(
       key: const ValueKey('persistent-app-tabs'),
       selectedIndex: selectedIndex,
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      onDestinationSelected: (index) {
+      items: [
+        for (final d in destinations)
+          FloatingNavItem(
+            label: d.label,
+            icon: d.icon,
+            badgeCount: d.route == '/notifications' ? unreadCount : 0,
+          ),
+      ],
+      onSelected: (index) {
         final destination = destinations[index];
         if (GoRouterState.of(context).uri.path == destination.route) return;
         // Tài khoản là màn con (có nút Back), không thay thế màn đang đứng.
@@ -95,20 +103,6 @@ class AppNavigation extends StatelessWidget {
           context.go(destination.route);
         }
       },
-      destinations: [
-        for (final d in destinations)
-          NavigationDestination(
-            label: d.label,
-            tooltip: '',
-            icon: d.route == '/notifications'
-                ? Badge(
-                    isLabelVisible: unreadCount > 0,
-                    smallSize: 8,
-                    child: Icon(d.icon),
-                  )
-                : Icon(d.icon),
-          ),
-      ],
     );
   }
 }

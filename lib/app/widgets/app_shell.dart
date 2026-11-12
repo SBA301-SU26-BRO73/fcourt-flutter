@@ -74,8 +74,8 @@ class _AppShellState extends State<AppShell> {
       return widget.child;
     }
     final selected = navSelectedIndex(user.role, widget.location);
-    // Solid bottom bar: the body ends above it, so lists and floating action
-    // buttons never sit behind the navigation.
+    // Floating bar: the body ends above it (FloatingNavBar.outerHeight), so
+    // lists and floating action buttons never sit behind the navigation.
     return Scaffold(
       body: widget.child,
       bottomNavigationBar: _navigation(user.role, selected),
