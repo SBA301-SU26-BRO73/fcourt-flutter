@@ -2,12 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/error/failure.dart';
+import '../../../core/storage/guest_booking_store.dart';
 import '../domain/entities/guest_booking_lookup.dart';
 import '../domain/repositories/guest_booking_lookup_repository.dart';
 
 class GuestBookingLookupPage extends StatefulWidget {
-  const GuestBookingLookupPage({super.key, required this.repository});
+  const GuestBookingLookupPage({
+    super.key,
+    required this.repository,
+    this.store,
+  });
   final GuestBookingLookupRepository? repository;
+
+  /// Đơn gần nhất của khách trên máy này; điền sẵn mã đơn và SĐT.
+  final GuestBookingStore? store;
 
   @override
   State<GuestBookingLookupPage> createState() => _GuestBookingLookupPageState();
@@ -20,6 +28,21 @@ class _GuestBookingLookupPageState extends State<GuestBookingLookupPage> {
   GuestBookingLookup? _booking;
   String? _error;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSaved();
+  }
+
+  Future<void> _restoreSaved() async {
+    final session = await widget.store?.read();
+    if (!mounted || session == null) return;
+    if (_code.text.isEmpty && _phone.text.isEmpty) {
+      _code.text = session.bookingCode ?? '';
+      _phone.text = session.phone;
+    }
+  }
 
   @override
   void dispose() {

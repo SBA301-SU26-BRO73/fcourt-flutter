@@ -6,6 +6,8 @@ import '../features/booking/domain/entities/booking_hold.dart';
 import '../features/booking/domain/repositories/booking_creation_repository.dart';
 import '../features/booking/presentation/pages/booking_create_screen.dart';
 import '../features/booking/presentation/guest_booking_lookup_page.dart';
+import '../core/storage/guest_booking_store.dart';
+import '../features/payment/data/repositories/guest_session_payment_repository.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../src/features/customer_slots/data/stomp_slot_invalidations.dart';
 
@@ -160,7 +162,7 @@ GoRouter createRouter(
     return parsed != null && slotDateKey(parsed) == text ? parsed : null;
   }
 
-  /// Picker -> booking summary; guests go through login and come back here.
+  /// Picker -> booking summary; guests continue with a phone number (no login, M23).
   void Function(SlotSelection, String)? slotContinue(
     BuildContext context,
     GoRouterState state,
@@ -169,15 +171,6 @@ GoRouter createRouter(
       : (selection, courtName) {
           try {
             final user = authBloc.state.user;
-            if (user == null) {
-              context.push(
-                Uri(
-                  path: AppRoutes.login,
-                  queryParameters: {'from': state.uri.toString()},
-                ).toString(),
-              );
-              return;
-            }
             context.push(
               '/booking/summary',
               extra: BookingSummaryArguments(
@@ -188,8 +181,9 @@ GoRouter createRouter(
                       'Chi nhánh đã chọn',
                   courtName: courtName,
                 ),
-                customerName: user.fullName ?? '',
-                phone: user.phone ?? '',
+                guest: user == null,
+                customerName: user?.fullName ?? '',
+                phone: user?.phone ?? '',
                 onHeld: (checkout) =>
                     context.push('/booking/confirm', extra: checkout),
               ),
@@ -244,6 +238,7 @@ GoRouter createRouter(
             path: '/lookup',
             builder: (_, _) => GuestBookingLookupPage(
               repository: dependencies.guestBookingLookupRepository,
+              store: dependencies.guestBookingStore,
             ),
           ),
           FcRoute(
@@ -369,8 +364,28 @@ GoRouter createRouter(
               return BookingCreateScreen(
                 repository: creator as BookingCreationRepository,
                 checkout: checkout,
-                onCreated: (arguments) =>
-                    context.replace('/payments/checkout', extra: arguments),
+                onCreated: (arguments) async {
+                  final store = dependencies.guestBookingStore;
+                  final token = arguments.holdToken;
+                  if (authBloc.state.user == null &&
+                      store != null &&
+                      token != null) {
+                    try {
+                      await store.save(
+                        GuestBookingSession(
+                          bookingId: arguments.bookingId,
+                          holdToken: token,
+                          phone: checkout.phone,
+                        ),
+                      );
+                    } catch (_) {
+                      // Mất lưu cục bộ không chặn thanh toán; vẫn tra cứu được bằng mã đơn.
+                    }
+                  }
+                  if (context.mounted) {
+                    context.replace('/payments/checkout', extra: arguments);
+                  }
+                },
                 onHistory: () => context.go('/bookings'),
               );
             },
@@ -573,13 +588,21 @@ GoRouter createRouter(
                   ),
                 );
               }
+              final guest = authBloc.state.user == null;
+              final guestStore = dependencies.guestBookingStore;
               return PaymentCheckoutScreen(
-                repository: paymentRepository,
+                repository: guest && guestStore != null
+                    ? GuestSessionPaymentRepository(
+                        paymentRepository,
+                        guestStore,
+                      )
+                    : paymentRepository,
                 saver: saver,
                 arguments: arguments,
-                promos: dependencies.promos,
-                onFreeConfirmed: () =>
-                    showTicketOverBookings(context, arguments),
+                promos: guest ? null : dependencies.promos,
+                onFreeConfirmed: () => guest
+                    ? showTicketForGuest(context, arguments)
+                    : showTicketOverBookings(context, arguments),
                 onUploadReceipt: () =>
                     context.push('/payments/receipt', extra: arguments),
               );
@@ -602,11 +625,12 @@ GoRouter createRouter(
                 repository: repository,
                 saver: saver,
                 arguments: args,
-                onHistory:
-                    dependencies.onBookingHistory ??
-                    (dependencies.bookingHistoryRepository == null
-                        ? null
-                        : () => context.go('/bookings')),
+                onHistory: authBloc.state.user == null
+                    ? () => showLookupForGuest(context)
+                    : dependencies.onBookingHistory ??
+                          (dependencies.bookingHistoryRepository == null
+                              ? null
+                              : () => context.go('/bookings')),
               );
             },
           ),
@@ -623,15 +647,21 @@ GoRouter createRouter(
                   body: Center(child: Text('Vui lòng chọn đơn đặt sân.')),
                 );
               }
+              final guest = authBloc.state.user == null;
               return PaymentWaitingScreen(
                 repository: repository,
                 picker: picker,
                 arguments: args,
-                onConfirmed: () => showTicketOverBookings(context, args),
-                onSupport: () => showBookingOverList(context, args.bookingId),
+                onConfirmed: () => guest
+                    ? showTicketForGuest(context, args)
+                    : showTicketOverBookings(context, args),
+                onSupport: () => guest
+                    ? showLookupForGuest(context)
+                    : showBookingOverList(context, args.bookingId),
                 onHome: () => context.go(AppRoutes.home),
-                onViewBooking: () =>
-                    showBookingOverList(context, args.bookingId),
+                onViewBooking: () => guest
+                    ? showLookupForGuest(context)
+                    : showBookingOverList(context, args.bookingId),
               );
             },
           ),

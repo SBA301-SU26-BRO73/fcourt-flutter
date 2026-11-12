@@ -16,3 +16,13 @@ void showBookingOverList(BuildContext context, int bookingId) {
   router.go('/bookings');
   router.push('/bookings/$bookingId');
 }
+
+/// Khách vãng lai không có danh sách đơn: tra cứu là màn gốc, vé nằm trên đó.
+void showTicketForGuest(BuildContext context, CheckoutArguments args) {
+  final router = GoRouter.of(context);
+  router.go('/lookup');
+  router.push('/payments/ticket', extra: args);
+}
+
+void showLookupForGuest(BuildContext context) =>
+    GoRouter.of(context).go('/lookup');

@@ -17,12 +17,16 @@ class BookingSummaryArguments {
     this.customerName = '',
     this.phone = '',
     this.promoCode = '',
+    this.guest = false,
   });
   final BookingSelection selection;
   final ValueChanged<BookingCheckout> onHeld;
   final String customerName;
   final String phone;
   final String promoCode;
+
+  /// Khách chưa đăng nhập: chỉ hỏi SĐT, không hỏi họ tên (BE chỉ cần `guestPhone`).
+  final bool guest;
 }
 
 class BookingSummaryScreen extends StatelessWidget {
@@ -62,7 +66,8 @@ class _SummaryFormState extends State<_SummaryForm> {
     _name = TextEditingController(text: widget.arguments.customerName);
     _phone = TextEditingController(text: widget.arguments.phone);
     _promoCode = widget.arguments.promoCode;
-    _needsName = widget.arguments.customerName.trim().isEmpty;
+    _needsName =
+        !widget.arguments.guest && widget.arguments.customerName.trim().isEmpty;
     _needsPhone = validateBookingPhone(widget.arguments.phone) != null;
   }
 
@@ -131,7 +136,9 @@ class _SummaryFormState extends State<_SummaryForm> {
                             if (_form.currentState!.validate()) {
                               context.read<BookingCubit>().submit(
                                 selection,
-                                _name.text,
+                                widget.arguments.guest
+                                    ? 'Khách vãng lai'
+                                    : _name.text,
                                 _phone.text,
                               );
                             }
@@ -224,8 +231,12 @@ class _SummaryFormState extends State<_SummaryForm> {
                         TextFormField(
                           controller: _phone,
                           enabled: !locked,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Số điện thoại',
+                            helperText: widget.arguments.guest
+                                ? 'Dùng để tra cứu đơn, không cần đăng nhập'
+                                : null,
+                            counterText: '',
                           ),
                           keyboardType: TextInputType.phone,
                           autofillHints: const [
