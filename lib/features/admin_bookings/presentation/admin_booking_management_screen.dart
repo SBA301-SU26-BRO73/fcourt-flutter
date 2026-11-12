@@ -47,20 +47,20 @@ class _AdminBookingManagementScreenState
     }
   }
 
-  void _openDetail(BuildContext context, AdminBooking row) => showDialog<void>(
-    context: context,
-    builder: (_) => Dialog.fullscreen(
-      child: AdminBookingDetail(
-        booking: row,
-        onReviewPayment: widget.onReviewPayment == null
-            ? null
-            : () {
-                Navigator.of(context).pop();
-                widget.onReviewPayment!(row);
-              },
+  Future<void> _openDetail(BuildContext context, AdminBooking row) async {
+    final review = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Dialog.fullscreen(
+        child: AdminBookingDetail(
+          booking: row,
+          onReviewPayment: widget.onReviewPayment == null
+              ? null
+              : () => Navigator.of(dialogContext).pop(true),
+        ),
       ),
-    ),
-  );
+    );
+    if (mounted && review == true) widget.onReviewPayment?.call(row);
+  }
 
   Future<void> _openFilters(
     AdminBookingCubit cubit,
