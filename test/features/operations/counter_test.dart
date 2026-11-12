@@ -1,3 +1,4 @@
+import 'package:fcourt/app/theme/tokens.dart';
 import 'package:dio/dio.dart';
 import 'package:fcourt/core/error/failure.dart';
 import 'package:fcourt/features/operations/domain/counter.dart';
@@ -87,7 +88,7 @@ void main() {
       expect(button.onPressed, isNull);
       expect(
         button.style!.backgroundColor!.resolve({WidgetState.disabled}),
-        const Color(0xFFB3261E),
+        FcTokens.light.danger.container,
       );
     },
   );

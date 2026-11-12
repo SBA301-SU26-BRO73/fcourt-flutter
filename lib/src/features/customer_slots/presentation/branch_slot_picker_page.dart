@@ -7,7 +7,7 @@ import '../domain/slot_options.dart';
 import '../domain/slot_repository.dart';
 import 'slot_picker_screen.dart';
 import 'widgets/slot_option_views.dart';
-import 'widgets/slot_picker_palette.dart';
+import '../../../../app/theme/slot_picker_palette.dart';
 
 /// Loads the courts of a branch, then shows [SlotPickerScreen] over all of them.
 class BranchSlotPickerPage extends StatefulWidget {

@@ -110,7 +110,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Chúc mừng!'), findsOneWidget);
-      expect(find.byIcon(Icons.celebration), findsOneWidget);
+      expect(find.byIcon(Icons.celebration_outlined), findsOneWidget);
       verify(() => branches.getBranches()).called(2);
     });
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../domain/schedule.dart';
 import '../domain/schedule_cells.dart';
 import 'schedule_page.dart';
+import '../../../app/theme/tokens.dart';
 
 class WeekBoard extends StatefulWidget {
   const WeekBoard({super.key, required this.data, required this.start});
@@ -107,15 +108,16 @@ class _WeekBoardState extends State<WeekBoard> {
         }
         final ending = sessions.any((s) => s.endingSoon);
         final playing = sessions.any((s) => s.playing);
+        final fc = context.fc;
         final color = ending
-            ? const Color(0xFFFFE082)
+            ? fc.warning.container
             : playing
-            ? const Color(0xFFB3261E)
+            ? fc.danger.container
             : Theme.of(context).colorScheme.secondaryContainer;
         final ink = ending
-            ? Colors.black
+            ? fc.warning.color
             : playing
-            ? Colors.white
+            ? fc.danger.color
             : Theme.of(context).colorScheme.onSecondaryContainer;
         final text = sessions
             .map(
@@ -191,12 +193,15 @@ class _EndingSoonIndicatorState extends State<EndingSoonIndicator>
     children: [
       FadeTransition(
         opacity: Tween(begin: 0.4, end: 1.0).animate(_controller),
-        child: const Icon(Icons.warning_amber, color: Colors.black),
+        child: Icon(Icons.warning_amber, color: context.fc.warning.color),
       ),
-      const Flexible(
+      Flexible(
         child: Text(
           'Sắp hết giờ',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: context.fc.warning.color,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     ],

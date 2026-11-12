@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,7 +9,6 @@ import 'features/offline/data/offline_runtime.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await LiquidGlassWidgets.initialize();
   if (!kIsWeb) {
     try {
       await Firebase.initializeApp();

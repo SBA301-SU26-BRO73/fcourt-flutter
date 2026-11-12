@@ -8,6 +8,7 @@ import 'ticket_brightness_scope.dart';
 import '../../domain/entities/booking_ticket.dart';
 import '../../domain/entities/payment_checkout.dart';
 import '../../domain/repositories/ticket_repository.dart';
+import '../../../../app/theme/tokens.dart';
 
 class BookingSuccessScreen extends StatefulWidget {
   const BookingSuccessScreen({
@@ -147,7 +148,7 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                   ),
                 ],
                 if (ticket != null) ...[
-                  const Icon(Icons.check_circle, color: Colors.green, size: 56),
+                  Icon(Icons.check_circle_outline, color: context.fc.success.color, size: 56),
                   Text(
                     'Đặt sân thành công!',
                     style: Theme.of(context).textTheme.headlineSmall,

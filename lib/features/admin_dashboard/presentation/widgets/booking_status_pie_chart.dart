@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/dashboard_stats.dart';
+import '../../../../app/theme/tokens.dart';
 
 /// Biểu đồ tròn trạng thái đặt sân: Đã xác nhận / Chờ duyệt / Đã hủy.
 class BookingStatusPieChart extends StatelessWidget {
@@ -9,9 +10,9 @@ class BookingStatusPieChart extends StatelessWidget {
 
   final BookingStatusCounts counts;
 
-  static const confirmedColor = Color(0xFF2E7D32);
-  static const pendingColor = Color(0xFFF9A825);
-  static const cancelledColor = Color(0xFFC62828);
+  static const confirmedColor = ChartColors.success;
+  static const pendingColor = ChartColors.warning;
+  static const cancelledColor = ChartColors.danger;
 
   List<(String, int, Color)> get _entries => [
     ('Đã xác nhận', counts.confirmed, confirmedColor),

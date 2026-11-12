@@ -14,6 +14,7 @@ import 'week_board.dart';
 import 'manual_check_in.dart';
 import '../../offline/data/offline_runtime.dart';
 import '../../offline/presentation/offline_panel.dart';
+import '../../../app/theme/tokens.dart';
 
 class SchedulePage extends StatelessWidget {
   const SchedulePage({
@@ -175,7 +176,7 @@ class _ScheduleBoardState extends State<ScheduleBoard>
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Nhận sân thành công'),
-        backgroundColor: Color(0xFF176B42),
+        backgroundColor: ChartColors.success,
       ),
     );
     await cubit.refresh();

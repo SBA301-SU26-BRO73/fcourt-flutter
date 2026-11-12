@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import 'dart:async';
 
@@ -123,13 +122,6 @@ class _FcourtAppState extends State<FcourtApp> {
         child: ListenableBuilder(
           listenable: _theme,
           builder: (context, _) => MaterialApp.router(
-            builder: (context, child) => LiquidGlassWidgets.wrap(
-              adaptiveQuality: true,
-              respectSystemAccessibility: true,
-              brightnessResolver: Theme.maybeBrightnessOf,
-              theme: const GlassThemeData.ios26(),
-              child: child ?? const SizedBox.shrink(),
-            ),
             title: 'FCOURT',
             themeMode: _theme.mode,
             theme: AppTheme.light(),

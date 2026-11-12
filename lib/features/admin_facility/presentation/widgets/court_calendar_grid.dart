@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/calendar_slot.dart';
 import '../bloc/court_calendar_bloc.dart';
+import '../../../../app/theme/tokens.dart';
 
 const _weekdayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
@@ -23,22 +24,22 @@ class SlotStyle {
   final String label;
   final IconData icon;
 
-  static const eventColor = Color(0xFF4648D4);
-  static const serviceColor = Color(0xFF705A7B);
+  static const eventColor = ChartColors.info;
+  static const serviceColor = ChartColors.neutral;
 
   static SlotStyle of(CalendarSlot slot) => switch (slot.status) {
     CalendarSlotStatus.available => const SlotStyle(
-      Color(0xFF1B7F4B),
+      ChartColors.success,
       'Trống',
       Icons.add_circle_outline,
     ),
     CalendarSlotStatus.booked => const SlotStyle(
-      Color(0xFFB3261E),
+      ChartColors.danger,
       'Đã đặt',
       Icons.person,
     ),
     CalendarSlotStatus.hold => const SlotStyle(
-      Color(0xFFB26A00),
+      ChartColors.warning,
       'Đang giữ',
       Icons.hourglass_top,
     ),
@@ -53,12 +54,12 @@ class SlotStyle {
       Icons.block,
     ),
     CalendarSlotStatus.expired => const SlotStyle(
-      Color(0xFF8A8F8D),
+      ChartColors.neutral,
       'Đã qua',
       Icons.history,
     ),
     CalendarSlotStatus.unknown => const SlotStyle(
-      Color(0xFF8A8F8D),
+      ChartColors.neutral,
       'Không rõ',
       Icons.help_outline,
     ),

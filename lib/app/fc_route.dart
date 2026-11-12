@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'widgets/app_backdrop.dart';
-
-/// A [GoRoute] whose page carries the aurora wallpaper and a real transition.
-///
-/// Scaffolds are transparent, so every page must paint its own backdrop or
-/// the page below would show through. Pushed pages use the platform
-/// transition (which adds the backdrop through the theme); tab roots and the
-/// entry screens cross-fade instead of sliding.
+/// A [GoRoute] with a real transition: pushed pages use the platform
+/// transition; tab roots and the entry screens cross-fade instead of sliding.
 class FcRoute extends GoRoute {
   FcRoute({required super.path, super.name, GoRouterWidgetBuilder? builder})
     : super(
@@ -28,7 +22,7 @@ class FcRoute extends GoRoute {
                                 .animate(animation),
                             child: child,
                           ),
-                      child: AppBackdrop(child: builder(context, state)),
+                      child: builder(context, state),
                     )
                   : MaterialPage<void>(
                       key: state.pageKey,

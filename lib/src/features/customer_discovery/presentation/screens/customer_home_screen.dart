@@ -49,11 +49,9 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
   Widget build(BuildContext context) {
     final user = context.select((AuthBloc bloc) => bloc.state.user);
     final colors = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final fc = context.fc;
     final pill = OutlineInputBorder(
       borderRadius: BorderRadius.circular(Radii.pill),
-      borderSide: BorderSide(color: fc.hairline),
+      borderSide: BorderSide(color: colors.outline),
     );
     return Scaffold(
       body: Column(
@@ -65,36 +63,25 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
               child: Row(
                 children: [
                   Expanded(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(Radii.pill),
-                        boxShadow: fc.shadowSmall,
-                      ),
-                      child: TextField(
-                        key: const ValueKey('discovery-search'),
-                        controller: _query,
-                        textInputAction: TextInputAction.search,
-                        onSubmitted: (_) => _search(),
-                        decoration: InputDecoration(
-                          hintText: 'Tìm sân, địa điểm',
-                          fillColor: dark ? colors.surface : Colors.white,
-                          prefixIcon: const Icon(Icons.search_rounded),
-                          suffixIcon: IconButton(
-                            tooltip: 'Tìm sân',
-                            onPressed: _search,
-                            icon: const Icon(Icons.arrow_forward_rounded),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 12,
-                          ),
-                          border: pill,
-                          enabledBorder: pill,
-                          focusedBorder: pill.copyWith(
-                            borderSide: BorderSide(
-                              color: colors.primary,
-                              width: 1.8,
-                            ),
+                    child: TextField(
+                      key: const ValueKey('discovery-search'),
+                      controller: _query,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) => _search(),
+                      decoration: InputDecoration(
+                        hintText: 'Tìm sân, địa điểm',
+                        prefixIcon: const Icon(Icons.search_outlined),
+                        suffixIcon: IconButton(
+                          tooltip: 'Tìm sân',
+                          onPressed: _search,
+                          icon: const Icon(Icons.arrow_forward_outlined),
+                        ),
+                        border: pill,
+                        enabledBorder: pill,
+                        focusedBorder: pill.copyWith(
+                          borderSide: BorderSide(
+                            color: colors.primary,
+                            width: 2,
                           ),
                         ),
                       ),
@@ -132,163 +119,16 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
                                     'Xin chào, ${user?.displayName ?? 'bạn'}',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodyLarge
-                                        ?.copyWith(
-                                          color: colors.onSurfaceVariant,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Hôm nay ra sân nào?',
                                     style: Theme.of(context)
                                         .textTheme
-                                        .headlineMedium,
+                                        .headlineSmall,
                                   ),
-                                  const SizedBox(height: 18),
-                                  LayoutBuilder(
-                                    builder: (context, constraints) => Wrap(
-                                      spacing: 8,
-                                      runSpacing: 12,
-                                      children: [
-                                        for (final (sport, icon, tint) in [
-                                          (
-                                            DiscoverySport.tennis,
-                                            Icons.sports_tennis,
-                                            const Color(0xFF16A47B),
-                                          ),
-                                          (
-                                            DiscoverySport.badminton,
-                                            Icons.sports,
-                                            const Color(0xFFEF9B26),
-                                          ),
-                                          (
-                                            DiscoverySport.football,
-                                            Icons.sports_soccer,
-                                            const Color(0xFF4582DD),
-                                          ),
-                                          (
-                                            DiscoverySport.pickleball,
-                                            Icons.sports_tennis,
-                                            const Color(0xFF9062D8),
-                                          ),
-                                        ])
-                                          SizedBox(
-                                            width:
-                                                (constraints.maxWidth - 24) / 4,
-                                            child: Semantics(
-                                              selected: state.sport == sport,
-                                              button: true,
-                                              child: InkWell(
-                                                borderRadius:
-                                                    BorderRadius.circular(18),
-                                                onTap: () => cubit.filter(
-                                                  state.sport == sport
-                                                      ? null
-                                                      : sport,
-                                                ),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        vertical: 8,
-                                                      ),
-                                                  child: Column(
-                                                    children: [
-                                                      AnimatedContainer(
-                                                        duration:
-                                                            const Duration(
-                                                              milliseconds: 200,
-                                                            ),
-                                                        curve:
-                                                            Curves.easeOutCubic,
-                                                        width: 60,
-                                                        height: 60,
-                                                        decoration: BoxDecoration(
-                                                          gradient: LinearGradient(
-                                                            begin: Alignment
-                                                                .topLeft,
-                                                            end: Alignment
-                                                                .bottomRight,
-                                                            colors:
-                                                                state.sport ==
-                                                                    sport
-                                                                ? [
-                                                                    tint.withValues(
-                                                                      alpha:
-                                                                          .85,
-                                                                    ),
-                                                                    tint,
-                                                                  ]
-                                                                : [
-                                                                    tint.withValues(
-                                                                      alpha: .1,
-                                                                    ),
-                                                                    tint.withValues(
-                                                                      alpha:
-                                                                          .26,
-                                                                    ),
-                                                                  ],
-                                                          ),
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                20,
-                                                              ),
-                                                          border: Border.all(
-                                                            color: fc.hairline,
-                                                            width: 1.5,
-                                                          ),
-                                                          boxShadow:
-                                                              state.sport ==
-                                                                  sport
-                                                              ? [
-                                                                  BoxShadow(
-                                                                    color: tint
-                                                                        .withValues(
-                                                                          alpha:
-                                                                              .4,
-                                                                        ),
-                                                                    blurRadius:
-                                                                        16,
-                                                                    offset:
-                                                                        const Offset(
-                                                                          0,
-                                                                          8,
-                                                                        ),
-                                                                  ),
-                                                                ]
-                                                              : null,
-                                                        ),
-                                                        child: Icon(
-                                                          icon,
-                                                          size: 30,
-                                                          color:
-                                                              state.sport ==
-                                                                  sport
-                                                              ? Colors.white
-                                                              : tint,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      Text(
-                                                        'Đặt sân\n${sport.label}',
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        style: const TextStyle(
-                                                          fontSize: 12,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
+                                  const SizedBox(height: Gap.md),
+                                  SportFilters(
+                                    selected: state.sport,
+                                    onSelected: cubit.filter,
                                   ),
-                                  const SizedBox(height: 18),
+                                  const SizedBox(height: Gap.lg),
                                   Row(
                                     children: [
                                       Expanded(
@@ -298,17 +138,9 @@ class _DiscoveryLandingState extends State<_DiscoveryLanding> {
                                               : 'Sân ${state.sport!.label.toLowerCase()}',
                                           style: Theme.of(context)
                                               .textTheme
-                                              .titleLarge
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w800,
-                                              ),
+                                              .titleMedium,
                                         ),
                                       ),
-                                      if (state.sport != null)
-                                        TextButton(
-                                          onPressed: () => cubit.filter(null),
-                                          child: const Text('Tất cả'),
-                                        ),
                                     ],
                                   ),
                                   if (state.loading)
@@ -404,10 +236,9 @@ class _VenueTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return FrostedCard(
+    return FcCard(
       padding: EdgeInsets.zero,
       clip: true,
-      strong: true,
       onTap: () => context.push('/branches/${branch.id}', extra: branch),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,12 +247,12 @@ class _VenueTile extends StatelessWidget {
             height: 116,
             width: double.infinity,
             child: branch.imageUrl == null
-                ? const CourtArtwork(height: 116, label: 'SportCourt')
+                ? const CourtArtwork(height: 116)
                 : Image.network(
                     branch.imageUrl!,
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) =>
-                        const CourtArtwork(height: 116, label: 'SportCourt'),
+                        const CourtArtwork(height: 116),
                   ),
           ),
           Expanded(
@@ -459,7 +290,7 @@ class _VenueTile extends StatelessWidget {
                       Icon(
                         Icons.star_rounded,
                         color: branch.reviewCount > 0
-                            ? const Color(0xFFFFB300)
+                            ? ChartColors.gold
                             : colors.outline,
                         size: 18,
                       ),

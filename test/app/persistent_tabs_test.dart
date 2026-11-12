@@ -10,7 +10,6 @@ import 'package:fcourt/src/features/customer_discovery/presentation/screens/cust
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../features/auth/helpers.dart';
@@ -79,26 +78,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(venues.requests, [null]);
       expect(find.text('Sân hiển thị khi chọn tất cả'), findsOneWidget);
-      expect(find.byType(GlassTabBar), findsOneWidget);
-      // Customer content scrolls under the floating pill (no opaque strip),
-      // and lists get the pill's height as bottom padding.
-      expect(
-        tester.widget<GlassScaffold>(find.byType(GlassScaffold)).extendBody,
-        isTrue,
-      );
-      expect(
-        MediaQuery.paddingOf(tester.element(find.byType(CustomScrollView)))
-            .bottom,
-        greaterThanOrEqualTo(96),
-      );
+      expect(find.byType(NavigationBar), findsOneWidget);
+      // Solid Material 3 bar: the body ends above it.
       expect(find.byType(BackButton), findsNothing);
       expect(find.byKey(const ValueKey('discovery-scroll-hint')), findsNothing);
       expect(
-        find.byKey(const ValueKey('active-tab-glass-ring')),
-        findsOneWidget,
-      );
-      expect(
-        tester.widget<GlassTabBar>(find.byType(GlassTabBar)).selectedIndex,
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
         0,
       );
 
@@ -106,36 +91,21 @@ void main() {
         await tester.tap(
           find
               .descendant(
-                of: find.byType(GlassTabBar),
+                of: find.byType(NavigationBar),
                 matching: find.text(label),
               )
               .hitTestable()
               .first,
         );
         await tester.pumpAndSettle();
-        expect(find.byType(GlassTabBar), findsOneWidget);
-        final activeLabel = find
-            .descendant(
-              of: find.byType(GlassTabBar),
-              matching: find.text(label),
-            )
-            .hitTestable()
-            .first;
-        final ring = tester.getRect(
-          find.byKey(const ValueKey('active-tab-glass-ring')),
-        );
-        expect(
-          ring.contains(tester.getCenter(activeLabel)),
-          isTrue,
-          reason: 'The glass rim must surround the active tab: $label',
-        );
+        expect(find.byType(NavigationBar), findsOneWidget);
       }
 
       await tab('Đơn của tôi');
       expect(find.byType(BookingHistoryScreen), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(GlassTabBar),
+          of: find.byType(NavigationBar),
           matching: find.text('Hoạt động'),
         ),
         findsNothing,
@@ -148,7 +118,7 @@ void main() {
       await tester.tap(find.byTooltip('Tài khoản'));
       await tester.pumpAndSettle();
       expect(find.byType(ProfilePage), findsOneWidget);
-      expect(find.byType(GlassTabBar), findsNothing);
+      expect(find.byType(NavigationBar), findsNothing);
       expect(find.byType(BackButton), findsOneWidget);
       await tester.tap(find.text('Hồ sơ'));
       await tester.pumpAndSettle();
@@ -157,7 +127,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
-      expect(find.byType(GlassTabBar), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     },
   );
@@ -183,18 +153,18 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Đặt sân\nCầu lông'));
-    await tester.tap(find.text('Đặt sân\nCầu lông'));
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Cầu lông'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Cầu lông'));
     await tester.pumpAndSettle();
     expect(find.text('Sân theo môn'), findsOneWidget);
     expect(venues.requests.last, DiscoverySport.badminton);
-    await tester.ensureVisible(find.text('Tất cả'));
-    await tester.tap(find.text('Tất cả'));
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Tất cả'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Tất cả'));
     await tester.pumpAndSettle();
     expect(venues.requests.last, isNull);
     expect(find.text('Sân hiển thị khi chọn tất cả'), findsOneWidget);
     expect(
-      GoRouterState.of(tester.element(find.byType(Scaffold))).uri.path,
+      GoRouterState.of(tester.element(find.byType(Scaffold).first)).uri.path,
       '/home',
     );
     await tester.pumpWidget(const SizedBox());

@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/analytics.dart';
+import '../../../../app/theme/tokens.dart';
 
 /// Biểu đồ cột số lượt đặt theo giờ (06h -> 23h); giờ vàng đổi sang màu cam.
 /// Chạm vào cột để xem số lượt đặt chi tiết.
@@ -14,8 +15,8 @@ class PeakHoursBarChart extends StatelessWidget {
 
   static const firstHour = 6;
   static const lastHour = 23;
-  static const peakColor = Color(0xFFEF6C00);
-  static const normalColor = Color(0xFF1E88E5);
+  static const peakColor = ChartColors.peak;
+  static const normalColor = ChartColors.info;
 
   @override
   Widget build(BuildContext context) {

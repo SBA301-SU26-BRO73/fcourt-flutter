@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../auth_redirect.dart';
-import 'app_backdrop.dart';
 import 'app_navigation.dart';
 import '../../features/auth/domain/entities/user_role.dart';
 import '../../features/notifications/domain/app_notification.dart';
@@ -75,35 +73,12 @@ class _AppShellState extends State<AppShell> {
             widget.location != '/payments/history') {
       return widget.child;
     }
-    final customer = user.role == UserRole.customer;
     final selected = navSelectedIndex(user.role, widget.location);
-    return Material(
-      type: MaterialType.transparency,
-      child: GlassScaffold(
-        background: const AppBackdrop(),
-        appBarHeight: 0,
-        // Customer pages scroll underneath the floating glass pill (no opaque
-        // strip around it); other roles keep the body above the bar so their
-        // fixed action buttons stay clear.
-        extendBody: customer,
-        edgeFade: false,
-        bottomBarHeight: 96,
-        bottomBar: _navigation(user.role, selected),
-        body: Theme(
-          data: Theme.of(context),
-          child: customer
-              ? MediaQuery(
-                  // Lists add this bottom padding so their last item can
-                  // scroll clear of the pill.
-                  data: MediaQuery.of(context).copyWith(
-                    padding: MediaQuery.paddingOf(context)
-                        .copyWith(bottom: floatingNavClearance(context)),
-                  ),
-                  child: widget.child,
-                )
-              : widget.child,
-        ),
-      ),
+    // Solid bottom bar: the body ends above it, so lists and floating action
+    // buttons never sit behind the navigation.
+    return Scaffold(
+      body: widget.child,
+      bottomNavigationBar: _navigation(user.role, selected),
     );
   }
 
@@ -122,8 +97,3 @@ class _AppShellState extends State<AppShell> {
     );
   }
 }
-
-/// Height of the floating tab pill plus the device's bottom inset: the space a
-/// customer list must leave at its end so its last item is not hidden.
-double floatingNavClearance(BuildContext context) =>
-    96 + MediaQuery.viewPaddingOf(context).bottom;

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/error/failure.dart';
 import '../domain/counter.dart';
 import '../domain/schedule.dart';
+import '../../../app/theme/tokens.dart';
 
 class AvailableCourtSlots extends StatefulWidget {
   const AvailableCourtSlots({
@@ -98,8 +99,8 @@ class _AvailableCourtSlotsState extends State<AvailableCourtSlots> {
                 child: OutlinedButton(
                   style: playing
                       ? OutlinedButton.styleFrom(
-                          disabledBackgroundColor: const Color(0xFFB3261E),
-                          disabledForegroundColor: Colors.white,
+                          disabledBackgroundColor: context.fc.danger.container,
+                          disabledForegroundColor: context.fc.danger.color,
                         )
                       : null,
                   onPressed: free ? () => widget.onSelected(slot) : null,

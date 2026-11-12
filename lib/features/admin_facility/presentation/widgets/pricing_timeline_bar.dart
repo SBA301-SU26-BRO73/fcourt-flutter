@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/pricing_rule.dart';
 import 'facility_formatters.dart';
+import '../../../../app/theme/tokens.dart';
 
-const peakColor = Color(0xFFF57C00);
-const offPeakColor = Color(0xFF2E7D32);
+const peakColor = ChartColors.peak;
+const offPeakColor = ChartColors.success;
 
 const _minutesPerDay = 24 * 60;
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../bloc/health_bloc.dart';
+import '../../../../app/theme/tokens.dart';
 
 /// Màn hình mẫu: gọi API health của BE để kiểm tra kết nối.
 /// Xóa hoặc thay bằng màn hình thật khi có feature đầu tiên.
@@ -34,7 +35,7 @@ class HealthPage extends StatelessWidget {
                   HealthLoading() => const CircularProgressIndicator(),
                   HealthSuccess(:final status) => _Result(
                     icon: status.isUp ? Icons.check_circle : Icons.error,
-                    color: status.isUp ? Colors.green : Colors.orange,
+                    color: status.isUp ? context.fc.success.color : context.fc.warning.color,
                     text: 'Máy chủ: ${status.status}',
                   ),
                   HealthFailure(:final message) => _Result(

@@ -7,6 +7,7 @@ import '../../domain/entities/slot_matrix.dart';
 import '../bloc/slot_template_bloc.dart';
 import '../widgets/facility_formatters.dart';
 import '../widgets/slot_matrix_preview.dart';
+import '../../../../app/theme/tokens.dart';
 
 const _dayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
@@ -253,20 +254,20 @@ class _TemplateBody extends StatelessWidget {
                   key: const Key('slot-warning'),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF3CD),
-                    borderRadius: BorderRadius.circular(8),
+                    color: context.fc.warning.container,
+                    borderRadius: BorderRadius.circular(Radii.sm),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.warning_amber_rounded,
-                        color: Color(0xFF8A6D3B),
+                        color: context.fc.warning.color,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           warning,
-                          style: const TextStyle(color: Color(0xFF5C4A1E)),
+                          style: TextStyle(color: context.fc.warning.color),
                         ),
                       ),
                     ],

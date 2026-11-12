@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../app/widgets/fc_widgets.dart';
+import '../../../../../app/widgets/sport_icon.dart';
 import '../../domain/discovery_repository.dart';
 
 String branchPrice(Branch branch) => branch.minPrice == null
@@ -22,12 +23,9 @@ class SportFilters extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
-              avatar: Icon(
-                sport == DiscoverySport.badminton
-                    ? Icons.sports
-                    : Icons.sports_tennis,
-                size: 18,
-              ),
+              avatar: sport == null
+                  ? null
+                  : SportIcon.named(sport.label, size: 18),
               label: Text(sport?.label ?? 'Tất cả'),
               selected: selected == sport,
               onSelected: (_) => onSelected(sport),
@@ -38,77 +36,42 @@ class SportFilters extends StatelessWidget {
   );
 }
 
-/// Decorative court artwork, never presented as a photograph of a venue.
+/// Placeholder for a branch without a photo: flat tonal block with the sport
+/// icon. Never presented as a photograph of a venue.
 class CourtArtwork extends StatelessWidget {
-  const CourtArtwork({super.key, this.height = 150, this.label = 'FCOURT'});
+  const CourtArtwork({super.key, this.height = 150, this.label});
   final double height;
-  final String label;
+  final String? label;
 
   @override
-  Widget build(BuildContext context) => Container(
-    height: height,
-    width: double.infinity,
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        colors: [Color(0xFF12B89B), Color(0xFF1F9FCB), Color(0xFF7F7BE6)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-    ),
-    child: Stack(
-      children: [
-        Positioned.fill(child: CustomPaint(painter: _CourtPainter())),
-        Positioned(
-          left: 16,
-          bottom: 14,
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              letterSpacing: .3,
-            ),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      height: height,
+      width: double.infinity,
+      color: colors.surfaceContainer,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.image_outlined,
+            size: 32,
+            color: colors.onSurfaceVariant,
           ),
-        ),
-        const Positioned(
-          right: 18,
-          top: 18,
-          child: Icon(Icons.sports_tennis, color: Colors.white70, size: 42),
-        ),
-      ],
-    ),
-  );
-}
-
-class _CourtPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    final court = Rect.fromLTWH(
-      size.width * .42,
-      -18,
-      size.width * .5,
-      size.height + 42,
+          if (label != null && height >= 120) ...[
+            const SizedBox(height: Gap.xs),
+            Text(
+              label!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
-    canvas.drawRect(court, paint);
-    canvas.drawLine(
-      Offset(court.center.dx, court.top),
-      Offset(court.center.dx, court.bottom),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(court.left, court.center.dy),
-      Offset(court.right, court.center.dy),
-      paint,
-    );
-    canvas.drawRect(court.deflate(18), paint);
   }
-
-  @override
-  bool shouldRepaint(_CourtPainter oldDelegate) => false;
 }
 
 class BranchCard extends StatelessWidget {
@@ -119,15 +82,14 @@ class BranchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
-    child: FrostedCard(
+    child: FcCard(
       padding: EdgeInsets.zero,
       clip: true,
-      strong: true,
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CourtArtwork(height: 112, label: 'FCOURT · ${branch.city}'),
+          const CourtArtwork(height: 112),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -205,6 +167,7 @@ class DiscoveryMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
     child: EmptyState(
+      icon: onRetry == null ? Icons.search_off_outlined : Icons.cloud_off_outlined,
       message: message,
       action: onRetry == null
           ? null

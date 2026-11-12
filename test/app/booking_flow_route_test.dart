@@ -96,7 +96,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        GoRouter.of(tester.element(find.byType(Scaffold))).push(flow.path);
+        GoRouter.of(tester.element(find.byType(Scaffold).first)).push(flow.path);
         await tester.pump();
         await tester.pump();
         await tester.pumpAndSettle();

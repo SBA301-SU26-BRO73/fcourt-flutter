@@ -5,6 +5,7 @@ import '../../../admin_dashboard/presentation/widgets/compact_currency.dart';
 import '../../domain/entities/platform_overview.dart';
 import '../bloc/platform_overview_cubit.dart';
 import '../widgets/growth_line_chart.dart';
+import '../../../../app/theme/tokens.dart';
 
 /// SCRUM-79: trung tâm thống kê vĩ mô toàn nền tảng. Cần [PlatformOverviewCubit]
 /// phía trên trong cây widget.
@@ -117,7 +118,7 @@ class _KpiGrid extends StatelessWidget {
       _KpiCard(
         key: const ValueKey('kpi-gmv'),
         icon: Icons.payments_outlined,
-        color: const Color(0xFF2E7D32),
+        color: ChartColors.success,
         label: 'Tổng GMV đặt sân',
         value: formatCompactVnd(overview.gmv),
         caption: 'Doanh thu đặt sân qua hệ thống',
@@ -125,7 +126,7 @@ class _KpiGrid extends StatelessWidget {
       _KpiCard(
         key: const ValueKey('kpi-saas'),
         icon: Icons.workspace_premium_outlined,
-        color: const Color(0xFF6A1B9A),
+        color: ChartColors.accent,
         label: 'Doanh thu gói SaaS',
         value: formatCompactVnd(overview.saasRevenue),
         caption: 'Chủ sân mua gói',
@@ -133,7 +134,7 @@ class _KpiGrid extends StatelessWidget {
       _KpiCard(
         key: const ValueKey('kpi-branches'),
         icon: Icons.store_mall_directory_outlined,
-        color: const Color(0xFF1565C0),
+        color: ChartColors.info,
         label: 'Tổng chi nhánh',
         value: '${overview.branches.total}',
         caption: '${overview.branches.active} hoạt động · ${overview.courts} sân',
@@ -141,7 +142,7 @@ class _KpiGrid extends StatelessWidget {
       _KpiCard(
         key: const ValueKey('kpi-customers'),
         icon: Icons.groups_outlined,
-        color: const Color(0xFFEF6C00),
+        color: ChartColors.peak,
         label: 'Khách hàng hoạt động',
         value: '${overview.customers.active}',
         caption:

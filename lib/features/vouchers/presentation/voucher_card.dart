@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/widgets/fc_widgets.dart';
 import '../domain/voucher.dart';
 
 class VoucherCard extends StatelessWidget {
@@ -26,15 +27,15 @@ class VoucherCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final row = voucher;
     final expired = row.expiredAt(now);
-    final (label, color) = expired
-        ? ('Hết hạn', const Color(0xFFC62828))
+    final (label, tone) = expired
+        ? ('Hết hạn', context.fc.danger)
         : row.status == VoucherStatus.expired
-        ? ('Đã tắt', const Color(0xFF757575))
+        ? ('Đã tắt', context.fc.neutral)
         : now.isBefore(row.startsAt)
-        ? ('Chưa bắt đầu', const Color(0xFF965000))
+        ? ('Chưa bắt đầu', context.fc.warning)
         : row.usedCount >= row.limit
-        ? ('Hết lượt', const Color(0xFF757575))
-        : ('Còn hiệu lực', const Color(0xFF2E7D32));
+        ? ('Hết lượt', context.fc.neutral)
+        : ('Còn hiệu lực', context.fc.success);
     String money(int amount) =>
         '${NumberFormat('#,##0.##', 'vi').format(amount / 100)} đ';
     return Card(
@@ -60,17 +61,9 @@ class VoucherCard extends StatelessWidget {
                 ),
               ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: .15),
-                border: Border.all(color: color),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(color: color, fontWeight: FontWeight.w600),
-              ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: StatusPill(label, tone: tone),
             ),
             const SizedBox(height: 8),
             Text(

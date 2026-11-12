@@ -224,34 +224,6 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(Gap.screen, 12, Gap.screen, 4),
-            child: HeroPanel(
-              padding: const EdgeInsets.fromLTRB(20, 18, 18, 18),
-              radius: Radii.card,
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Lịch sân của bạn, sẵn sàng cho buổi chơi tiếp theo.',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(
-                    Icons.confirmation_number_outlined,
-                    color: Colors.white.withValues(alpha: .85),
-                    size: 44,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -358,7 +330,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                     for (final booking in day.value)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: FrostedCard(
+                        child: FcCard(
                           onTap: () async {
                             await widget.onDetail(booking.id);
                             if (mounted) await _load(reset: true);
@@ -413,10 +385,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                                 children: [
                                   StatusPill(
                                     booking.label,
-                                    color: switch (booking.status) {
+                                    tone: switch (booking.status) {
                                       'CANCELLED' => context.fc.danger,
                                       'COMPLETED' => context.fc.success,
-                                      'CONFIRMED' => colors.primary,
+                                      'CONFIRMED' => context.fc.info,
                                       _ => context.fc.warning,
                                     },
                                     icon: switch (booking.status) {

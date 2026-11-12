@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../domain/booking_promo.dart';
+import '../../../app/theme/tokens.dart';
 
 class PromoTotals extends StatelessWidget {
   const PromoTotals({super.key, required this.promo});
@@ -24,7 +25,7 @@ class PromoTotals extends StatelessWidget {
         Text(
           'Khuyến mãi: -${money(promo.discountMinor)}',
           style: const TextStyle(
-            color: Color(0xFF2E7D32),
+            color: ChartColors.success,
             fontWeight: FontWeight.w600,
           ),
         ),

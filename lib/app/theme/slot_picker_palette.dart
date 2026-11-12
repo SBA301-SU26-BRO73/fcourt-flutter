@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 /// Flat solid colors of the slot picker (approved mock-up, light and dark).
 ///
 /// One teal accent, no gradients or translucency. Every text/background pair
-/// used by the picker reaches WCAG AA (4.5:1) in both modes.
+/// used by the picker reaches WCAG AA (4.5:1) in both modes. The whole app
+/// theme ([AppTheme]) is built from these same values, so the picker and the
+/// rest of the app share one palette.
 @immutable
 class SlotPickerPalette {
   const SlotPickerPalette._({

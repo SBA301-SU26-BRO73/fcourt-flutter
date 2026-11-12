@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../domain/transaction.dart';
+import '../../../app/theme/tokens.dart';
 
 String vnd(num amount) => NumberFormat.currency(
   locale: 'vi_VN',
@@ -87,7 +88,7 @@ class TransactionTile extends StatelessWidget {
           color: entry.transactionType == 'REFUND'
               ? Theme.of(context).colorScheme.error
               : switch (entry.status) {
-                  'SUCCESS' => Colors.green,
+                  'SUCCESS' => context.fc.success.color,
                   'REJECTED' => Theme.of(context).colorScheme.error,
                   _ => null,
                 },

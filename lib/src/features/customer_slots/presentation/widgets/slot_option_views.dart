@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/slot_options.dart';
-import 'slot_picker_palette.dart';
+import '../../../../../app/theme/slot_picker_palette.dart';
 
 /// One start time: "18:00 – 20:00", which courts are free, and the price.
 class SlotOptionTile extends StatelessWidget {

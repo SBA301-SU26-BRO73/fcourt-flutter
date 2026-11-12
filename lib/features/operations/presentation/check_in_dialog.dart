@@ -4,6 +4,7 @@ import '../../../core/error/failure.dart';
 import '../../../core/network/command_key.dart';
 import '../domain/check_in_failure.dart';
 import '../domain/schedule.dart';
+import '../../../app/theme/tokens.dart';
 
 class CheckInDialog extends StatefulWidget {
   const CheckInDialog({
@@ -87,7 +88,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
         builder: (context) => AlertDialog(
           icon: const Icon(
             Icons.check_circle,
-            color: Color(0xFF176B42),
+            color: ChartColors.success,
             size: 40,
           ),
           title: Text(p.offline ? 'HỢP LỆ (OFFLINE)' : 'Nhận sân thành công'),
