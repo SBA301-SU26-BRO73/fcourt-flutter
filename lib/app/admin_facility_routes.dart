@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
 import 'fc_route.dart';
 
 import '../features/admin_dashboard/domain/usecases/analytics_usecases.dart';
@@ -73,12 +74,11 @@ List<RouteBase> adminFacilityRoutes(
         create: (_) => DashboardBloc(
           getBranches: GetBranches(branches),
           getStats: GetDashboardStats(deps.dashboardRepository),
+          getRevenueChart: GetRevenueChart(deps.analyticsRepository),
         )..add(const DashboardStarted()),
         child: AdminDashboardScreen(
           exportRepository: deps.revenueReportRepository,
           fileOpener: deps.reportFileOpener,
-          onOpenBranches: () => context.push('/admin/branches'),
-          onOpenAnalytics: () => context.push('/admin/analytics'),
         ),
       ),
     ),
@@ -105,12 +105,12 @@ List<RouteBase> adminFacilityRoutes(
               context.push<Branch>('/admin/branches/${branch.id}/edit'),
           onOpenCourts: (branch) =>
               context.push('/admin/branches/${branch.id}/courts'),
-          onOpenDashboard: () => context.push('/admin/dashboard'),
           onOpenImages: images == null
               ? null
               : (branch) => context.push('/admin/branches/${branch.id}/images'),
           onOpenPayments: hasPayments
-              ? (branch) => context.push('/admin/branches/${branch.id}/payments')
+              ? (branch) =>
+                    context.push('/admin/branches/${branch.id}/payments')
               : null,
           onOpenRefunds: hasRefunds
               ? (branch) => context.push('/admin/branches/${branch.id}/refunds')

@@ -119,9 +119,16 @@ void main() {
     ),
   );
 
+  void tall(WidgetTester tester) {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+  }
+
   testWidgets('shows three counters and navigates to filtered receipts', (
     tester,
   ) async {
+    tall(tester);
     int? opened;
     await tester.pumpWidget(app(onReceipts: (id) => opened = id));
     await tester.pumpAndSettle();
@@ -153,6 +160,7 @@ void main() {
   });
 
   testWidgets('approves a receipt in two taps from the card', (tester) async {
+    tall(tester);
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('approve-1')));
@@ -165,6 +173,7 @@ void main() {
   });
 
   testWidgets('rejecting requires a reason', (tester) async {
+    tall(tester);
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('reject-2')));

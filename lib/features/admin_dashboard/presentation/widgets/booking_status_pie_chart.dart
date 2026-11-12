@@ -2,26 +2,17 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/dashboard_stats.dart';
-import '../../../../app/theme/tokens.dart';
 
-/// Biểu đồ tròn trạng thái đặt sân: Đã xác nhận / Chờ duyệt / Đã hủy.
+/// Vòng tròn trạng thái đặt sân (mockup 06): vòng 112 với lỗ 78 ghi tổng số
+/// đơn, bên phải là chú giải Đã xác nhận / Chờ duyệt / Đã hủy.
 class BookingStatusPieChart extends StatelessWidget {
   const BookingStatusPieChart({super.key, required this.counts});
 
   final BookingStatusCounts counts;
 
-  static const confirmedColor = ChartColors.success;
-  static const pendingColor = ChartColors.warning;
-  static const cancelledColor = ChartColors.danger;
-
-  /// Chữ trên lát biểu đồ: đen hoặc trắng, chọn bên đạt tương phản cao hơn
-  /// (>= 4.5:1 với cả ba màu trạng thái).
-  static Color sliceLabelColor(Color slice) {
-    final l = slice.computeLuminance();
-    return (1.05 / (l + 0.05)) >= ((l + 0.05) / 0.05)
-        ? Colors.white
-        : Colors.black;
-  }
+  static const confirmedColor = Color(0xFF7869EC);
+  static const pendingColor = Color(0xFF75CBAA);
+  static const cancelledColor = Color(0xFFD9DEEA);
 
   List<(String, int, Color)> get _entries => [
     ('Đã xác nhận', counts.confirmed, confirmedColor),
@@ -31,60 +22,107 @@ class BookingStatusPieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final total = counts.total;
-    return Column(
+    return Row(
       children: [
         SizedBox(
-          height: 180,
-          child: total == 0
-              ? const Center(child: Text('Chưa có lượt đặt sân'))
-              : PieChart(
-                  PieChartData(
-                    centerSpaceRadius: 40,
-                    sectionsSpace: 2,
-                    sections: [
+          width: 112,
+          height: 112,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              PieChart(
+                PieChartData(
+                  centerSpaceRadius: 39,
+                  sectionsSpace: 0,
+                  startDegreeOffset: -90,
+                  sections: [
+                    if (total == 0)
+                      PieChartSectionData(
+                        value: 1,
+                        color: colors.surfaceContainerHighest,
+                        radius: 17,
+                        showTitle: false,
+                      )
+                    else
                       for (final (_, value, color) in _entries)
                         if (value > 0)
                           PieChartSectionData(
                             value: value.toDouble(),
                             color: color,
-                            radius: 50,
-                            title: '${(value * 100 / total).round()}%',
-                            titleStyle: TextStyle(
-                              color: sliceLabelColor(color),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
+                            radius: 17,
+                            showTitle: false,
                           ),
-                    ],
-                  ),
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeOutCubic,
+                  ],
                 ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 16,
-          runSpacing: 8,
-          alignment: WrapAlignment.center,
-          children: [
-            for (final (label, value, color) in _entries)
-              Row(
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOutCubic,
+              ),
+              Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
+                  Text(
+                    '$total',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                      color: colors.onSurface,
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Text('$label: $value'),
+                  Text(
+                    'đơn đặt',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
-          ],
+            ],
+          ),
+        ),
+        const SizedBox(width: 24),
+        Expanded(
+          child: Column(
+            children: [
+              for (final (label, value, color) in _entries)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '$value',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );

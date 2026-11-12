@@ -251,32 +251,35 @@ void main() {
       );
     }
 
-    testWidgets('shimmer khi tải, sau đó 4 thẻ số liệu và biểu đồ tròn', (
-      tester,
-    ) async {
-      final pending = Completer<DashboardStats>();
-      when(() => dashboard.getStats()).thenAnswer((_) => pending.future);
-      await pump(tester);
-      await tester.pump();
+    testWidgets(
+      'shimmer khi tải, sau đó banner doanh thu, hai thẻ số liệu và biểu đồ tròn',
+      (tester) async {
+        final pending = Completer<DashboardStats>();
+        when(() => dashboard.getStats()).thenAnswer((_) => pending.future);
+        await pump(tester);
+        await tester.pump();
 
-      expect(find.byType(Shimmer), findsOneWidget);
-      expect(find.byType(DashboardSkeleton), findsOneWidget);
+        expect(find.byType(Shimmer), findsOneWidget);
+        expect(find.byType(DashboardSkeleton), findsOneWidget);
 
-      pending.complete(_stats());
-      await tester.pumpAndSettle();
+        pending.complete(_stats());
+        await tester.pumpAndSettle();
 
-      expect(find.byType(Shimmer), findsNothing);
-      expect(find.text('15.5M đ'), findsOneWidget);
-      expect(find.text('Hôm nay 850K đ'), findsOneWidget);
-      expect(find.text('42'), findsOneWidget);
-      expect(find.text('6/8'), findsOneWidget);
-      expect(find.text('72.5%'), findsOneWidget);
-      expect(find.byType(StatCard), findsNWidgets(4));
-      expect(find.byType(PieChart), findsOneWidget);
-      expect(find.text('Đã xác nhận: 30'), findsOneWidget);
-      expect(find.text('Chờ duyệt: 8'), findsOneWidget);
-      expect(find.text('Đã hủy: 4'), findsOneWidget);
-    });
+        expect(find.byType(Shimmer), findsNothing);
+        expect(find.textContaining('15.500.000'), findsOneWidget);
+        expect(find.text('Hôm nay 850.000đ'), findsOneWidget);
+        expect(find.text('42'), findsNWidgets(2));
+        expect(find.text('6/8 sân hoạt động'), findsOneWidget);
+        expect(find.textContaining('72,5'), findsOneWidget);
+        expect(find.byType(PieChart), findsOneWidget);
+        expect(find.text('Đã xác nhận'), findsOneWidget);
+        expect(find.text('30'), findsOneWidget);
+        expect(find.text('Chờ duyệt'), findsOneWidget);
+        expect(find.text('8'), findsOneWidget);
+        expect(find.text('Đã hủy'), findsOneWidget);
+        expect(find.text('4'), findsOneWidget);
+      },
+    );
 
     testWidgets('đổi chi nhánh trong dropdown tải lại số liệu ngay', (
       tester,
@@ -293,7 +296,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => dashboard.getStats(branchId: 2)).called(1);
-      expect(find.text('3.2M đ'), findsOneWidget);
+      expect(find.textContaining('3.200.000'), findsOneWidget);
       expect(find.byType(PieChart), findsOneWidget);
     });
 

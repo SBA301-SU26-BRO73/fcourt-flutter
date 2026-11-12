@@ -11,6 +11,8 @@ class DashboardState extends Equatable {
     this.branchesMessage,
     this.selectedBranchId,
     this.stats,
+    this.weekRevenue,
+    this.updatedAt,
     this.message,
   });
 
@@ -23,6 +25,12 @@ class DashboardState extends Equatable {
   /// `null` = tất cả chi nhánh.
   final int? selectedBranchId;
   final DashboardStats? stats;
+
+  /// Doanh thu theo ngày của 7 ngày gần nhất; null khi chưa có hoặc lỗi.
+  final RevenueChart? weekRevenue;
+
+  /// Lúc số liệu được tải xong (hiện ở chân biểu đồ).
+  final DateTime? updatedAt;
   final String? message;
 
   DashboardState copyWith({
@@ -31,6 +39,8 @@ class DashboardState extends Equatable {
     Object? branchesMessage = _keep,
     Object? selectedBranchId = _keep,
     DashboardStats? stats,
+    Object? weekRevenue = _keep,
+    DateTime? updatedAt,
     Object? message = _keep,
   }) => DashboardState(
     status: status ?? this.status,
@@ -42,6 +52,10 @@ class DashboardState extends Equatable {
         ? this.selectedBranchId
         : selectedBranchId as int?,
     stats: stats ?? this.stats,
+    weekRevenue: identical(weekRevenue, _keep)
+        ? this.weekRevenue
+        : weekRevenue as RevenueChart?,
+    updatedAt: updatedAt ?? this.updatedAt,
     message: identical(message, _keep) ? this.message : message as String?,
   );
 
@@ -52,6 +66,8 @@ class DashboardState extends Equatable {
     branchesMessage,
     selectedBranchId,
     stats,
+    weekRevenue,
+    updatedAt,
     message,
   ];
 }
