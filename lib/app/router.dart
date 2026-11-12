@@ -158,13 +158,8 @@ GoRouter createRouter(
           FcRoute(path: '/activity', builder: (_, _) => const ActivityPage()),
           FcRoute(
             path: '/notifications',
-            builder: (_, _) => const NotificationsPage(),
-          ),
-          FcRoute(
-            path: '/notifications/:id',
-            builder: (_, state) => NotificationArticlePage(
-              index: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
-            ),
+            builder: (_, _) =>
+                NotificationsPage(repository: dependencies.notificationsRepository),
           ),
           FcRoute(
             path: AppRoutes.settings,
