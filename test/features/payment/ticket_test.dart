@@ -76,6 +76,8 @@ void main() {
     final repo = TicketRepositoryImpl(Dio()..httpClientAdapter = adapter);
     expect((await repo.load(args)).checkInCode, body['checkInCode']);
     expect(adapter.requests.length, 2);
+    final qr = adapter.requests.firstWhere((r) => r.path.endsWith('/qr'));
+    expect(qr.headers['Accept'], 'image/png');
     for (final request in adapter.requests) {
       expect(request.headers['X-Hold-Token'], 'secret');
       expect(request.uri.toString(), isNot(contains('secret')));
