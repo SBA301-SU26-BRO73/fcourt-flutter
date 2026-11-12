@@ -92,6 +92,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                   AuthTextField(
                     controller: _new,
                     label: 'Mật khẩu mới',
+                    helperText: 'Tối thiểu 8 ký tự',
                     obscure: true,
                     validator: AuthValidators.password,
                     serverError: fieldErrors['newPassword'],

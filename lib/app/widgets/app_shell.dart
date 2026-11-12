@@ -76,17 +76,7 @@ class _AppShellState extends State<AppShell> {
       return widget.child;
     }
     final customer = user.role == UserRole.customer;
-    final selected = widget.location == '/activity'
-        ? 2
-        : widget.location.startsWith('/notifications')
-        ? 3
-        : widget.location.startsWith('/bookings') ||
-              widget.location.startsWith('/payments') ||
-              widget.location.startsWith('/admin/bookings') ||
-              widget.location.startsWith('/staff/schedule') ||
-              widget.location == AppRoutes.superAdminOverview
-        ? 1
-        : 0;
+    final selected = navSelectedIndex(user.role, widget.location);
     return Material(
       type: MaterialType.transparency,
       child: GlassScaffold(

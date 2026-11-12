@@ -1,5 +1,6 @@
 import '../../../app/widgets/account_actions.dart';
 import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/widgets/skeleton_list.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -471,7 +472,9 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                       ),
                   ],
                   if (_loading)
-                    const Center(child: CircularProgressIndicator()),
+                    _items.isEmpty
+                        ? const SkeletonList()
+                        : const Center(child: CircularProgressIndicator()),
                   if (_more && !_loading)
                     TextButton(
                       onPressed: () => _load(),

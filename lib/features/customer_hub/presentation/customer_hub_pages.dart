@@ -5,27 +5,9 @@ import 'package:intl/intl.dart';
 
 import '../../../app/widgets/account_actions.dart';
 import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/widgets/skeleton_list.dart';
 import '../../notifications/domain/app_notification.dart';
 import '../../notifications/presentation/notifications_cubit.dart';
-
-class ActivityPage extends StatelessWidget {
-  const ActivityPage({super.key});
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      automaticallyImplyLeading: false,
-      title: const Text('Hoạt động'),
-      actions: const [AccountActions()],
-    ),
-    body: const Center(
-      child: EmptyState(
-        icon: Icons.receipt_long_outlined,
-        title: 'Hiện vẫn chưa có hoạt động nào',
-        message: 'Hoạt động sẽ xuất hiện tại đây khi bạn sử dụng SportCourt.',
-      ),
-    ),
-  );
-}
 
 /// Thông báo trong app: danh sách thật từ notification-service, chạm để đánh dấu đã đọc
 /// (và mở đơn đặt sân nếu thông báo có link).
@@ -87,13 +69,16 @@ class _NotificationsView extends StatelessWidget {
             current.error != null &&
             current.status == NotificationsStatus.loaded &&
             current.error != previous.error,
-        listener: (context, state) => ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(state.error!))),
+        listener: (context, state) =>
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(state.error!))),
         builder: (context, state) {
           switch (state.status) {
             case NotificationsStatus.loading:
-              return const Center(child: CircularProgressIndicator());
+              return const Padding(
+                padding: EdgeInsets.all(Gap.screen),
+                child: SkeletonList(),
+              );
             case NotificationsStatus.failure:
               return Center(
                 child: EmptyState(
@@ -112,8 +97,7 @@ class _NotificationsView extends StatelessWidget {
                   child: EmptyState(
                     icon: Icons.notifications_none_outlined,
                     title: 'Chưa có thông báo nào',
-                    message:
-                        'Thông báo về đơn đặt sân và thanh toán sẽ xuất hiện tại đây.',
+                    message: 'Thông báo về đơn đặt sân và thanh toán sẽ xuất hiện tại đây.',
                   ),
                 );
               }

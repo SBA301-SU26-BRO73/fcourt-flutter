@@ -15,6 +15,7 @@ class AuthTextField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.icon,
+    this.helperText,
   });
 
   final TextEditingController controller;
@@ -30,6 +31,9 @@ class AuthTextField extends StatefulWidget {
 
   /// Optional leading icon.
   final IconData? icon;
+
+  /// Luật nhập hiện sẵn dưới ô (ví dụ độ dài tối thiểu của mật khẩu).
+  final String? helperText;
 
   @override
   State<AuthTextField> createState() => _AuthTextFieldState();
@@ -47,10 +51,14 @@ class _AuthTextFieldState extends State<AuthTextField> {
       textInputAction: widget.textInputAction,
       autofillHints: widget.autofillHints,
       validator: widget.validator,
+      // Kiểm tra khi người dùng rời ô hoặc sửa, lỗi cũ tự mất khi sửa đúng.
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       onChanged: widget.onChanged,
       onFieldSubmitted: widget.onSubmitted,
       decoration: InputDecoration(
         labelText: widget.label,
+        helperText: widget.helperText,
+        helperMaxLines: 2,
         prefixIcon: widget.icon == null ? null : Icon(widget.icon),
         errorText: widget.serverError,
         errorMaxLines: 3,

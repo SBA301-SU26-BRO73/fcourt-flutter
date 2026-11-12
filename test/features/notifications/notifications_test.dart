@@ -124,7 +124,8 @@ void main() {
         total: 22,
       ),
       act: (c) => c.loadMore(),
-      verify: (c) => expect(c.state.items.map((n) => n.id).where((i) => i < 100), [2, 3]),
+      verify: (c) =>
+          expect(c.state.items.map((n) => n.id).where((i) => i < 100), [2, 3]),
     );
   });
 
@@ -139,8 +140,9 @@ void main() {
       when(() => repo.page(0, size: any(named: 'size')))
           .thenAnswer((_) async => page([note(1), note(2, read: true)]));
       await pump(tester);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byKey(const ValueKey('skeleton-list')), findsOneWidget);
       await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('skeleton-list')), findsNothing);
       expect(find.text('Đặt sân thành công 1'), findsOneWidget);
       expect(find.text('Đặt sân thành công 2'), findsOneWidget);
       expect(find.byKey(const ValueKey('unread-dot')), findsOneWidget);
@@ -209,7 +211,9 @@ void main() {
           'total': 1,
         });
       });
-      final impl = NotificationsRepositoryImpl(Dio()..httpClientAdapter = adapter);
+      final impl = NotificationsRepositoryImpl(
+        Dio()..httpClientAdapter = adapter,
+      );
       final result = await impl.page(0);
       expect(result.items.single.id, 5);
       expect(result.items.single.isRead, isFalse);
@@ -226,7 +230,9 @@ void main() {
 
     test('malformed payload becomes a failure, not a crash', () async {
       final adapter = FakeAdapter((_) => jsonResponse(200, {'oops': 1}));
-      final impl = NotificationsRepositoryImpl(Dio()..httpClientAdapter = adapter);
+      final impl = NotificationsRepositoryImpl(
+        Dio()..httpClientAdapter = adapter,
+      );
       await expectLater(impl.page(0), throwsA(isA<UnknownFailure>()));
     });
   });

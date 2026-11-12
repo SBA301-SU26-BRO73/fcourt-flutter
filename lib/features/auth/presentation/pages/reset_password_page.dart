@@ -128,6 +128,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         AuthTextField(
                           controller: _password,
                           label: 'Mật khẩu mới',
+                          helperText: 'Tối thiểu 8 ký tự',
                           obscure: true,
                           validator: AuthValidators.password,
                           serverError: fieldErrors['newPassword'],
