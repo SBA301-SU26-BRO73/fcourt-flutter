@@ -105,7 +105,7 @@ class _UnpaidRepository extends Repository {
 }
 
 void main() {
-  testWidgets('bookings are grouped by date with the newest date first', (
+  testWidgets('booking cards are ordered by date with the newest date first', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1600);
@@ -120,11 +120,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('03/01/2030'), findsOneWidget);
-    expect(find.text('08/01/2030'), findsOneWidget);
+    final older = find.text('03/01/2030 · 18:00–18:30');
+    final newer = find.text('08/01/2030 · 18:00–18:30');
+    expect(older, findsNWidgets(2));
+    expect(newer, findsOneWidget);
     expect(
-      tester.getTopLeft(find.text('08/01/2030')).dy,
-      lessThan(tester.getTopLeft(find.text('03/01/2030')).dy),
+      tester.getTopLeft(newer).dy,
+      lessThan(tester.getTopLeft(older.first).dy),
     );
     await tester.pumpWidget(const SizedBox());
   });
@@ -202,12 +204,20 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('Còn '), findsOneWidget);
+    expect(find.text('#BK1'), findsOneWidget);
+    await tester.ensureVisible(find.text('Xem thêm'));
     await tester.tap(find.text('Xem thêm'));
     await tester.pumpAndSettle();
     expect(repo.calls, ['ALL:0', 'ALL:1']);
-    await tester.tap(find.text('Thủ Đức · Sân 2'));
+    await tester.scrollUntilVisible(
+      find.text('#BK2'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('#BK2'));
     expect(selected, 2);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Đã hủy'));
     await tester.tap(find.text('Đã hủy'));
     await tester.pumpAndSettle();
     expect(find.text('Chưa có đơn đặt sân'), findsOneWidget);
@@ -227,7 +237,8 @@ void main() {
       repo.fail = false;
       await tester.tap(find.text('Thử lại'));
       await tester.pumpAndSettle();
-      expect(find.text('Thủ Đức · Sân 1'), findsOneWidget);
+      expect(find.text('Thủ Đức'), findsOneWidget);
+      expect(find.text('Sân 1'), findsOneWidget);
       repo.delayed = Completer();
       await tester.tap(find.text('Đã hoàn thành'));
       await tester.pump();
@@ -249,7 +260,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Mã đơn: BK1'), findsOneWidget);
+    expect(find.text('#BK1'), findsOneWidget);
+    await tester.ensureVisible(find.text('Xuất trình vé QR'));
     await tester.tap(find.text('Xuất trình vé QR'));
     expect(ticket, 1);
   });

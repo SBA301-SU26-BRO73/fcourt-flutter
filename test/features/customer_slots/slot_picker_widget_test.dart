@@ -77,9 +77,9 @@ void main() {
         await tester.pumpWidget(app(busyDay(), brightness: brightness));
         await tester.pump();
         await settle(tester);
-        expect(find.text('Chọn giờ chơi'), findsOneWidget);
+        expect(find.text('Chọn giờ'), findsOneWidget);
         expect(find.text('Sân Cầu Lông Ba Đình'), findsOneWidget);
-        expect(find.text('NGÀY CHƠI'), findsOneWidget);
+        expect(find.text('Ngày chơi'), findsOneWidget);
         expect(find.text('Tất cả sân'), findsOneWidget);
         expect(find.text('Sân 2'), findsOneWidget);
         for (final label in ['1 giờ', '1,5 giờ', '2 giờ']) {
@@ -109,15 +109,19 @@ void main() {
             ),
           );
           await settle(tester);
-          FilledButton continueButton() =>
-              tester.widget<FilledButton>(find.byType(FilledButton));
-          expect(continueButton().onPressed, isNull);
+          InkWell continueButton() => tester.widget<InkWell>(
+            find.ancestor(
+              of: find.text('Tiếp tục'),
+              matching: find.byType(InkWell),
+            ),
+          );
+          expect(continueButton().onTap, isNull);
           await tester.tap(find.text('2 giờ')); // tap 1
           await settle(tester);
-          await tester.tap(find.text('07:00 – 09:00')); // tap 2
+          await tester.tap(find.text('07:00–09:00')); // tap 2
           await settle(tester);
-          expect(find.textContaining('Sân 2 (gợi ý) · 2 giờ'), findsOneWidget);
-          expect(find.text('100.000 đ'), findsWidgets);
+          expect(find.textContaining('gợi ý Sân 2'), findsOneWidget);
+          expect(find.textContaining('100.000đ'), findsWidgets);
           await tester.tap(find.text('Tiếp tục')); // tap 3
           expect(courtName, 'Sân 2', reason: 'court 1 is booked at 08:00');
           expect(picked!.courtId, 2);
@@ -132,9 +136,9 @@ void main() {
         phone(tester);
         await tester.pumpWidget(app(busyDay(), brightness: brightness));
         await settle(tester);
-        await tester.tap(find.text('07:00 – 08:00'));
+        await tester.tap(find.text('07:00–08:00'));
         await settle(tester);
-        expect(find.textContaining('(gợi ý)'), findsOneWidget);
+        expect(find.textContaining('gợi ý'), findsOneWidget);
         await tester.tap(find.text('Sân 2'));
         await settle(tester);
         expect(find.text('Chưa chọn giờ'), findsOneWidget);
@@ -149,12 +153,12 @@ void main() {
         await settle(tester);
         await tester.tap(find.text('Sân 1'));
         await settle(tester);
-        expect(find.text('08:00 – 09:00'), findsNothing);
+        expect(find.text('08:00–09:00'), findsNothing);
         await tester.tap(find.text('Hiện giờ đã đặt / đã qua'));
         await settle(tester);
-        expect(find.text('08:00 – 09:00'), findsOneWidget);
+        expect(find.text('08:00–09:00'), findsOneWidget);
         expect(find.text('Đã đặt'), findsWidgets);
-        await tester.tap(find.text('08:00 – 09:00'));
+        await tester.tap(find.text('08:00–09:00'));
         await settle(tester);
         expect(find.text('Chưa chọn giờ'), findsOneWidget);
       });
@@ -199,17 +203,24 @@ void main() {
     for (final label in ['Tất cả sân', '1 giờ']) {
       final pill = find.ancestor(
         of: find.text(label),
-        matching: find.byType(AnimatedContainer),
+        matching: find.byType(GestureDetector),
       );
       expect(tester.getSize(pill.first).height, greaterThanOrEqualTo(48));
     }
     final tile = find.ancestor(
-      of: find.text('07:00 – 08:00'),
+      of: find.text('07:00–08:00'),
       matching: find.byType(AnimatedContainer),
     );
     expect(tester.getSize(tile.first).height, greaterThanOrEqualTo(64));
     expect(
-      tester.getSize(find.byType(FilledButton)).height,
+      tester
+          .getSize(
+            find.ancestor(
+              of: find.text('Tiếp tục'),
+              matching: find.byType(InkWell),
+            ),
+          )
+          .height,
       greaterThanOrEqualTo(48),
     );
   });
@@ -242,7 +253,7 @@ void main() {
     await tester.tap(find.text('Hiện giờ đã đặt / đã qua'));
     await settle(tester);
     expect(find.text('Bao sân'), findsWidgets);
-    await tester.tap(find.text('07:00 – 08:00'));
+    await tester.tap(find.text('07:00–08:00'));
     await settle(tester);
     expect(find.text('Chưa chọn giờ'), findsOneWidget);
   });
@@ -271,7 +282,7 @@ void main() {
       await _shot(tester, key, file('1-start'));
       await tester.tap(find.text('2 giờ'));
       await settle(tester);
-      await tester.tap(find.text('07:00 – 09:00'));
+      await tester.tap(find.text('07:00–09:00'));
       await settle(tester);
       await _shot(tester, key, file('2-selected'));
       await tester.tap(find.text('Sân 1'));
@@ -310,7 +321,8 @@ Future<void> _loadFonts() async {
   }
   final loader = FontLoader('PlusJakartaSans');
   for (final name in ['Regular', 'SemiBold', 'Bold']) {
-    final bytes = File('assets/fonts/PlusJakartaSans-$name.ttf').readAsBytesSync();
+    final bytes = File('assets/fonts/PlusJakartaSans-$name.ttf')
+        .readAsBytesSync();
     loader.addFont(
       Future.value(ByteData.sublistView(Uint8List.fromList(bytes))),
     );

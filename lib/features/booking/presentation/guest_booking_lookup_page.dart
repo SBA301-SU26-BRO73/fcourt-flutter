@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
 import '../../../core/error/failure.dart';
+import '../../payment/presentation/widgets/payment_parts.dart';
 import '../../../core/storage/guest_booking_store.dart';
 import '../domain/entities/guest_booking_lookup.dart';
 import '../domain/repositories/guest_booking_lookup_repository.dart';
@@ -89,11 +92,13 @@ class _GuestBookingLookupPageState extends State<GuestBookingLookupPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Tra cứu đơn đặt sân')),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
           Text(
             'Nhập mã đơn và số điện thoại đã dùng khi đặt sân.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 16),
           Form(
@@ -159,6 +164,8 @@ class _GuestBookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final timeRange = booking.slots.isEmpty
         ? ''
         : '${booking.slots.first.startTime.substring(0, 5)}–'
@@ -169,39 +176,83 @@ class _GuestBookingCard extends StatelessWidget {
       symbol: 'đ',
       decimalDigits: 0,
     ).format(booking.totalPrice);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              booking.courtName,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${booking.branchName}${booking.branchAddress == null ? '' : '\n${booking.branchAddress}'}',
-            ),
-            Text('$date · $timeRange'),
-            Text('Mã đơn: ${booking.bookingCode}'),
-            Text('Trạng thái: ${_statusLabel(booking.status)}'),
-            Text('Tổng tiền: $amount'),
-            if (booking.checkInCode != null &&
-                booking.checkInCode!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Mã check-in',
-                style: Theme.of(context).textTheme.titleSmall,
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: colors.onSurfaceVariant,
+      fontSize: 11,
+    );
+    final tone = switch (booking.status) {
+      'CANCELLED' || 'EXPIRED' => context.fc.danger,
+      'CONFIRMED' || 'CHECKED_IN' || 'COMPLETED' => context.fc.success,
+      _ => context.fc.warning,
+    };
+    return PayPanel(
+      padding: 16,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Mã đơn: ${booking.bookingCode}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-              SelectableText(
-                booking.checkInCode!,
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 2),
+              TintTag(_statusLabel(booking.status), tone: tone),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            booking.courtName,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            booking.branchAddress == null
+                ? booking.branchName
+                : '${booking.branchName}\n${booking.branchAddress}',
+            style: muted,
+          ),
+          const SizedBox(height: 6),
+          Text('$date · $timeRange', style: muted),
+          Divider(height: 29, thickness: 1, color: colors.outlineVariant),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Trạng thái: ${_statusLabel(booking.status)}',
+                  style: muted,
+                ),
+              ),
+              Text(
+                amount,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: colors.primary,
+                ),
               ),
             ],
+          ),
+          if (booking.checkInCode != null &&
+              booking.checkInCode!.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text('Mã check-in', style: muted),
+            const SizedBox(height: 4),
+            SelectableText(
+              booking.checkInCode!,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2,
+              ),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

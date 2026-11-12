@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../domain/slot_options.dart';
 import '../../../../../app/theme/slot_picker_palette.dart';
 
-/// One start time: "18:00 – 20:00", which courts are free, and the price.
+/// One start time (mock-up ".slot"): 16dp corners, 11/14 padding, time 13/700
+/// over a 10dp note; price 12/800 accent on the right. The selected row has
+/// an accent border, a soft fill and a check mark instead of the price.
 class SlotOptionTile extends StatelessWidget {
   const SlotOptionTile({
     super.key,
@@ -22,7 +24,7 @@ class SlotOptionTile extends StatelessWidget {
   final VoidCallback onTap;
 
   String get _range =>
-      '${slotTime(option.startMinute)} – ${slotTime(option.endMinute)}';
+      '${slotTime(option.startMinute)}–${slotTime(option.endMinute)}';
 
   String get _subtitle {
     if (!option.available) return option.blockedLabel ?? 'Không khả dụng';
@@ -38,15 +40,7 @@ class SlotOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = SlotPickerPalette.of(context);
-    final motion = slotMotion(context, 180);
     final enabled = option.available;
-    final timeStyle = TextStyle(
-      fontSize: 16,
-      height: 24 / 16,
-      fontWeight: FontWeight.w700,
-      color: enabled ? palette.text : palette.muted,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
     return Semantics(
       button: enabled,
       enabled: enabled,
@@ -57,17 +51,13 @@ class SlotOptionTile extends StatelessWidget {
       excludeSemantics: true,
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
-        duration: motion,
+        duration: slotMotion(context, 180),
         curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.only(bottom: 8),
-        constraints: const BoxConstraints(minHeight: 64),
+        margin: const EdgeInsets.only(bottom: 7),
         decoration: BoxDecoration(
           color: selected ? palette.accentSoft : palette.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? palette.accent : palette.line,
-            width: selected ? 2 : 1,
-          ),
+          border: Border.all(color: selected ? palette.accent : palette.line),
         ),
         child: Material(
           type: MaterialType.transparency,
@@ -75,45 +65,44 @@ class SlotOptionTile extends StatelessWidget {
             onTap: enabled ? onTap : null,
             borderRadius: BorderRadius.circular(16),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
               child: Row(
                 children: [
-                  if (enabled)
-                    _CheckDot(selected: selected, palette: palette)
-                  else
-                    Icon(Icons.block_rounded, size: 20, color: palette.muted),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_range, style: timeStyle),
                         Text(
-                          _subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          _range,
                           style: TextStyle(
                             fontSize: 13,
-                            height: 18 / 13,
-                            color: palette.muted,
+                            fontWeight: FontWeight.w700,
+                            color: enabled ? palette.text : palette.muted,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          selected ? '$_subtitle · Đã chọn' : _subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 10, color: palette.muted),
                         ),
                       ],
                     ),
                   ),
-                  if (enabled) ...[
-                    const SizedBox(width: 12),
+                  if (selected)
+                    Icon(Icons.check_rounded, size: 20, color: palette.accent)
+                  else if (enabled)
                     Text(
                       slotMoney(option.priceMinor),
                       style: TextStyle(
-                        fontSize: 16,
-                        height: 24 / 16,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
                         color: palette.accent,
                       ),
                     ),
-                  ],
                 ],
               ),
             ),
@@ -124,52 +113,40 @@ class SlotOptionTile extends StatelessWidget {
   }
 }
 
-class _CheckDot extends StatelessWidget {
-  const _CheckDot({required this.selected, required this.palette});
-  final bool selected;
-  final SlotPickerPalette palette;
-
-  @override
-  Widget build(BuildContext context) => AnimatedContainer(
-    duration: slotMotion(context, 160),
-    curve: Curves.easeOutCubic,
-    width: 24,
-    height: 24,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      color: selected ? palette.accent : Colors.transparent,
-      border: Border.all(
-        color: selected ? palette.accent : palette.line,
-        width: 2,
-      ),
-    ),
-    child: AnimatedScale(
-      duration: slotMotion(context, 160),
-      curve: Curves.easeOutBack,
-      scale: selected ? 1 : 0,
-      child: Icon(Icons.check_rounded, size: 16, color: palette.onAccent),
-    ),
-  );
-}
-
-/// "Sáng / Chiều / Tối" caption above a group of tiles.
+/// "Sáng / Chiều / Tối" (mock-up ".period"): small icon + 12/700 label.
 class SlotGroupHeader extends StatelessWidget {
   const SlotGroupHeader(this.part, {super.key});
   final DayPart part;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 16, bottom: 8),
-    child: Text(
-      part.label,
-      style: TextStyle(
-        fontSize: 16,
-        height: 24 / 16,
-        fontWeight: FontWeight.w700,
-        color: SlotPickerPalette.of(context).text,
+  Widget build(BuildContext context) {
+    final palette = SlotPickerPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 8),
+      child: Row(
+        children: [
+          Icon(
+            switch (part) {
+              DayPart.morning => Icons.wb_sunny_outlined,
+              DayPart.afternoon => Icons.wb_twilight_outlined,
+              DayPart.evening => Icons.nightlight_outlined,
+            },
+            size: 15,
+            color: palette.muted,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            part.label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: palette.text,
+            ),
+          ),
+        ],
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// Pulsing placeholder rows shown while the schedules load.
@@ -206,8 +183,8 @@ class _SlotListSkeletonState extends State<SlotListSkeleton>
       ),
     );
     Widget row() => Container(
-      height: 64,
-      margin: const EdgeInsets.only(bottom: 8),
+      height: 58,
+      margin: const EdgeInsets.only(bottom: 7),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: palette.surface,

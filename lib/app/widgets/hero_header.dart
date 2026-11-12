@@ -186,6 +186,7 @@ class _SearchPill extends StatelessWidget {
             ),
             decoration: InputDecoration(
               isCollapsed: true,
+              contentPadding: EdgeInsets.zero,
               filled: false,
               border: InputBorder.none,
               enabledBorder: InputBorder.none,

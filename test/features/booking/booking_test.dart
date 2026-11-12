@@ -219,8 +219,10 @@ void main() {
         ),
       );
       expect(find.text('FCOURT Thủ Đức'), findsOneWidget);
-      expect(find.text('18:00 – 18:30'), findsOneWidget);
-      expect(find.textContaining('160.000'), findsOneWidget);
+      // Adjacent half-hour slots are now summarized as one continuous run.
+      expect(find.textContaining('18:00–19:00'), findsOneWidget);
+      // Shown on the run row and in the total.
+      expect(find.textContaining('160.000'), findsNWidgets(2));
       expect(find.text('Minh'), findsOneWidget);
       final button = find.text('Giữ chỗ 5 phút & thanh toán');
       await tester.scrollUntilVisible(

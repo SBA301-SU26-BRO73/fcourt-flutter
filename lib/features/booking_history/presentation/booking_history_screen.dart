@@ -1,5 +1,6 @@
-import '../../../app/widgets/account_actions.dart';
 import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
+import 'booking_style.dart';
 import '../../../app/widgets/skeleton_list.dart';
 
 import 'dart:async';
@@ -7,7 +8,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/error/failure.dart';
 import '../domain/booking.dart';
@@ -193,301 +193,442 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final items = [..._items]
-      ..sort((a, b) {
-        final date = b.date.compareTo(a.date);
-        return date != 0 ? date : b.id.compareTo(a.id);
-      });
-    final days = <String, List<Booking>>{};
-    for (final booking in items) {
-      days.putIfAbsent(booking.date, () => []).add(booking);
-    }
-    final now = DateTime.now().toUtc().add(const Duration(hours: 7));
-    final today = DateFormat('yyyy-MM-dd').format(now);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final query = _search.text.trim().toLowerCase();
+    final items =
+        [
+          for (final b in _items)
+            if (query.isEmpty ||
+                b.code.toLowerCase().contains(query) ||
+                b.branchName.toLowerCase().contains(query))
+              b,
+        ]..sort((a, b) {
+          final date = b.date.compareTo(a.date);
+          return date != 0 ? date : b.id.compareTo(a.id);
+        });
     return Scaffold(
-      body: Column(
-        children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(Gap.screen, 8, 8, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Đã đặt',
-                      style: Theme.of(context).textTheme.headlineLarge,
-                    ),
-                  ),
-                  const AccountActions(),
-                ],
-              ),
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: () => _load(reset: true),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              20,
+              0,
+              20,
+              FloatingNavBar.clearance,
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Gap.screen),
-              child: SizedBox(
-                width: double.infinity,
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: Gap.xs,
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              SizedBox(
+                height: 58,
+                child: Row(
                   children: [
-                    for (int i = 0; i < filters.length; i++)
-                      ChoiceChip(
-                        labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-                        label: Text(
-                          [
-                            'Tất cả',
-                            'Sắp diễn ra',
-                            'Đã hoàn thành',
-                            'Đã hủy',
-                          ][i],
+                    Expanded(
+                      child: Text(
+                        'Đơn của tôi',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontSize: 25,
+                          letterSpacing: -.9,
                         ),
+                      ),
+                    ),
+                    if (widget.onTransactions != null)
+                      CircleIconButton(
+                        icon: Icons.receipt_long_outlined,
+                        tooltip: 'Lịch sử thanh toán',
+                        onPressed: widget.onTransactions,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 7),
+              _SearchPill(
+                controller: _search,
+                hint: 'Tìm mã đơn hoặc tên sân',
+                onChanged: () => setState(() {}),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                height: 35,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    for (int i = 0; i < filters.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 7),
+                      _FilterPill(
+                        label: _filterLabels[i],
                         selected: _tab == i,
-                        onSelected: (_) {
-                          if (_tab != i) {
-                            setState(() {
-                              _tab = i;
-                              _networkLoadedTab = -1;
-                              _items = [];
-                              _offline = false;
-                              _error = null;
-                            });
-                            _load(reset: true);
-                            _restoreCache();
-                          }
+                        onTap: () {
+                          if (_tab == i) return;
+                          setState(() {
+                            _tab = i;
+                            _networkLoadedTab = -1;
+                            _items = [];
+                            _offline = false;
+                            _error = null;
+                          });
+                          _load(reset: true);
+                          _restoreCache();
                         },
                       ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => _load(reset: true),
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(
-                  20,
-                  4,
-                  20,
-                  32 + MediaQuery.paddingOf(context).bottom,
-                ),
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  if (_offline)
-                    Container(
-                      key: const ValueKey('bookings-offline-banner'),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        'Ngoại tuyến · đang hiển thị danh sách đã tải gần đây',
-                      ),
-                    ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Đơn đặt sân của bạn',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                      if (widget.onTransactions != null)
-                        IconButton(
-                          tooltip: 'Lịch sử thanh toán',
-                          onPressed: widget.onTransactions,
-                          icon: const Icon(Icons.receipt_long_outlined),
-                        ),
                     ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: Gap.sm),
-                    child: TextField(
-                      controller: _search,
-                      onChanged: (_) => setState(() {}),
-                      textInputAction: TextInputAction.search,
-                      decoration: InputDecoration(
-                        hintText: 'Tìm theo mã đơn',
-                        prefixIcon: const Icon(Icons.search_outlined),
-                        suffixIcon: _search.text.isEmpty
-                            ? null
-                            : IconButton(
-                                tooltip: 'Xóa tìm kiếm',
-                                icon: const Icon(Icons.close),
-                                onPressed: () => setState(_search.clear),
-                              ),
-                      ),
-                    ),
-                  ),
-                  if (_error != null) ...[
-                    Text(_error!),
-                    TextButton(
-                      onPressed: () => _load(reset: _items.isEmpty),
-                      child: const Text('Thử lại'),
-                    ),
                   ],
-                  if (!_loading && _items.isNotEmpty && items.isEmpty)
-                    const EmptyState(
-                      icon: Icons.search_off_outlined,
-                      message: 'Không có đơn khớp mã đã nhập',
-                    ),
-                  if (!_loading && _items.isEmpty && _error == null)
-                    const EmptyState(
-                      icon: Icons.event_note_outlined,
-                      message: 'Chưa có đơn đặt sân',
-                    ),
-                  for (final day in days.entries) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16, bottom: 12),
-                      child: Text(
-                        '${day.key == today ? 'Hôm nay · ' : ''}${DateFormat('dd/MM/yyyy').format(DateTime.parse(day.key))}',
-                        style: TextStyle(
-                          color: colors.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    for (final booking in day.value)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: FcCard(
-                          onTap: () async {
-                            await widget.onDetail(booking.id);
-                            if (mounted) await _load(reset: true);
+                ),
+              ),
+              const SizedBox(height: 22),
+              if (_offline)
+                Container(
+                  key: const ValueKey('bookings-offline-banner'),
+                  margin: const EdgeInsets.only(bottom: 15),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Ngoại tuyến · đang hiển thị danh sách đã tải gần đây',
+                  ),
+                ),
+              if (_error != null) ...[
+                Text(_error!),
+                TextButton(
+                  onPressed: () => _load(reset: _items.isEmpty),
+                  child: const Text('Thử lại'),
+                ),
+              ],
+              if (!_loading && _items.isNotEmpty && items.isEmpty)
+                const EmptyState(
+                  icon: Icons.search_off_outlined,
+                  message: 'Không có đơn khớp từ khóa đã nhập',
+                ),
+              if (!_loading && _items.isEmpty && _error == null)
+                const EmptyState(
+                  icon: Icons.event_note_outlined,
+                  message: 'Chưa có đơn đặt sân',
+                ),
+              for (final booking in items)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 15),
+                  child: _OrderCard(
+                    booking: booking,
+                    reviewed: _reviewed.contains(booking.id),
+                    onOpen: () async {
+                      await widget.onDetail(booking.id);
+                      if (mounted) await _load(reset: true);
+                    },
+                    onReview: widget.onReview == null
+                        ? null
+                        : () async {
+                            if (await widget.onReview!(booking.id) && mounted) {
+                              setState(() => _reviewed.add(booking.id));
+                            }
                           },
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const IconBadge(
-                                    Icons.event_available_outlined,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '${booking.branchName} · ${booking.courtName}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Text(
-                                          mergeSlotRanges(booking.slots)
-                                              .join(' · '),
-                                          style: TextStyle(
-                                            color: colors.onSurfaceVariant,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Mã đơn: ${booking.code}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: colors.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Icon(Icons.chevron_right),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 8,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  StatusPill(
-                                    booking.label,
-                                    tone: switch (booking.status) {
-                                      'CANCELLED' => context.fc.danger,
-                                      'COMPLETED' => context.fc.success,
-                                      'CONFIRMED' => context.fc.info,
-                                      _ => context.fc.warning,
-                                    },
-                                    icon: switch (booking.status) {
-                                      'CANCELLED' => Icons.cancel_outlined,
-                                      'COMPLETED' => Icons.check_circle_outline,
-                                      'CONFIRMED' => Icons.event_available,
-                                      _ => Icons.schedule,
-                                    },
-                                  ),
-                                  Text(
-                                    NumberFormat.currency(
-                                      locale: 'vi_VN',
-                                      symbol: 'đ',
-                                      decimalDigits: 0,
-                                    ).format(booking.amount),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  if ({
-                                    'CONFIRMED',
-                                    'PENDING_PAYMENT',
-                                    'AWAITING_CONFIRMATION',
-                                  }.contains(booking.status))
-                                    Text(
-                                      booking.countdown(DateTime.now()),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: colors.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  if (booking.status == 'COMPLETED' &&
-                                      widget.onReview != null &&
-                                      !_reviewed.contains(booking.id))
-                                    TextButton(
-                                      onPressed: () async {
-                                        if (await widget.onReview!(
-                                              booking.id,
-                                            ) &&
-                                            mounted) {
-                                          setState(
-                                            () => _reviewed.add(booking.id),
-                                          );
-                                        }
-                                      },
-                                      child: const Text('Đánh giá sân'),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                  ),
+                ),
+              if (_loading)
+                _items.isEmpty
+                    ? const SkeletonList()
+                    : const Center(child: CircularProgressIndicator()),
+              if (_more && !_loading)
+                TextButton(
+                  onPressed: () => _load(),
+                  child: const Text('Xem thêm'),
+                )
+              else if (!_loading && items.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Center(
+                    child: Text(
+                      'Bạn đã xem hết đơn đặt sân',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 11,
                       ),
-                  ],
-                  if (_loading)
-                    _items.isEmpty
-                        ? const SkeletonList()
-                        : const Center(child: CircularProgressIndicator()),
-                  if (_more && !_loading)
-                    TextButton(
-                      onPressed: () => _load(),
-                      child: const Text('Xem thêm'),
                     ),
-                ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+const _filterLabels = ['Tất cả', 'Sắp diễn ra', 'Đã hoàn thành', 'Đã hủy'];
+
+/// Mock-up ".search": 48dp pill with a 1dp line, icon 18 and 12dp hint.
+class _SearchPill extends StatelessWidget {
+  const _SearchPill({
+    required this.controller,
+    required this.hint,
+    required this.onChanged,
+  });
+  final TextEditingController controller;
+  final String hint;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.only(left: 16, right: 4),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search, size: 18, color: colors.onSurfaceVariant),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: (_) => onChanged(),
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(fontSize: 12),
+              decoration: InputDecoration(
+                isCollapsed: true,
+                contentPadding: EdgeInsets.zero,
+                filled: false,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                hintText: hint,
+                hintStyle: TextStyle(
+                  fontSize: 12,
+                  color: colors.onSurfaceVariant,
+                ),
               ),
             ),
           ),
+          if (controller.text.isNotEmpty)
+            IconButton(
+              tooltip: 'Xóa tìm kiếm',
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: () {
+                controller.clear();
+                onChanged();
+              },
+            ),
         ],
       ),
     );
   }
 }
+
+/// Mock-up ".filters .pill": 11/600, 10/13 padding; selected = solid accent.
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      excludeSemantics: true,
+      child: Material(
+        color: selected ? colors.primary : colors.surfaceContainer,
+        shape: StadiumBorder(
+          side: BorderSide(
+            color: selected ? colors.primary : colors.outlineVariant,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+                color: selected ? colors.onPrimary : colors.onSurface,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Mock-up ".order": code and status tag, photo with name and lines, total
+/// and one clear action.
+class _OrderCard extends StatelessWidget {
+  const _OrderCard({
+    required this.booking,
+    required this.reviewed,
+    required this.onOpen,
+    this.onReview,
+  });
+  final Booking booking;
+  final bool reviewed;
+  final VoidCallback onOpen;
+  final VoidCallback? onReview;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final tone = booking.tone(context);
+    final upcoming = const {
+      'CONFIRMED',
+      'PENDING_PAYMENT',
+      'AWAITING_CONFIRMATION',
+    }.contains(booking.status);
+    final needsReceipt = booking.status == 'PENDING_PAYMENT';
+    final canReview =
+        booking.status == 'COMPLETED' && onReview != null && !reviewed;
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: colors.onSurfaceVariant,
+      fontSize: 10,
+    );
+    return Material(
+      color: colors.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(23),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '#${booking.code}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  TintTag(booking.tagLabel, tone: tone),
+                ],
+              ),
+              const SizedBox(height: 15),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: SizedBox(
+                      width: 74,
+                      height: 82,
+                      child: SportPhoto(kind: booking.sportKind),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          booking.branchName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontSize: 13,
+                            height: 1.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(booking.dateAndSlots, style: muted),
+                        const SizedBox(height: 5),
+                        Text(booking.sportAndCourt, style: muted),
+                        if (upcoming) ...[
+                          const SizedBox(height: 5),
+                          Text(
+                            booking.countdown(DateTime.now()),
+                            style: muted?.copyWith(
+                              color: colors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              Divider(height: 31, thickness: 1, color: colors.outlineVariant),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Tổng thanh toán',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    booking.amountText,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: colors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              if (needsReceipt || canReview) ...[
+                const SizedBox(height: 15),
+                SizedBox(
+                  width: double.infinity,
+                  child: needsReceipt
+                      ? FilledButton(
+                          onPressed: onOpen,
+                          style: _smallAction(context),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Gửi biên lai'),
+                              SizedBox(width: 8),
+                              Icon(Icons.arrow_forward, size: 15),
+                            ],
+                          ),
+                        )
+                      : OutlinedButton(
+                          onPressed: onReview,
+                          style: _smallAction(context),
+                          child: const Text('Đánh giá sân'),
+                        ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Mock-up ".order .primary": 12/700 label, 12dp vertical padding.
+ButtonStyle _smallAction(BuildContext context) => FilledButton.styleFrom(
+  minimumSize: const Size.fromHeight(44),
+  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+  textStyle: Theme.of(context).textTheme.labelLarge
+      ?.copyWith(fontSize: 12, fontWeight: FontWeight.w700),
+);

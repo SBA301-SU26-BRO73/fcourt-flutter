@@ -1,4 +1,5 @@
 import 'package:fcourt/app/widgets/floating_nav_bar.dart';
+import 'package:fcourt/app/widgets/sport_circle_icon.dart';
 import 'package:fcourt/app/app.dart';
 import 'package:fcourt/app/app_dependencies.dart';
 import 'package:fcourt/core/config/app_config.dart';
@@ -156,13 +157,15 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Cầu lông'));
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Cầu lông'));
+    final badminton = find.widgetWithText(SportCircleIcon, 'Cầu lông');
+    await tester.ensureVisible(badminton);
+    await tester.tap(badminton);
     await tester.pumpAndSettle();
     expect(find.text('Sân theo môn'), findsOneWidget);
     expect(venues.requests.last, DiscoverySport.badminton);
-    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Tất cả'));
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Tất cả'));
+    // Tapping the selected sport again clears the filter in the new UI.
+    await tester.ensureVisible(badminton);
+    await tester.tap(badminton);
     await tester.pumpAndSettle();
     expect(venues.requests.last, isNull);
     expect(find.text('Sân hiển thị khi chọn tất cả'), findsOneWidget);

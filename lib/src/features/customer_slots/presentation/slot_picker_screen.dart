@@ -10,6 +10,7 @@ import 'widgets/slot_filters.dart';
 import 'widgets/slot_lock_contacts.dart';
 import 'widgets/slot_option_views.dart';
 import '../../../../app/theme/slot_picker_palette.dart';
+import '../../../../app/widgets/wp3b_widgets.dart';
 
 /// Start-time picker: day strip, court chips, duration, then the list of free
 /// start times grouped by part of the day. Picking a 2-hour game takes three
@@ -108,46 +109,7 @@ class _SlotViewState extends State<_SlotView> with WidgetsBindingObserver {
         final days = _days(state);
         return Scaffold(
           backgroundColor: palette.background,
-          appBar: AppBar(
-            backgroundColor: palette.background,
-            foregroundColor: palette.text,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            toolbarHeight: 72,
-            titleSpacing: Navigator.canPop(context) ? 0 : 20,
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.branchName != null && widget.branchName!.isNotEmpty)
-                  Text(
-                    widget.branchName!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 18 / 13,
-                      fontWeight: FontWeight.w500,
-                      color: palette.muted,
-                    ),
-                  ),
-                Text(
-                  'Chọn giờ chơi',
-                  style: TextStyle(
-                    fontSize: 24,
-                    height: 32 / 24,
-                    fontWeight: FontWeight.w700,
-                    color: palette.text,
-                  ),
-                ),
-              ],
-            ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Divider(height: 1, thickness: 1, color: palette.line),
-            ),
-          ),
+          appBar: AppBar(title: const Text('Chọn giờ')),
           body: SafeArea(
             top: false,
             bottom: false,
@@ -160,8 +122,19 @@ class _SlotViewState extends State<_SlotView> with WidgetsBindingObserver {
                   onRefresh: cubit.refresh,
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(top: 16, bottom: 24),
+                    padding: const EdgeInsets.fromLTRB(
+                      20,
+                      3,
+                      20,
+                      FloatingBottomBar.clearance + 8,
+                    ),
                     children: [
+                      if (widget.branchName != null &&
+                          widget.branchName!.isNotEmpty)
+                        _VenueStrip(
+                          name: widget.branchName!,
+                          courtCount: state.courts.length,
+                        ),
                       _Filters(state: state, days: days),
                       _Results(state: state, days: days),
                     ],
@@ -182,6 +155,55 @@ class _SlotViewState extends State<_SlotView> with WidgetsBindingObserver {
   }
 }
 
+/// Branch name with a small photo (mock-up ".venue-strip").
+class _VenueStrip extends StatelessWidget {
+  const _VenueStrip({required this.name, required this.courtCount});
+  final String name;
+  final int courtCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = SlotPickerPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 3, bottom: 12),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: const SizedBox(width: 44, height: 38, child: SportPhoto()),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: palette.text,
+                  ),
+                ),
+                if (courtCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      '$courtCount sân',
+                      style: TextStyle(fontSize: 11, color: palette.muted),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Filters extends StatelessWidget {
   const _Filters({required this.state, required this.days});
   final SlotPickerState state;
@@ -190,16 +212,15 @@ class _Filters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<SlotPickerCubit>();
+    final palette = SlotPickerPalette.of(context);
     final multi = state.courts.length > 1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: SlotSectionLabel(
-            'Ngày chơi',
-            trailing: 'Tháng ${state.date.month}',
-          ),
+        SlotSectionLabel(
+          'Ngày chơi',
+          top: 0,
+          trailing: 'Tháng ${state.date.month}, ${state.date.year}',
         ),
         SlotDateStrip(
           days: days,
@@ -208,16 +229,11 @@ class _Filters extends StatelessWidget {
           onSelected: cubit.selectDate,
         ),
         if (multi) ...[
-          const SizedBox(height: 24),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: SlotSectionLabel('Sân'),
-          ),
+          const SlotSectionLabel('Sân'),
           SizedBox(
             height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
                 SlotPill(
                   label: 'Tất cả sân',
@@ -236,35 +252,26 @@ class _Filters extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 24),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: SlotSectionLabel('Thời lượng'),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              for (var i = 0; i < slotDurations.length; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Expanded(
-                  child: SlotPill(
-                    label: durationLabel(slotDurations[i]),
-                    selected: state.durationMinutes == slotDurations[i],
-                    onTap: () => cubit.selectDuration(slotDurations[i]),
-                  ),
+        const SlotSectionLabel('Thời lượng'),
+        Row(
+          children: [
+            for (var i = 0; i < slotDurations.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Expanded(
+                child: SlotPill(
+                  expand: true,
+                  label: durationLabel(slotDurations[i]),
+                  selected: state.durationMinutes == slotDurations[i],
+                  onTap: () => cubit.selectDuration(slotDurations[i]),
                 ),
-              ],
+              ),
             ],
-          ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SlotShowUnavailableRow(
-            value: state.showUnavailable,
-            onChanged: cubit.toggleUnavailable,
-          ),
+        Divider(height: 12, thickness: 1, color: palette.line),
+        SlotShowUnavailableRow(
+          value: state.showUnavailable,
+          onChanged: cubit.toggleUnavailable,
         ),
       ],
     );
@@ -313,81 +320,77 @@ class _Results extends StatelessWidget {
         content = _OptionList(state: state, options: options);
       }
     }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (state.notice != null && !state.loading)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Semantics(
-                liveRegion: true,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: palette.accentSoft,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 20,
-                        color: palette.accent,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          state.notice!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 20 / 14,
-                            color: palette.text,
-                          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (state.notice != null && !state.loading)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Semantics(
+              liveRegion: true,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: palette.accentSoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 20,
+                      color: palette.accent,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        state.notice!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 20 / 14,
+                          color: palette.text,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          if (!state.loading && state.error == null)
-            SlotLockContacts(
-              slots: [
-                for (final court in state.courts)
-                  if (state.courtFilter == null ||
-                      state.courtFilter == court.id)
-                    ...?state.slotsByCourt[court.id],
-              ],
-            ),
-          AnimatedSwitcher(
-            duration: slotMotion(context, 220),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween(
-                  begin: const Offset(0, .02),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              ),
-            ),
-            layoutBuilder: (current, previous) => Stack(
-              alignment: Alignment.topCenter,
-              children: [
-                ...previous.map(
-                  (w) => Positioned(top: 0, left: 0, right: 0, child: w),
-                ),
-                ?current,
-              ],
-            ),
-            child: KeyedSubtree(key: ValueKey(key), child: content),
           ),
-        ],
-      ),
+        if (!state.loading && state.error == null)
+          SlotLockContacts(
+            slots: [
+              for (final court in state.courts)
+                if (state.courtFilter == null || state.courtFilter == court.id)
+                  ...?state.slotsByCourt[court.id],
+            ],
+          ),
+        AnimatedSwitcher(
+          duration: slotMotion(context, 220),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween(
+                begin: const Offset(0, .02),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          ),
+          layoutBuilder: (current, previous) => Stack(
+            alignment: Alignment.topCenter,
+            children: [
+              ...previous.map(
+                (w) => Positioned(top: 0, left: 0, right: 0, child: w),
+              ),
+              ?current,
+            ],
+          ),
+          child: KeyedSubtree(key: ValueKey(key), child: content),
+        ),
+      ],
     );
   }
 }
@@ -425,7 +428,9 @@ class _OptionList extends StatelessWidget {
   }
 }
 
-/// Solid bottom bar: what is selected, the total, and "Tiếp tục".
+/// Floating total (mock-up ".floating-total"): solid indigo (lime in dark)
+/// bar, 28dp corners. One line with the time range, court and price; the day
+/// below; "Tiếp tục" on the right.
 class _BottomBar extends StatelessWidget {
   const _BottomBar({required this.state, required this.onContinue});
   final SlotPickerState state;
@@ -433,135 +438,92 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = SlotPickerPalette.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final bar = dark ? colors.primary : colors.onPrimaryContainer;
+    final ink = dark ? colors.onPrimary : Colors.white;
     final option = state.selectedOption;
     final court = state.selectedCourt;
     final suggested = state.courtFilter == null && state.courts.length > 1;
     final enabled = option != null && !state.loading && onContinue != null;
-    return Material(
-      color: palette.surface,
-      elevation: 0,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: palette.line)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Center(
-            heightFactor: 1,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AnimatedSwitcher(
-                      duration: slotMotion(context, 180),
-                      transitionBuilder: (child, animation) =>
-                          FadeTransition(opacity: animation, child: child),
-                      layoutBuilder: (current, previous) => Stack(
-                        alignment: Alignment.centerLeft,
-                        children: [...previous, ?current],
-                      ),
-                      child: SizedBox(
-                        key: ValueKey(option?.startMinute),
-                        height: 44,
-                        child: Semantics(
-                          liveRegion: true,
-                          child: option == null
-                              ? Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Chưa chọn giờ',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      height: 20 / 14,
-                                      color: palette.muted,
-                                    ),
+    final line1 = option == null
+        ? 'Chưa chọn giờ'
+        : '${slotTime(option.startMinute)}–${slotTime(option.endMinute)}'
+              ' · ${court?.name ?? ''} · ${slotMoney(option.priceMinor)}';
+    final line2 = option == null
+        ? 'Chọn một khung giờ trống'
+        : '${weekdayLong(state.date)}, ${slotDayMonth(state.date)}'
+              '${suggested ? ' · gợi ý ${court?.name ?? ''}' : ''}';
+    return SafeArea(
+      top: false,
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Semantics(
+              button: true,
+              enabled: enabled,
+              label: 'Tiếp tục',
+              child: Opacity(
+                opacity: enabled ? 1 : .6,
+                child: Material(
+                  color: bar,
+                  borderRadius: BorderRadius.circular(28),
+                  clipBehavior: Clip.antiAlias,
+                  elevation: 0,
+                  child: InkWell(
+                    onTap: enabled ? onContinue : null,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(19, 17, 19, 17),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  line1,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: ink,
+                                    fontSize: 12,
+                                    height: 1.3,
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                )
-                              : Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '${weekdayShort(state.date)} '
-                                            '${slotDayMonth(state.date)} · '
-                                            '${slotTime(option.startMinute)} – '
-                                            '${slotTime(option.endMinute)}',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              height: 20 / 15,
-                                              fontWeight: FontWeight.w700,
-                                              color: palette.text,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${court?.name ?? ''}'
-                                            '${suggested ? ' (gợi ý)' : ''}'
-                                            ' · ${durationLabel(option.durationMinutes)}',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              height: 18 / 13,
-                                              color: palette.muted,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      slotMoney(option.priceMinor),
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        height: 28 / 20,
-                                        fontWeight: FontWeight.w800,
-                                        color: palette.accent,
-                                      ),
-                                    ),
-                                  ],
                                 ),
-                        ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  line2,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: ink.withValues(alpha: .85),
+                                    fontSize: 11,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Tiếp tục',
+                            style: TextStyle(
+                              color: ink,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Icon(Icons.arrow_forward, size: 15, color: ink),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 52,
-                      child: FilledButton(
-                        onPressed: enabled ? onContinue : null,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: palette.accent,
-                          foregroundColor: palette.onAccent,
-                          disabledBackgroundColor: palette.accent.withValues(
-                            alpha: .38,
-                          ),
-                          disabledForegroundColor: palette.onAccent.withValues(
-                            alpha: .8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          textStyle: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        child: const Text('Tiếp tục'),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

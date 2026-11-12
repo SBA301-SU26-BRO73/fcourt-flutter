@@ -49,12 +49,12 @@ void main() {
     (
       name: 'branch picker: 2 hours in three taps',
       path: '/branches/5/slots?date=2030-01-01&branchName=Test%20Branch',
-      taps: ['2 giờ', '07:00 – 09:00'],
+      taps: ['2 giờ', '07:00–09:00'],
     ),
     (
       name: 'single court deep link',
       path: '/courts/9/slots?date=2030-01-01&courtName=Test%20Court&branchName=Test%20Branch',
-      taps: ['07:00 – 08:00'],
+      taps: ['07:00–08:00'],
     ),
   ]) {
     testWidgets(

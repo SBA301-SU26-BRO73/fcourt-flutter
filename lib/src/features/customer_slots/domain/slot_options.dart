@@ -172,4 +172,4 @@ String slotTime(int minute) =>
     '${(minute % 60).toString().padLeft(2, '0')}';
 
 String slotMoney(int minor) =>
-    '${NumberFormat('#,##0.##', 'vi').format(minor / 100)} đ';
+    '${NumberFormat('#,##0.##', 'vi').format(minor / 100)}đ';

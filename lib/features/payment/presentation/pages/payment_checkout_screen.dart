@@ -8,8 +8,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../domain/entities/payment_checkout.dart';
 import '../../domain/repositories/payment_repository.dart';
-import '../../../../app/widgets/fc_widgets.dart';
-import '../widgets/countdown_timer_widget.dart';
+import '../../../../app/theme/tokens.dart';
+import '../../../../app/widgets/wp3b_widgets.dart';
+import '../../../booking_history/presentation/booking_style.dart';
+import '../widgets/payment_parts.dart';
 import '../../../promos/domain/promo_repository.dart';
 import '../../../promos/presentation/promo_checkout_cubit.dart';
 import '../../../promos/presentation/promo_checkout_state.dart';
@@ -162,26 +164,28 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     if (_expired) return _expiredPage();
-    return Scaffold(
-      appBar: AppBar(title: const Text('Thanh toán VietQR')),
-      body: BlocConsumer<PromoCheckoutCubit, PromoCheckoutState>(
-        bloc: _checkout,
-        listenWhen: (old, current) =>
-            !old.freeConfirmed && current.freeConfirmed,
-        listener: (_, state) {
-          if (state.freeConfirmed) widget.onFreeConfirmed?.call();
-        },
-        builder: (context, state) {
-          if (state.loading) {
-            return PopScope(
+    return BlocConsumer<PromoCheckoutCubit, PromoCheckoutState>(
+      bloc: _checkout,
+      listenWhen: (old, current) => !old.freeConfirmed && current.freeConfirmed,
+      listener: (_, state) {
+        if (state.freeConfirmed) widget.onFreeConfirmed?.call();
+      },
+      builder: (context, state) {
+        if (state.loading) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Thanh toán')),
+            body: PopScope(
               canPop: state.retryCode == null,
               child: const Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (state.expired) return _expiredPage().body!;
-          final checkout = state.checkout;
-          if (checkout == null) {
-            return PopScope(
+            ),
+          );
+        }
+        if (state.expired) return _expiredPage();
+        final checkout = state.checkout;
+        if (checkout == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Thanh toán')),
+            body: PopScope(
               canPop: state.retryCode == null,
               child: Center(
                 child: Padding(
@@ -199,44 +203,55 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                   ),
                 ),
               ),
-            );
-          }
-          final money = NumberFormat.currency(
-            locale: 'vi_VN',
-            symbol: '₫',
-            decimalDigits: 0,
-          ).format(checkout.amountVnd);
-          return PopScope(
-            canPop:
-                !state.applying &&
-                !state.freeConfirming &&
-                state.retryCode == null,
-            child: SafeArea(
+            ),
+          );
+        }
+        final theme = Theme.of(context);
+        final colors = theme.colorScheme;
+        final money = formatVnd(checkout.amountVnd);
+        final showReceipt =
+            state.transferAllowed && widget.onUploadReceipt != null;
+        return PopScope(
+          canPop:
+              !state.applying &&
+              !state.freeConfirming &&
+              state.retryCode == null,
+          child: Scaffold(
+            body: SafeArea(
+              bottom: false,
               child: Column(
                 children: [
-                  _HoldBanner(
+                  HoldBanner(
                     expiresAt: checkout.expiresAt,
                     onExpired: () {
                       if (mounted) setState(() => _expired = true);
                     },
                   ),
+                  AppBar(title: const Text('Thanh toán'), primary: false),
                   Expanded(
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 600),
                         child: ListView(
-                          padding: const EdgeInsets.all(20),
+                          padding: EdgeInsets.fromLTRB(
+                            20,
+                            0,
+                            20,
+                            showReceipt ? FloatingBottomBar.clearance : 24,
+                          ),
                           children: [
-                            Text(
-                              checkout.branchName,
-                              style: Theme.of(context).textTheme.titleLarge,
+                            PayBookingSummary(
+                              name: checkout.branchName,
+                              dateLine: _displayDate(checkout.date),
+                              courtLine: checkout.courtName,
+                              code: checkout.bookingCode,
+                              amountText: money,
+                              kind: sportKindOf(
+                                '${checkout.branchName} ${checkout.courtName}',
+                              ),
                             ),
-                            Text(
-                              '${checkout.courtName} · ${_displayDate(checkout.date)}',
-                            ),
-                            Text('Mã đơn: ${checkout.bookingCode}'),
-                            const SizedBox(height: 16),
                             if (widget.promos != null) ...[
+                              const SizedBox(height: 16),
                               PromoCodeInput(
                                 key: ValueKey('promo-$_generation'),
                                 initialCode:
@@ -263,9 +278,9 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                               ),
                               if (state.promo != null)
                                 PromoTotals(promo: state.promo!),
-                              const SizedBox(height: 16),
                             ],
                             if (state.blocked || state.error != null) ...[
+                              const SizedBox(height: 16),
                               Text(
                                 state.error ?? 'Đang chờ đối soát voucher, chưa thể chuyển khoản.',
                               ),
@@ -277,15 +292,45 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                               ),
                             ],
                             if (state.transferAllowed) ...[
-                              Center(
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxWidth: 240,
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  0,
+                                  23,
+                                  0,
+                                  15,
+                                ),
+                                child: Text(
+                                  'Chuyển khoản ngân hàng',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontSize: 18,
+                                    height: 1.25,
+                                    fontWeight: FontWeight.w800,
                                   ),
-                                  child: ColoredBox(
-                                    color: Colors.white,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(12),
+                                ),
+                              ),
+                              _BankPanel(
+                                checkout: checkout,
+                                money: money,
+                                onCopy: _copy,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 17,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 148,
+                                      height: 148,
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: colors.outlineVariant,
+                                        ),
+                                      ),
                                       child:
                                           widget.qrBuilder?.call(
                                             checkout.qrUri,
@@ -296,75 +341,79 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                                             semanticsLabel:
                                                 'Mã VietQR thanh toán',
                                             errorBuilder: (_, _, _) =>
-                                                const SizedBox(
-                                                  height: 240,
-                                                  child: Center(
-                                                    child: Text(
-                                                      'Chưa tải được mã QR. Bạn có thể chuyển khoản theo thông tin bên dưới.',
+                                                const Center(
+                                                  child: Text(
+                                                    'Chưa tải được mã QR. Bạn có thể chuyển khoản theo thông tin ở trên.',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: Color(0xFF3D4A63),
                                                     ),
                                                   ),
                                                 ),
                                           ),
                                     ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: Gap.lg),
-                              FcCard(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: Gap.lg,
-                                  vertical: Gap.sm,
-                                ),
-                                child: Column(
-                                  children: [
-                                    _infoRow('Ngân hàng', checkout.bankName),
-                                    _infoRow(
-                                      'Số tài khoản',
-                                      checkout.accountNumber,
-                                      copyLabel: 'Sao chép số tài khoản',
-                                    ),
-                                    _infoRow(
-                                      'Tên chủ tài khoản',
-                                      checkout.accountName,
-                                    ),
-                                    _infoRow('Số tiền', money),
-                                    _infoRow(
-                                      'Nội dung chuyển khoản',
-                                      checkout.transferContent,
+                                    const SizedBox(width: 18),
+                                    Flexible(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text.rich(
+                                            TextSpan(
+                                              text: 'Viet',
+                                              children: [
+                                                TextSpan(
+                                                  text: 'QR',
+                                                  style: TextStyle(
+                                                    color: Color(0xFFE24C55),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            style: TextStyle(
+                                              fontSize: 22,
+                                              fontStyle: FontStyle.italic,
+                                              fontWeight: FontWeight.w700,
+                                              color: colors.onSurface,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            'Quét mã để chuyển khoản',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  fontSize: 11,
+                                                  color:
+                                                      colors.onSurfaceVariant,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              FilledButton.tonalIcon(
-                                key: const ValueKey('copy-transfer-content'),
-                                onPressed: () =>
-                                    _copy(checkout.transferContent),
-                                icon: const Icon(Icons.copy),
-                                label: const Text(
-                                  'Sao chép nội dung chuyển khoản',
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 16),
-                            if (state.transferAllowed) ...[
-                              OutlinedButton.icon(
-                                onPressed: _saving
-                                    ? null
-                                    : () => _save(checkout),
-                                icon: Icon(
-                                  _saving
-                                      ? Icons.hourglass_top
-                                      : Icons.download,
-                                ),
-                                label: Text(
-                                  _saving
-                                      ? 'Đang lưu…'
-                                      : 'Lưu mã QR vào thư viện ảnh',
+                              Center(
+                                child: TextButton.icon(
+                                  onPressed: _saving
+                                      ? null
+                                      : () => _save(checkout),
+                                  icon: Icon(
+                                    _saving
+                                        ? Icons.hourglass_top
+                                        : Icons.download,
+                                    size: 18,
+                                  ),
+                                  label: Text(
+                                    _saving
+                                        ? 'Đang lưu…'
+                                        : 'Lưu mã QR vào thư viện ảnh',
+                                  ),
                                 ),
                               ),
                             ],
                             if (checkout.amountVnd == 0 && !state.blocked) ...[
+                              const SizedBox(height: 16),
                               const Text(
                                 'Đơn được giảm còn 0 đồng, không cần chuyển khoản.',
                               ),
@@ -387,76 +436,174 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                       ),
                     ),
                   ),
-                  if (state.transferAllowed && widget.onUploadReceipt != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          key: const ValueKey('send-receipt'),
-                          onPressed: widget.onUploadReceipt,
-                          icon: const Icon(Icons.receipt_long),
-                          label: const Text(
-                            'Tôi đã chuyển khoản · Gửi biên lai',
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
-          );
-        },
-      ),
+            bottomNavigationBar: showReceipt
+                ? PayActionBar(
+                    buttonKey: const ValueKey('send-receipt'),
+                    label: 'Gửi biên lai',
+                    onPressed: widget.onUploadReceipt,
+                  )
+                : null,
+          ),
+        );
+      },
     );
   }
-
-  Widget _infoRow(String label, String value, {String? copyLabel}) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    dense: true,
-    title: Text(label),
-    subtitle: SelectableText(value),
-    trailing: copyLabel == null
-        ? null
-        : IconButton(
-            tooltip: copyLabel,
-            constraints: const BoxConstraints.tightFor(
-              width: Gap.touch,
-              height: Gap.touch,
-            ),
-            onPressed: () => _copy(value),
-            icon: const Icon(Icons.copy_outlined),
-          ),
-  );
 }
 
-/// Đồng hồ giữ chỗ cố định trên đầu màn hình, không cuộn mất khi xem số tài khoản.
-class _HoldBanner extends StatelessWidget {
-  const _HoldBanner({required this.expiresAt, required this.onExpired});
-  final DateTime expiresAt;
-  final VoidCallback onExpired;
+/// Bank details (mock-up ".bank"): logo and name, three rows, then the
+/// transfer note with its copy chip.
+class _BankPanel extends StatelessWidget {
+  const _BankPanel({
+    required this.checkout,
+    required this.money,
+    required this.onCopy,
+  });
+  final PaymentCheckout checkout;
+  final String money;
+  final Future<void> Function(String) onCopy;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Material(
-      key: const ValueKey('hold-banner'),
-      color: colors.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Row(
-          children: [
-            Icon(Icons.timer_outlined, color: colors.onSecondaryContainer),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Giữ chỗ còn lại',
-                style: TextStyle(color: colors.onSecondaryContainer),
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final success = context.fc.success;
+    final label = theme.textTheme.bodySmall?.copyWith(
+      color: colors.onSurfaceVariant,
+      fontSize: 11,
+    );
+    final value = theme.textTheme.bodySmall?.copyWith(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      color: colors.onSurface,
+    );
+    Widget row(String name, String text, {Color? color, String? copyTooltip}) =>
+        Padding(
+          padding: const EdgeInsets.only(top: 13),
+          child: Row(
+            children: [
+              Expanded(child: Text(name, style: label)),
+              SelectableText(text, style: value?.copyWith(color: color)),
+              if (copyTooltip != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: InkResponse(
+                    onTap: () => onCopy(text),
+                    radius: 18,
+                    child: Tooltip(
+                      message: copyTooltip,
+                      child: Icon(
+                        Icons.copy_outlined,
+                        size: 15,
+                        color: colors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+    final initial = checkout.bankName.trim().isEmpty
+        ? '?'
+        : checkout.bankName.trim().substring(0, 1).toUpperCase();
+    return PayPanel(
+      padding: 16,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 37,
+                height: 37,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: success.container,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    color: success.color,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  checkout.bankName,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          row(
+            'Số tài khoản',
+            checkout.accountNumber,
+            copyTooltip: 'Sao chép số tài khoản',
+          ),
+          row('Chủ tài khoản', checkout.accountName),
+          row('Số tiền', money, color: colors.primary),
+          const SizedBox(height: 13),
+          Divider(height: 1, thickness: 1, color: colors.outlineVariant),
+          Padding(
+            padding: const EdgeInsets.only(top: 13),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Nội dung chuyển khoản', style: label),
+                      const SizedBox(height: 7),
+                      SelectableText(checkout.transferContent, style: value),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Material(
+                  key: const ValueKey('copy-transfer-content'),
+                  color: colors.primaryContainer,
+                  borderRadius: BorderRadius.circular(18),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => onCopy(checkout.transferContent),
+                    child: Padding(
+                      padding: const EdgeInsets.all(9),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.copy,
+                            size: 12,
+                            color: colors.onPrimaryContainer,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Sao chép',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colors.onPrimaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            CountdownTimerWidget(expiresAt: expiresAt, onExpired: onExpired),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

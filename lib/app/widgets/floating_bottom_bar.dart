@@ -14,6 +14,7 @@ class FloatingBottomBar extends StatelessWidget {
     required this.actionLabel,
     required this.onAction,
     this.caption,
+    this.priceUnit,
     this.actionIcon = Icons.arrow_forward,
     this.filled = false,
     this.loading = false,
@@ -28,6 +29,9 @@ class FloatingBottomBar extends StatelessWidget {
   /// Null disables the action.
   final VoidCallback? onAction;
   final String? caption;
+
+  /// Small suffix after the price, e.g. "/giờ".
+  final String? priceUnit;
   final IconData? actionIcon;
   final bool filled;
   final bool loading;
@@ -81,8 +85,20 @@ class FloatingBottomBar extends StatelessWidget {
                         ),
                       ),
                     if (caption != null) const SizedBox(height: 4),
-                    Text(
-                      priceText,
+                    Text.rich(
+                      TextSpan(
+                        text: priceText,
+                        children: [
+                          if (priceUnit != null)
+                            TextSpan(
+                              text: priceUnit,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ],
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

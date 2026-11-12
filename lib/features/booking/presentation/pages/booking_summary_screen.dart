@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../app/widgets/wp3b_widgets.dart';
+import '../../../booking_history/presentation/booking_style.dart';
+import '../../../payment/presentation/widgets/payment_parts.dart';
 import '../../domain/entities/booking_hold.dart';
 import '../../domain/entities/booking_selection.dart';
 import '../../domain/repositories/booking_repository.dart';
@@ -78,18 +81,48 @@ class _SummaryFormState extends State<_SummaryForm> {
     super.dispose();
   }
 
-  String money(int value) => NumberFormat.currency(
-    locale: 'vi_VN',
-    symbol: '₫',
-    decimalDigits: 0,
-  ).format(value);
+  String money(int value) => formatVnd(value);
   String time(int minutes) =>
       '${(minutes ~/ 60).toString().padLeft(2, '0')}:'
       '${(minutes % 60).toString().padLeft(2, '0')}';
 
+  /// Runs of back-to-back slots as one row: "19:00–21:00 · 4 khung giờ".
+  List<({int start, int end, int count, int price})> _runs(
+    BookingSelection selection,
+  ) {
+    final slots = [...selection.slots]
+      ..sort((a, b) => a.startMinute.compareTo(b.startMinute));
+    final runs = <({int start, int end, int count, int price})>[];
+    for (final slot in slots) {
+      final last = runs.isEmpty ? null : runs.last;
+      if (last != null && last.end == slot.startMinute) {
+        runs[runs.length - 1] = (
+          start: last.start,
+          end: slot.startMinute + 30,
+          count: last.count + 1,
+          price: last.price + slot.priceVnd,
+        );
+      } else {
+        runs.add((
+          start: slot.startMinute,
+          end: slot.startMinute + 30,
+          count: 1,
+          price: slot.priceVnd,
+        ));
+      }
+    }
+    return runs;
+  }
+
   @override
   Widget build(BuildContext context) {
     final selection = widget.arguments.selection;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: colors.onSurfaceVariant,
+      fontSize: 11,
+    );
     return BlocConsumer<BookingCubit, BookingState>(
       listener: (context, state) {
         if (state.checkout case final checkout?) {
@@ -107,112 +140,168 @@ class _SummaryFormState extends State<_SummaryForm> {
         final locked =
             state.status == BookingStatus.submitting ||
             state.status == BookingStatus.held;
+        final dateText =
+            '${weekdayName(selection.date)}, '
+            '${DateFormat('dd/MM/yyyy').format(selection.date)}';
         return Scaffold(
           appBar: AppBar(title: const Text('Tóm tắt đặt sân')),
-          bottomNavigationBar: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (state.error case final message?)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Semantics(
-                        liveRegion: true,
-                        child: Text(
-                          message,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                      ),
-                    ),
-                  FilledButton(
-                    onPressed: locked
-                        ? null
-                        : () {
-                            if (_form.currentState!.validate()) {
-                              context.read<BookingCubit>().submit(
-                                selection,
-                                widget.arguments.guest
-                                    ? 'Khách vãng lai'
-                                    : _name.text,
-                                _phone.text,
-                              );
-                            }
-                          },
-                    child: state.status == BookingStatus.submitting
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Giữ chỗ 5 phút & thanh toán'),
-                  ),
-                ],
-              ),
-            ),
+          bottomNavigationBar: PayActionBar(
+            label: 'Giữ chỗ 5 phút & thanh toán',
+            loading: state.status == BookingStatus.submitting,
+            onPressed: locked
+                ? null
+                : () {
+                    if (_form.currentState!.validate()) {
+                      context.read<BookingCubit>().submit(
+                        selection,
+                        widget.arguments.guest ? 'Khách vãng lai' : _name.text,
+                        _phone.text,
+                      );
+                    }
+                  },
           ),
           body: SafeArea(
+            bottom: false,
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
                 child: Form(
                   key: _form,
                   child: ListView(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(
+                      20,
+                      0,
+                      20,
+                      FloatingBottomBar.clearance + 8,
+                    ),
                     children: [
-                      Text(
-                        selection.branchName,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      Text(selection.courtName),
-                      Text(DateFormat('dd/MM/yyyy').format(selection.date)),
-                      const SizedBox(height: 20),
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              for (final slot in selection.slots)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 6,
+                      PayPanel(
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: SizedBox(
+                                    width: 76,
+                                    height: 60,
+                                    child: SportPhoto(
+                                      sport:
+                                          '${selection.branchName} ${selection.courtName}',
+                                    ),
                                   ),
-                                  child: Wrap(
-                                    alignment: WrapAlignment.spaceBetween,
-                                    spacing: 16,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '${time(slot.startMinute)} – ${time(slot.startMinute + 30)}',
+                                        selection.branchName,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                       ),
-                                      Text(money(slot.priceVnd)),
+                                      const SizedBox(height: 8),
+                                      Text(dateText, style: muted),
+                                      const SizedBox(height: 6),
+                                      Text(selection.courtName, style: muted),
                                     ],
                                   ),
                                 ),
-                              const Divider(),
-                              Text(
-                                '${selection.slots.length} khung giờ · Tổng tạm tính',
-                                style: Theme.of(context).textTheme.titleMedium,
+                              ],
+                            ),
+                            Divider(
+                              height: 25,
+                              thickness: 1,
+                              color: colors.outlineVariant,
+                            ),
+                            for (final run in _runs(selection))
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 5,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text.rich(
+                                        TextSpan(
+                                          text:
+                                              '${time(run.start)}–${time(run.end)}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          children: [
+                                            TextSpan(
+                                              text:
+                                                  '  ·  ${run.count} khung giờ',
+                                              style: muted,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      money(run.price),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              Text(
-                                money(selection.totalVnd),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall,
-                              ),
-                              const Text(
-                                'Số tiền thanh toán sẽ được xác nhận ở bước tiếp theo.',
-                              ),
-                            ],
+                            Divider(
+                              height: 25,
+                              thickness: 1,
+                              color: colors.outlineVariant,
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${selection.slots.length} khung giờ · Tổng tạm tính',
+                                    style: muted?.copyWith(fontSize: 10),
+                                  ),
+                                ),
+                                Text(
+                                  money(selection.totalVnd),
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: colors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
+                        child: Text(
+                          'Số tiền thanh toán sẽ được xác nhận ở bước tiếp theo.',
+                          style: muted,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 23, 0, 15),
+                        child: Text(
+                          'Thông tin liên hệ',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontSize: 18,
+                            height: 1.25,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      if (_needsName)
+                      if (_needsName) ...[
                         TextFormField(
                           controller: _name,
                           enabled: !locked,
@@ -228,6 +317,8 @@ class _SummaryFormState extends State<_SummaryForm> {
                               ? 'Vui lòng nhập họ tên'
                               : null,
                         ),
+                        const SizedBox(height: 12),
+                      ],
                       if (_needsPhone)
                         TextFormField(
                           controller: _phone,
@@ -247,27 +338,84 @@ class _SummaryFormState extends State<_SummaryForm> {
                           validator: validateBookingPhone,
                         ),
                       if (!_needsName && !_needsPhone)
-                        ListTile(
+                        PayPanel(
                           key: const ValueKey('summary-contact'),
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.person_outline),
-                          title: Text(_name.text.trim()),
-                          subtitle: Text(_phone.text.trim()),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 37,
+                                height: 37,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: colors.primaryContainer,
+                                ),
+                                child: Icon(
+                                  Icons.person_outline,
+                                  size: 20,
+                                  color: colors.onPrimaryContainer,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _name.text.trim(),
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(_phone.text.trim(), style: muted),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      const SizedBox(height: 8),
-                      Row(
+                      const SizedBox(height: 16),
+                      Container(
                         key: const ValueKey('hold-notice'),
-                        children: [
-                          const Icon(Icons.timer_outlined, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colors.primaryContainer,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.schedule,
+                              size: 18,
+                              color: colors.onPrimaryContainer,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Chỗ được giữ 5 phút kể từ khi bạn bấm nút bên dưới. Mã khuyến mãi nhập ở bước thanh toán.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontSize: 11,
+                                  color: colors.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (state.error case final message?)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Semantics(
+                            liveRegion: true,
                             child: Text(
-                              'Chỗ được giữ 5 phút kể từ khi bạn bấm nút bên dưới. Mã khuyến mãi nhập ở bước thanh toán.',
-                              style: Theme.of(context).textTheme.bodyMedium,
+                              message,
+                              style: TextStyle(color: colors.error),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
                     ],
                   ),
                 ),

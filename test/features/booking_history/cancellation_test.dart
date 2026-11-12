@@ -168,13 +168,14 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Hủy đặt sân'));
+    await tester.ensureVisible(find.text('Hủy đơn'));
+    await tester.tap(find.text('Hủy đơn'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Đổi lịch');
     await tester.tap(find.text('Xác nhận hủy'));
     await tester.pumpAndSettle();
     expect(find.text('Đã hủy'), findsOneWidget);
     expect(find.text('Đã hủy đặt sân'), findsOneWidget);
-    expect(find.text('Hủy đặt sân'), findsNothing);
+    expect(find.text('Hủy đơn'), findsNothing);
   });
 }

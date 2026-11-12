@@ -355,7 +355,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
             child: ListView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               children: [
                 if (_receipt != null)
                   Padding(
@@ -380,28 +380,62 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                     padding: EdgeInsets.all(Gap.lg),
                     child: Center(child: WaitingRipple()),
                   ),
-                  const Text(
+                  Text(
                     'Đã gửi biên lai · Đang chờ chủ sân xác nhận',
                     textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
-                  const Text(
+                  const SizedBox(height: 8),
+                  Text(
                     'Bạn có thể rời màn hình và quay lại để xem trạng thái.',
                     textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ] else if (_terminal) ...[
-                  Icon(
-                    _receipt!.status == ReceiptStatus.confirmed
-                        ? Icons.check_circle
-                        : Icons.info_outline,
-                    size: 64,
+                  Center(
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _receipt!.status == ReceiptStatus.confirmed
+                            ? context.fc.success.container
+                            : context.fc.danger.container,
+                      ),
+                      child: Icon(
+                        _receipt!.status == ReceiptStatus.confirmed
+                            ? Icons.check_rounded
+                            : Icons.info_outline,
+                        size: 34,
+                        color: _receipt!.status == ReceiptStatus.confirmed
+                            ? context.fc.success.color
+                            : context.fc.danger.color,
+                      ),
+                    ),
                   ),
+                  const SizedBox(height: Gap.md),
                   Text(
                     _receipt!.status == ReceiptStatus.confirmed
                         ? 'Thanh toán đã xác nhận'
                         : 'Thanh toán đã bị từ chối hoặc hủy',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
                   if (_receipt!.rejectionReason != null)
-                    Text(_receipt!.rejectionReason!),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        _receipt!.rejectionReason!,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                   if (_receipt!.status == ReceiptStatus.rejected &&
                       widget.onSupport != null)
                     TextButton(
@@ -409,8 +443,11 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                       child: const Text('Xem hỗ trợ thanh toán'),
                     ),
                 ] else ...[
-                  const Text(
+                  Text(
                     'Ảnh chuyển khoản, tối đa 5 MB. Chọn xong sẽ tự gửi.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   if (_image != null)
