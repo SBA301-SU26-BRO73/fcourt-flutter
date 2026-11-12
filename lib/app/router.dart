@@ -770,13 +770,6 @@ GoRouter createRouter(
               }
               return HomePage(
                 discoveryRepository: dependencies.discoveryRepository,
-                staffToday:
-                    role == UserRole.staff && dependencies.operations != null
-                    ? StaffTodayOrders(
-                        repository: dependencies.operations!,
-                        onOpenSchedule: () => context.go('/staff/schedule'),
-                      )
-                    : null,
               );
             },
           ),
