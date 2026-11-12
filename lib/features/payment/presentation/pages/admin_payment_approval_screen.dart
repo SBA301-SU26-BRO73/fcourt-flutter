@@ -13,12 +13,14 @@ class AdminPaymentApprovalScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.branchId,
+    this.onBack,
     this.onLedger,
     this.onRefunds,
     this.receiptBuilder,
   });
   final AdminPaymentRepository repository;
   final int branchId;
+  final VoidCallback? onBack;
   final VoidCallback? onLedger;
   final VoidCallback? onRefunds;
   final Widget Function(Uri)? receiptBuilder;
@@ -106,6 +108,13 @@ class _AdminPaymentApprovalScreenState
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: const Text('Duyệt biên lai'),
+      leading: widget.onBack == null
+          ? null
+          : IconButton(
+              tooltip: 'Quay lại',
+              onPressed: widget.onBack,
+              icon: const Icon(Icons.arrow_back),
+            ),
       actions: [
         if (widget.onRefunds != null)
           IconButton(
@@ -134,7 +143,11 @@ class _AdminPaymentApprovalScreenState
         children: [
           if (_loading) const LinearProgressIndicator(),
           if (_error != null) ...[
-            OwnerNote(_error!, color: Theme.of(context).colorScheme.error, size: 12),
+            OwnerNote(
+              _error!,
+              color: Theme.of(context).colorScheme.error,
+              size: 12,
+            ),
             TextButton(onPressed: _load, child: const Text('Thử lại')),
           ],
           if (!_loading && _error == null && _payments.isEmpty)
@@ -151,7 +164,10 @@ class _AdminPaymentApprovalScreenState
           for (final payment in _payments)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _ReceiptRow(payment: payment, onTap: () => _review(payment)),
+              child: _ReceiptRow(
+                payment: payment,
+                onTap: () => _review(payment),
+              ),
             ),
           if (_more)
             TextButton(

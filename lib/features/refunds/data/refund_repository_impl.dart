@@ -63,7 +63,7 @@ class RefundRepositoryImpl implements RefundRepository {
     return v.toInt();
   }
 
-  static RefundRequest parse(dynamic r) {
+  static RefundRequest parse(dynamic r, {bool adminList = false}) {
     if (r is! Map ||
         r['id'] is! int ||
         r['id'] <= 0 ||
@@ -79,8 +79,14 @@ class RefundRepositoryImpl implements RefundRepository {
       return v;
     }
 
-    if (!RegExp(r'^970[0-9]{3}$').hasMatch(text('bankBin')) ||
-        !RegExp(r'^[0-9]{6,20}$').hasMatch(text('bankAccountNumber'))) {
+    final bankMissing = adminList && r['bankInfoMissing'] == true;
+    final bankName = bankMissing ? '' : text('bankName');
+    final bankBin = bankMissing ? '' : text('bankBin');
+    final accountNumber = bankMissing ? '' : text('bankAccountNumber');
+    final accountName = bankMissing ? '' : text('bankAccountName');
+    if (!bankMissing &&
+        (!RegExp(r'^970[0-9]{3}$').hasMatch(bankBin) ||
+            !RegExp(r'^[0-9]{6,20}$').hasMatch(accountNumber))) {
       throw const FormatException();
     }
     final status = text('status');
@@ -105,10 +111,10 @@ class RefundRepositoryImpl implements RefundRepository {
       bookingId: r['bookingId'] as int,
       amount: money(r['amount']),
       status: status,
-      bankName: text('bankName'),
-      bankBin: text('bankBin'),
-      accountNumber: text('bankAccountNumber'),
-      accountName: text('bankAccountName'),
+      bankName: bankName,
+      bankBin: bankBin,
+      accountNumber: accountNumber,
+      accountName: accountName,
       reason: text('reason'),
       createdAt: created,
       updatedAt: updated,

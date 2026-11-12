@@ -427,6 +427,7 @@ GoRouter createRouter(
               return AdminPaymentApprovalScreen(
                 repository: repository,
                 branchId: id,
+                onBack: () => context.go(AppRoutes.home),
                 onRefunds: dependencies.adminRefunds == null
                     ? null
                     : () => context.push('/admin/branches/$id/refunds'),
@@ -726,7 +727,7 @@ GoRouter createRouter(
                     bookings: dependencies.adminBookings,
                   ),
                   onReceipts: (id) =>
-                      context.push('/admin/branches/$id/payments'),
+                      context.go('/admin/branches/$id/payments'),
                   onRefunds: (id) =>
                       context.push('/admin/branches/$id/refunds'),
                   onToday: () => context.go('/admin/bookings'),

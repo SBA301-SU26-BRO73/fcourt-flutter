@@ -16,6 +16,8 @@ import 'package:fcourt/features/admin_facility/presentation/pages/court_list_scr
 import 'package:fcourt/features/admin_facility/presentation/pages/pricing_rule_config_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/time_slot_template_screen.dart';
 import 'package:fcourt/features/health/domain/entities/health_status.dart';
+import 'package:fcourt/features/payment/domain/entities/pending_payment.dart';
+import 'package:fcourt/features/payment/domain/repositories/admin_payment_repository.dart';
 import 'package:fcourt/features/health/domain/repositories/health_repository.dart';
 import 'package:fcourt/src/features/customer_discovery/domain/discovery_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,8 +40,9 @@ class _FakeHealthRepository implements HealthRepository {
 Future<void> pumpAt(
   WidgetTester tester,
   AdminFacilityDependencies admin,
-  String location,
-) async {
+  String location, {
+  AdminPaymentRepository? payments,
+}) async {
   final auth = MockAuthRepository();
   when(() => auth.restoreSession()).thenAnswer((_) async => adminUser);
   final authBloc = AuthBloc(RestoreSession(auth), Logout(auth))
@@ -55,6 +58,7 @@ Future<void> pumpAt(
       catalogRepository: MockCatalogRepository(),
       discoveryRepository: _FakeDiscoveryRepository(),
       adminFacility: admin,
+      adminPaymentRepository: payments,
     ),
     authBloc,
     refreshListenable: refresh,
@@ -83,6 +87,26 @@ class _FakeDiscoveryRepository implements DiscoveryRepository {
     int page = 0,
   }) async =>
       const BranchPage(branches: [], page: 0, totalPages: 0, totalElements: 0);
+}
+
+class _PendingPayments implements AdminPaymentRepository {
+  @override
+  Future<List<PendingPayment>> pending(int branchId, {int offset = 0}) async =>
+      [
+        PendingPayment(
+          id: 1,
+          bookingId: 2,
+          bookingCode: 'FS-TEST',
+          customerName: 'Khách test',
+          amountVnd: 40000,
+          receiptUri: Uri.parse('https://res.cloudinary.com/demo/receipt.png'),
+          submittedAt: DateTime(2026),
+        ),
+      ];
+  @override
+  Future<void> confirm(int paymentId) async {}
+  @override
+  Future<void> reject(int paymentId, String reason) async {}
 }
 
 class _MockDashboardRepository extends Mock implements DashboardRepository {}
@@ -151,6 +175,19 @@ void main() {
       dashboardRepository: dashboard,
       analyticsRepository: analytics,
     );
+  });
+
+  testWidgets('owner receipt count opens approval list and returns home', (
+    tester,
+  ) async {
+    await pumpAt(tester, admin, '/home', payments: _PendingPayments());
+    await tester.tap(find.byKey(const ValueKey('todo-receipts')));
+    await tester.pumpAndSettle();
+    expect(find.text('Duyệt biên lai'), findsOneWidget);
+    expect(find.textContaining('FS-TEST'), findsOneWidget);
+    await tester.tap(find.byTooltip('Quay lại'));
+    await tester.pumpAndSettle();
+    expect(find.text('Việc cần làm'), findsWidgets);
   });
 
   final cases = <String, Type>{

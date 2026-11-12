@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -65,24 +67,51 @@ class OwnerTodoLoader {
     var receiptCount = 0, refundCount = 0, todayCount = 0;
     int? receiptBranch, refundBranch;
     for (final Branch branch in owned) {
-      final pending = await payments?.pending(branch.id) ?? const [];
-      if (pending.isNotEmpty) {
-        receiptBranch ??= branch.id;
-        receiptCount += pending.length;
-        receipts.addAll(pending.map((p) => TodoReceipt(branch.id, p)));
+      try {
+        final pending = await payments?.pending(branch.id) ?? const [];
+        if (pending.isNotEmpty) {
+          receiptBranch ??= branch.id;
+          receiptCount += pending.length;
+          receipts.addAll(pending.map((p) => TodoReceipt(branch.id, p)));
+        }
+      } catch (error, stack) {
+        developer.log(
+          'Failed to load pending receipts for branch ${branch.id}',
+          name: 'OwnerTodo',
+          error: error,
+          stackTrace: stack,
+        );
       }
-      final due = await refunds?.pending(branch.id) ?? const [];
-      if (due.isNotEmpty) {
-        refundBranch ??= branch.id;
-        refundCount += due.length;
+      try {
+        final due = await refunds?.pending(branch.id) ?? const [];
+        if (due.isNotEmpty) {
+          refundBranch ??= branch.id;
+          refundCount += due.length;
+        }
+      } catch (error, stack) {
+        developer.log(
+          'Failed to load pending refunds for branch ${branch.id}',
+          name: 'OwnerTodo',
+          error: error,
+          stackTrace: stack,
+        );
       }
-      final page = await bookings?.search(
-        AdminBookingQuery(
-          branchId: branch.id,
-          date: DateTime(today.year, today.month, today.day),
-        ),
-      );
-      todayCount += page?.total ?? 0;
+      try {
+        final page = await bookings?.search(
+          AdminBookingQuery(
+            branchId: branch.id,
+            date: DateTime(today.year, today.month, today.day),
+          ),
+        );
+        todayCount += page?.total ?? 0;
+      } catch (error, stack) {
+        developer.log(
+          'Failed to load bookings for branch ${branch.id}',
+          name: 'OwnerTodo',
+          error: error,
+          stackTrace: stack,
+        );
+      }
     }
     return OwnerTodoSummary(
       receipts: receipts,

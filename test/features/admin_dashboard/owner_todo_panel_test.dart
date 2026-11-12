@@ -49,23 +49,28 @@ class FakePayments implements AdminPaymentRepository {
 
 class FakeRefunds implements AdminRefunds {
   int count = 0;
+  bool fail = false;
   @override
-  Future<List<RefundRequest>> pending(int branchId, {int page = 0}) async => [
-    for (var i = 0; i < count; i++)
-      RefundRequest(
-        id: i,
-        bookingId: 1,
-        amount: 1,
-        status: 'PENDING',
-        bankName: 'b',
-        bankBin: '1',
-        accountNumber: '1',
-        accountName: 'n',
-        reason: 'r',
-        createdAt: DateTime(2026),
-        updatedAt: DateTime(2026),
-      ),
-  ];
+  Future<List<RefundRequest>> pending(int branchId, {int page = 0}) async {
+    if (fail) throw const FormatException('Bad refund row');
+    return [
+      for (var i = 0; i < count; i++)
+        RefundRequest(
+          id: i,
+          bookingId: 1,
+          amount: 1,
+          status: 'PENDING',
+          bankName: 'b',
+          bankBin: '1',
+          accountNumber: '1',
+          accountName: 'n',
+          reason: 'r',
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        ),
+    ];
+  }
+
   @override
   Future<RefundRequest> approve(int id) => throw UnimplementedError();
   @override
@@ -165,6 +170,15 @@ void main() {
     expect(bookings.queries.single.date, isNotNull);
     await tester.tap(find.byKey(const ValueKey('todo-receipts')));
     expect(opened, 1);
+  });
+
+  testWidgets('refund failure does not hide pending receipts', (tester) async {
+    tall(tester);
+    refunds.fail = true;
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('todo-receipt-1')), findsOneWidget);
+    expect(find.text('Không tải được việc cần làm.'), findsNothing);
   });
 
   testWidgets('approves a receipt in two taps from the card', (tester) async {

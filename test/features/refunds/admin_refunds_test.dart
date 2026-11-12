@@ -38,6 +38,33 @@ class Admin implements AdminRefunds {
 }
 
 void main() {
+  test(
+    'pending keeps refunds without bank details and skips malformed rows',
+    () async {
+      final missingBank = {
+        ...refundJson(),
+        'bankInfoMissing': true,
+        'bankName': null,
+        'bankBin': null,
+        'bankAccountNumber': null,
+        'bankAccountName': null,
+      };
+      final adapter = FakeAdapter(
+        (_) => jsonResponse(200, [
+          missingBank,
+          {'id': 2},
+        ]),
+      );
+      final rows = await AdminRefundsImpl(Dio()..httpClientAdapter = adapter)
+          .pending(7);
+      expect(rows, hasLength(1));
+      expect(rows.single.bankBin, isEmpty);
+      expect(
+        () => RefundRepositoryImpl.parse(missingBank),
+        throwsFormatException,
+      );
+    },
+  );
   test('reverse QR preserves bank/account/whole amount exactly', () {
     final qr = refundQr(RefundRepositoryImpl.parse(refundJson()));
     expect(qr.host, 'img.vietqr.io');
