@@ -17,11 +17,7 @@ void main() {
       'COMPLETED',
       'CANCELLED',
     ]) {
-      final expected = {
-        'CONFIRMED',
-        'CHECKED_IN',
-        'COMPLETED',
-      }.contains(status);
+      final expected = {'CONFIRMED', 'CHECKED_IN'}.contains(status);
       expect(
         BookingRepositoryImpl.parse({...raw(), 'status': status}).hasTicket,
         expected,
@@ -38,7 +34,7 @@ void main() {
     }
   });
   testWidgets(
-    'backend completed booking retains midnight schedule and QR action',
+    'completed booking retains its schedule and hides the check-in QR action',
     (tester) async {
       final adapter = FakeAdapter(
         (_) => jsonResponse(200, {
@@ -69,9 +65,8 @@ void main() {
       expect(find.text('Đã hoàn thành'), findsOneWidget);
       expect(find.textContaining('23:30–00:00'), findsOneWidget);
       expect(find.text('Hủy đặt sân'), findsNothing);
-      await tester.ensureVisible(find.text('Xuất trình vé QR'));
-      await tester.tap(find.text('Xuất trình vé QR'));
-      expect(ticket, 1);
+      expect(find.text('Xuất trình vé QR'), findsNothing);
+      expect(ticket, isNull);
       expect(adapter.requests.single.path, '/api/bookings/1');
     },
   );

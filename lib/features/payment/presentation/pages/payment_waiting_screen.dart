@@ -238,15 +238,16 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
     }
   }
 
-  Future<void> _pick(bool camera) async {
+  Future<void> _pick() async {
     if (_busy) return;
     final generation = _generation;
+    ReceiptImage? selected;
     setState(() => _busy = true);
     try {
-      final image = await widget.picker.pick(camera: camera);
-      if (_active(generation) && image != null) {
+      selected = await widget.picker.pick(camera: false);
+      if (_active(generation) && selected != null) {
         setState(() {
-          _image = image;
+          _image = selected;
           _error = null;
         });
       }
@@ -255,6 +256,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
     } finally {
       if (_active(generation)) setState(() => _busy = false);
     }
+    if (_active(generation) && selected != null) unawaited(_upload());
   }
 
   Future<void> _upload() async {
@@ -307,8 +309,8 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
               )
             : null,
       ),
-      bottomNavigationBar: submitted &&
-              (widget.onHome != null || widget.onViewBooking != null)
+      bottomNavigationBar:
+          submitted && (widget.onHome != null || widget.onViewBooking != null)
           ? SafeArea(
               top: false,
               child: Padding(
@@ -424,9 +426,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                       child: const Text('Xem hỗ trợ thanh toán'),
                     ),
                 ] else ...[
-                  const Text(
-                    'Chụp hoặc chọn ảnh biên lai chuyển khoản. Ảnh sẽ được nén trước khi gửi (tối đa 5MB).',
-                  ),
+                  const Text('Chọn ảnh biên lai chuyển khoản. Tối đa 5 MB.'),
                   const SizedBox(height: 16),
                   if (_image != null)
                     Padding(
@@ -442,39 +442,32 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                         ),
                       ),
                     ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _busy ? null : () => _pick(true),
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text('Chụp ảnh'),
-                        ),
+                  if (!_busy && _error != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _image == null ? _pick : _upload,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Thử lại'),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _busy ? null : () => _pick(false),
-                          icon: const Icon(Icons.photo),
-                          label: Text(
-                            _image == null ? 'Chọn ảnh' : 'Chọn ảnh khác',
-                          ),
-                        ),
+                    ),
+                  ] else ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _busy ? null : _pick,
+                        icon: const Icon(Icons.upload),
+                        label: const Text('Tải biên lai lên'),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                    ),
+                  ],
                   if (_busy) ...[
                     LinearProgressIndicator(
                       value: _progress > 0 ? _progress : null,
                     ),
                     const SizedBox(height: 12),
                   ],
-                  FilledButton.icon(
-                    onPressed: _busy || _image == null ? null : _upload,
-                    icon: const Icon(Icons.upload),
-                    label: const Text('Gửi biên lai'),
-                  ),
                 ],
                 if (_error != null) ...[
                   Text(

@@ -18,8 +18,7 @@ class Booking {
   final String? address, phone, checkInCode, paymentStatus;
   final List<String> slots;
   bool get hasTicket =>
-      {'CONFIRMED', 'CHECKED_IN', 'COMPLETED'}.contains(status) &&
-      checkInCode != null;
+      {'CONFIRMED', 'CHECKED_IN'}.contains(status) && checkInCode != null;
   DateTime? get startsAt => slots.isEmpty
       ? null
       : DateTime.tryParse('${date}T${slots.first.substring(0, 5)}:00+07:00');

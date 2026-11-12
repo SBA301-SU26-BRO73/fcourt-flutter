@@ -27,6 +27,7 @@ const publicRoutes = {
   AppRoutes.registerCustomer,
   AppRoutes.registerOwner,
   AppRoutes.forgotPassword,
+  '/lookup',
 };
 
 /// Khách chưa đăng nhập được xem chi nhánh, sân và lưới slot (BE mở `GET /api/public/**`);
@@ -44,7 +45,12 @@ bool isGuestBrowseRoute(String location) =>
 /// - Chưa đăng nhập: chỉ được vào các màn công khai.
 /// - Đã đăng nhập: không quay lại màn đăng nhập, đăng ký hay chờ.
 /// - Màn hình của một vai trò (ví dụ danh mục của super admin): vai trò khác bị đưa về trang chủ.
-String? authRedirect(AuthStatus status, String location, {UserRole? role}) {
+String? authRedirect(
+  AuthStatus status,
+  String location, {
+  UserRole? role,
+  String? returnTo,
+}) {
   if (location == AppRoutes.resetPassword) return null;
   switch (status) {
     case AuthStatus.unknown:
@@ -58,6 +64,22 @@ String? authRedirect(AuthStatus status, String location, {UserRole? role}) {
           ? null
           : AppRoutes.offlineCheckIn;
     case AuthStatus.authenticated:
+      if (location == AppRoutes.login && returnTo != null) {
+        final candidate = Uri.tryParse(returnTo);
+        if (candidate != null &&
+            candidate.hasAuthority == false &&
+            candidate.path.startsWith('/') &&
+            !candidate.path.startsWith('//') &&
+            !publicRoutes.contains(candidate.path) &&
+            candidate.path != AppRoutes.splash) {
+          final redirect = authRedirect(
+            AuthStatus.authenticated,
+            candidate.path,
+            role: role,
+          );
+          if (redirect == null) return candidate.toString();
+        }
+      }
       final isEntryScreen =
           publicRoutes.contains(location) ||
           location == AppRoutes.splash ||

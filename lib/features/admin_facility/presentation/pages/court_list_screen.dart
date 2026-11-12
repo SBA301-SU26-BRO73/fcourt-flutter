@@ -154,7 +154,7 @@ class CourtListScreen extends StatelessWidget {
           );
         }
         return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 112),
           // One full-width card per row on phones so the status badge and the
           // three action icons fit on one line; more columns on wider screens.
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(

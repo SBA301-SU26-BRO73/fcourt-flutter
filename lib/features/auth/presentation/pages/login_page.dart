@@ -183,6 +183,10 @@ class _LoginPageState extends State<LoginPage> {
                           child: const Text('Xem sân không cần đăng nhập'),
                         ),
                         TextButton(
+                          onPressed: () => context.push('/lookup'),
+                          child: const Text('Tra cứu đơn khách vãng lai'),
+                        ),
+                        TextButton(
                           onPressed: () =>
                               context.push(AppRoutes.registerOwner),
                           child: const Text('Đăng ký làm chủ sân'),

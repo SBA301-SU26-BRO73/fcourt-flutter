@@ -7,9 +7,15 @@ import '../../features/auth/domain/entities/user_role.dart';
 import '../auth_redirect.dart';
 
 class AppNavigation extends StatelessWidget {
-  const AppNavigation({super.key, required this.role, this.selectedIndex = 0});
+  const AppNavigation({
+    super.key,
+    required this.role,
+    this.selectedIndex = 0,
+    this.unreadCount = 0,
+  });
   final UserRole role;
   final int selectedIndex;
+  final int unreadCount;
   @override
   Widget build(BuildContext context) {
     final customer = role == UserRole.customer;
@@ -71,7 +77,14 @@ class AppNavigation extends StatelessWidget {
           label: customer ? 'Đã đặt' : 'Vận hành',
         ),
         const GlassTab(icon: Icon(CupertinoIcons.clock), label: 'Hoạt động'),
-        const GlassTab(icon: Icon(CupertinoIcons.bell), label: 'Thông báo'),
+        GlassTab(
+          icon: Badge(
+            isLabelVisible: unreadCount > 0,
+            smallSize: 8,
+            child: const Icon(CupertinoIcons.bell),
+          ),
+          label: 'Thông báo',
+        ),
       ],
     );
     return LayoutBuilder(

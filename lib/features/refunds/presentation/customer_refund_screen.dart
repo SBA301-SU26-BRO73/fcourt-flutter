@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../core/error/failure.dart';
 import '../../transactions/presentation/transaction_widgets.dart';
@@ -10,14 +14,20 @@ class CustomerRefundScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.bookingId,
+    this.userId,
   });
   final RefundRepository repository;
   final int bookingId;
+  final int? userId;
   @override
   State<CustomerRefundScreen> createState() => _CustomerRefundScreenState();
 }
 
 class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
+  String? get _savedBankDetailsKey => widget.userId == null
+      ? null
+      : 'fcourt.refund.bank-details.${widget.userId}';
+  final _secureStorage = const FlutterSecureStorage();
   final _form = GlobalKey<FormState>();
   final _account = TextEditingController(),
       _name = TextEditingController(),
@@ -31,6 +41,33 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
   void initState() {
     super.initState();
     _load();
+    unawaited(_restoreBankDetails());
+  }
+
+  Future<void> _restoreBankDetails() async {
+    try {
+      final key = _savedBankDetailsKey;
+      if (key == null) return;
+      final value = await _secureStorage.read(key: key);
+      if (!mounted || value == null) return;
+      final details = jsonDecode(value);
+      if (details is! Map<String, dynamic> ||
+          _account.text.isNotEmpty ||
+          _name.text.isNotEmpty) {
+        return;
+      }
+      final bankBin = details['bankBin'];
+      final account = details['accountNumber'];
+      final name = details['accountName'];
+      if (bankBin is String &&
+          vietnamBanks.any((bank) => bank.bin == bankBin)) {
+        setState(() => _bank = bankBin);
+      }
+      if (account is String) _account.text = account;
+      if (name is String) _name.text = name;
+    } catch (_) {
+      // A missing or unreadable local value must not block a refund request.
+    }
   }
 
   @override
@@ -93,6 +130,12 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
           _reason.text,
         ),
       );
+      final details = {
+        'bankBin': bank.bin,
+        'accountNumber': _account.text,
+        'accountName': _name.text,
+      };
+      unawaited(_saveBankDetails(details));
       if (mounted && generation == _generation) {
         setState(
           () => _state = RefundState(
@@ -112,6 +155,16 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
       }
     } finally {
       if (mounted && generation == _generation) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _saveBankDetails(Map<String, String> details) async {
+    try {
+      final key = _savedBankDetailsKey;
+      if (key == null) return;
+      await _secureStorage.write(key: key, value: jsonEncode(details));
+    } catch (_) {
+      // The refund request is already accepted; local convenience is optional.
     }
   }
 
@@ -152,30 +205,11 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                 Text(
                   'Yêu cầu bị từ chối: ${request.note ?? 'Vui lòng liên hệ chủ sân'}',
                 ),
-              Stepper(
-                currentStep: request.step,
-                physics: const NeverScrollableScrollPhysics(),
-                controlsBuilder: (_, _) => const SizedBox.shrink(),
-                steps: [
-                  for (final title in const [
-                    'Đã gửi yêu cầu',
-                    'Admin tiếp nhận',
-                    'Đang chuyển khoản',
-                    'Đã hoàn tất',
-                  ])
-                    Step(
-                      title: Text(title),
-                      content: const SizedBox.shrink(),
-                      isActive:
-                          request.step >=
-                          const [
-                            'Đã gửi yêu cầu',
-                            'Admin tiếp nhận',
-                            'Đang chuyển khoản',
-                            'Đã hoàn tất',
-                          ].indexOf(title),
-                    ),
-                ],
+              _RefundProgress(step: request.step),
+              const SizedBox(height: 12),
+              Text(
+                'Thông tin nhận tiền',
+                style: Theme.of(context).textTheme.titleSmall,
               ),
               Text(
                 '${request.bankName} · ${request.accountNumber}\n${request.accountName}',
@@ -198,6 +232,7 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                     const Text(
                       'Kiểm tra kỹ tài khoản nhận tiền. Chủ sân sẽ chuyển khoản thủ công sau khi duyệt yêu cầu.',
                     ),
+                    const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       initialValue: _bank,
                       isExpanded: true,
@@ -214,6 +249,7 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                           ? null
                           : (v) => setState(() => _bank = v!),
                     ),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: _account,
                       enabled: !_busy,
@@ -227,6 +263,7 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                           ? null
                           : 'Nhập số tài khoản từ 6–20 chữ số',
                     ),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: _name,
                       enabled: !_busy,
@@ -238,6 +275,7 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                           ? null
                           : 'Nhập tên người thụ hưởng',
                     ),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: _reason,
                       enabled: !_busy,
@@ -250,6 +288,7 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                           ? 'Vui lòng nhập lý do'
                           : null,
                     ),
+                    const SizedBox(height: 16),
                     FilledButton(
                       onPressed: _busy ? null : _request,
                       child: Text(
@@ -262,6 +301,45 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RefundProgress extends StatelessWidget {
+  const _RefundProgress({required this.step});
+  final int step;
+
+  @override
+  Widget build(BuildContext context) {
+    const labels = [
+      'Đã gửi yêu cầu hoàn tiền',
+      'Chủ sân đã duyệt',
+      'Đang chuyển khoản',
+      'Đã hoàn tất',
+    ];
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        for (var index = 0; index < labels.length; index++)
+          Row(
+            children: [
+              Icon(
+                index <= step
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
+                color: index <= step ? colors.primary : colors.outline,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(labels[index])),
+              if (index < labels.length - 1)
+                Text(
+                  index < step ? 'Hoàn tất' : 'Đang chờ',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+          ),
+      ],
     );
   }
 }

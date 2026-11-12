@@ -663,6 +663,13 @@ void main() {
       await pump(tester);
       expect(find.text('Bao sân - FCourt Quận 7'), findsOneWidget);
       expect(find.text('Bao tất cả các sân'), findsOneWidget);
+      expect(
+        tester
+            .widget<CheckboxListTile>(find.byKey(const Key('all-courts')))
+            .value,
+        isFalse,
+      );
+      await tester.tap(find.byKey(const Key('all-courts')));
       await tester.tap(find.byKey(const Key('whole-day')));
       await tester.tap(
         find.descendant(
@@ -703,8 +710,6 @@ void main() {
               CourtLockGroup(groupId: 'g-3', locks: [_lock(courtId: 6)]),
         );
         await pump(tester);
-        await tester.tap(find.byKey(const Key('all-courts')));
-        await tester.pump();
         await tester.enterText(find.byKey(const Key('lock-reason')), 'Sửa sàn');
         await tester.tap(find.byKey(const Key('submit-out-of-service')));
         await tester.pump();
@@ -749,6 +754,7 @@ void main() {
           find.byKey(const Key('lock-reason')),
           'Giải đấu',
         );
+        await tester.tap(find.byKey(const Key('all-courts')));
         await tester.tap(find.byKey(const Key('submit-out-of-service')));
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('lock-conflicts')), findsOneWidget);

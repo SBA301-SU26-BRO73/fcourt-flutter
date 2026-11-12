@@ -18,7 +18,7 @@ class DeviceRegistry {
     final deviceId = await _store.deviceId();
     final appVersion = await _appVersion();
     await _dio.put<void>(
-      '/devices',
+      '/api/notifications/devices',
       data: {
         'deviceId': deviceId,
         'token': token,
@@ -33,7 +33,7 @@ class DeviceRegistry {
     try {
       if (deleteRemote) {
         final deviceId = await _store.deviceId();
-        await _dio.delete<void>('/devices/$deviceId');
+        await _dio.delete<void>('/api/notifications/devices/$deviceId');
       }
     } finally {
       await _store.clearToken();

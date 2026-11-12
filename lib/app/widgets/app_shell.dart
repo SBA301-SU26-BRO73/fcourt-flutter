@@ -7,40 +7,84 @@ import '../auth_redirect.dart';
 import 'app_backdrop.dart';
 import 'app_navigation.dart';
 import '../../features/auth/domain/entities/user_role.dart';
+import '../../features/notifications/domain/app_notification.dart';
 
 /// One persistent navigation surface for every signed-in destination.
-class AppShell extends StatelessWidget {
-  const AppShell({super.key, required this.location, required this.child});
+class AppShell extends StatefulWidget {
+  const AppShell({
+    super.key,
+    required this.location,
+    required this.child,
+    this.notificationsRepository,
+  });
   final String location;
   final Widget child;
+  final NotificationsRepository? notificationsRepository;
+
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  late Future<int> _unreadCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _unreadCount = _loadUnreadCount(widget.notificationsRepository);
+  }
+
+  @override
+  void didUpdateWidget(AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.notificationsRepository != widget.notificationsRepository) {
+      _unreadCount = _loadUnreadCount(widget.notificationsRepository);
+    } else if (oldWidget.location != widget.location &&
+        (oldWidget.location.startsWith('/notifications') ||
+            widget.location.startsWith('/notifications'))) {
+      _unreadCount = _loadUnreadCount(widget.notificationsRepository);
+    }
+  }
+
+  Future<int> _loadUnreadCount(NotificationsRepository? repository) async {
+    if (repository == null) return 0;
+    try {
+      return await repository.unreadCount();
+    } catch (_) {
+      return 0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.select((AuthBloc bloc) => bloc.state.user);
     if (user == null ||
-        publicRoutes.contains(location) ||
-        location == AppRoutes.splash ||
-        location == AppRoutes.resetPassword ||
-        location == AppRoutes.offlineCheckIn ||
-        location.startsWith('/profile') ||
-        location == AppRoutes.settings ||
-        location.startsWith('/notifications/') ||
-        location.startsWith('/branches/') ||
-        location.startsWith('/courts/') ||
-        location.startsWith('/booking/') ||
-        location.startsWith('/bookings/') ||
-        location.startsWith('/payments/') && location != '/payments/history') {
-      return child;
+        publicRoutes.contains(widget.location) ||
+        widget.location == AppRoutes.splash ||
+        widget.location == AppRoutes.resetPassword ||
+        widget.location == AppRoutes.offlineCheckIn ||
+        widget.location.startsWith('/profile') ||
+        widget.location == AppRoutes.settings ||
+        widget.location == '/lookup' ||
+        widget.location.startsWith('/notifications/') ||
+        widget.location.startsWith('/branches/') ||
+        widget.location.startsWith('/courts/') ||
+        widget.location.startsWith('/booking/') ||
+        widget.location.startsWith('/bookings/') ||
+        widget.location.startsWith('/payments/') &&
+            widget.location != '/payments/history') {
+      return widget.child;
     }
     final customer = user.role == UserRole.customer;
-    final selected = location == '/activity'
+    final selected = widget.location == '/activity'
         ? 2
-        : location.startsWith('/notifications')
+        : widget.location.startsWith('/notifications')
         ? 3
-        : location.startsWith('/bookings') ||
-              location.startsWith('/payments') ||
-              location.startsWith('/admin/bookings') ||
-              location.startsWith('/staff/schedule') ||
-              location == AppRoutes.superAdminOverview
+        : widget.location.startsWith('/bookings') ||
+              widget.location.startsWith('/payments') ||
+              widget.location.startsWith('/admin/bookings') ||
+              widget.location.startsWith('/staff/schedule') ||
+              widget.location == AppRoutes.superAdminOverview
         ? 1
         : 0;
     return Material(
@@ -54,7 +98,7 @@ class AppShell extends StatelessWidget {
         extendBody: customer,
         edgeFade: false,
         bottomBarHeight: 96,
-        bottomBar: AppNavigation(role: user.role, selectedIndex: selected),
+        bottomBar: _navigation(user.role, selected),
         body: Theme(
           data: Theme.of(context),
           child: customer
@@ -65,10 +109,25 @@ class AppShell extends StatelessWidget {
                     padding: MediaQuery.paddingOf(context)
                         .copyWith(bottom: floatingNavClearance(context)),
                   ),
-                  child: child,
+                  child: widget.child,
                 )
-              : child,
+              : widget.child,
         ),
+      ),
+    );
+  }
+
+  Widget _navigation(UserRole role, int selected) {
+    final repository = widget.notificationsRepository;
+    if (repository == null) {
+      return AppNavigation(role: role, selectedIndex: selected);
+    }
+    return FutureBuilder<int>(
+      future: _unreadCount,
+      builder: (context, snapshot) => AppNavigation(
+        role: role,
+        selectedIndex: selected,
+        unreadCount: snapshot.data ?? 0,
       ),
     );
   }
