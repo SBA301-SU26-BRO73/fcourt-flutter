@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/widgets/wp3b_widgets.dart';
+
 import '../domain/schedule.dart';
 import '../domain/schedule_cells.dart';
 import 'schedule_page.dart';
@@ -130,14 +132,20 @@ class _WeekBoardState extends State<WeekBoard> {
           child: InkWell(
             onTap: () => showDialog<void>(
               context: context,
-              builder: (context) => AlertDialog(
-                title: Text(calendarDate(day)),
-                content: SingleChildScrollView(child: Text(text)),
+              builder: (context) => Wp3bDialog(
+                icon: Icons.event_note_outlined,
+                title: calendarDate(day),
+                content: Wp3bInfoBlock(
+                  children: [
+                    for (final s in sessions)
+                      Wp3bInfoRow(
+                        '${s.start}–${s.end}',
+                        '${s.name.isEmpty ? 'Khách vãng lai' : s.name} · ${sessionLabel(s.status)}${s.lateCheckIn ? ' · Trễ nhận sân' : ''}',
+                      ),
+                  ],
+                ),
                 actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Đóng'),
-                  ),
+                  Wp3bAction('Đóng', onPressed: () => Navigator.pop(context)),
                 ],
               ),
             ),

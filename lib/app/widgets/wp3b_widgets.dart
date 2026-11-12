@@ -11,3 +11,4 @@ export 'photo_card.dart';
 export 'sport_circle_icon.dart';
 export 'sport_icon.dart';
 export 'tint_tag.dart';
+export 'wp3b_dialog.dart';
