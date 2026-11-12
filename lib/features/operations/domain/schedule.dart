@@ -20,6 +20,18 @@ class CourtSession {
   final bool endingSoon;
   final bool lateCheckIn;
   bool get playing => status == 'CHECKED_IN';
+  bool get canCheckIn => status == 'CONFIRMED';
+  CourtSession withStatus(String value) => CourtSession(
+    bookingId: bookingId,
+    date: date,
+    start: start,
+    end: end,
+    status: value,
+    name: name,
+    phone: phone,
+    endingSoon: endingSoon,
+    lateCheckIn: lateCheckIn,
+  );
 }
 
 class CourtSchedule {
@@ -61,6 +73,9 @@ abstract class OperationsRepository {
   Future<BranchSchedule> today();
   Future<TicketPreview> preview(String code);
   Future<int> checkIn(String code, String key, {bool manual = false});
+
+  /// Nhận sân một chạm theo mã đơn (lấy từ lịch hôm nay), không cần mã vé.
+  Future<int> checkInByBooking(int bookingId, String key);
 }
 
 DateTime weekMonday(DateTime date) => DateTime(

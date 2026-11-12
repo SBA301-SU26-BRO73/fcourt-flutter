@@ -77,4 +77,9 @@ class OfflineOperations implements OperationsRepository {
     }
     return remote!.checkIn(code, key, manual: manual);
   }
+
+  @override
+  Future<int> checkInByBooking(int bookingId, String key) => remote == null
+      ? Future.error(const NetworkFailure('Cần có mạng để nhận sân một chạm'))
+      : remote!.checkInByBooking(bookingId, key);
 }
