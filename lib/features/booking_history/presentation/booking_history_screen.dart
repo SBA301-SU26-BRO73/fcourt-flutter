@@ -267,7 +267,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                                         ),
                                         const SizedBox(height: 5),
                                         Text(
-                                          booking.slots.join(' · '),
+                                          mergeSlotRanges(booking.slots).join(' · '),
                                           style: TextStyle(
                                             color: colors.onSurfaceVariant,
                                           ),

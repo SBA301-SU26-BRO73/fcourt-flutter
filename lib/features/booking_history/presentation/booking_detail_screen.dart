@@ -262,7 +262,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ListTile(
                     leading: const Icon(Icons.schedule),
                     title: const Text('Khung giờ'),
-                    subtitle: Text(b.slots.join(' · ')),
+                    subtitle: Text(mergeSlotRanges(b.slots).join(' · ')),
                   ),
                   const Divider(indent: 16, endIndent: 16),
                   ListTile(
