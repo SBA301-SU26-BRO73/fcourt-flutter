@@ -161,7 +161,12 @@ void main() {
     });
 
     test('khách chưa đăng nhập xem được chi nhánh, sân và lưới slot nhưng không đặt được', () {
-      for (final path in ['/branches', '/branches/12', '/courts/9/slots']) {
+      for (final path in [
+        '/branches',
+        '/branches/12',
+        '/branches/12/slots',
+        '/courts/9/slots',
+      ]) {
         expect(
           authRedirect(AuthStatus.unauthenticated, path),
           isNull,

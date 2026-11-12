@@ -35,6 +35,7 @@ const publicRoutes = {
 bool isGuestBrowseRoute(String location) =>
     location == '/branches' ||
     RegExp(r'^/branches/[0-9]+$').hasMatch(location) ||
+    RegExp(r'^/branches/[0-9]+/slots$').hasMatch(location) ||
     RegExp(r'^/courts/[0-9]+/slots$').hasMatch(location);
 
 /// Quyết định chuyển hướng theo trạng thái đăng nhập; `null` nghĩa là ở lại.

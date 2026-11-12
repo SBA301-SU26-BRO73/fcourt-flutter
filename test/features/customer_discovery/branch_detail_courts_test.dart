@@ -65,10 +65,10 @@ Future<GoRouter> _pump(WidgetTester tester, _Courts repository) async {
         ),
       ),
       GoRoute(
-        path: '/courts/:courtId/slots',
+        path: '/branches/:branchId/slots',
         builder: (_, state) => Scaffold(
           body: Text(
-            'slot:${state.pathParameters['courtId']}:${state.uri.queryParameters['courtName']}:${state.uri.queryParameters['branchName']}',
+            'slots:${state.pathParameters['branchId']}:${state.uri.queryParameters['court']}:${state.uri.queryParameters['branchName']}',
           ),
         ),
       ),
@@ -88,7 +88,7 @@ void main() {
     expect(find.text('120.000 đ/giờ'), findsOneWidget);
     await tester.tap(find.text('Sân B'));
     await tester.pumpAndSettle();
-    expect(find.text('slot:32:Sân B:Chi nhánh A'), findsOneWidget);
+    expect(find.text('slots:8:32:Chi nhánh A'), findsOneWidget);
   });
 
   testWidgets(
@@ -105,11 +105,11 @@ void main() {
       expect(repository.calls, 2);
       await tester.tap(find.text('Đặt sân ngay'));
       await tester.pumpAndSettle();
-      expect(find.text('slot:31:Sân A:Chi nhánh A'), findsOneWidget);
+      expect(find.text('slots:8:null:Chi nhánh A'), findsOneWidget);
     },
   );
 
-  testWidgets('booking button lets user choose among multiple courts', (
+  testWidgets('booking button opens the picker over all courts', (
     tester,
   ) async {
     final repository = _Courts()..data = const [_a, _b];
@@ -117,9 +117,7 @@ void main() {
     addTearDown(router.dispose);
     await tester.tap(find.text('Đặt sân ngay'));
     await tester.pumpAndSettle();
-    expect(find.text('Chọn sân để xem lịch'), findsOneWidget);
-    await tester.tap(find.text('Sân B').last);
-    await tester.pumpAndSettle();
-    expect(find.text('slot:32:Sân B:Chi nhánh A'), findsOneWidget);
+    expect(find.text('Chọn sân để xem lịch'), findsNothing);
+    expect(find.text('slots:8:null:Chi nhánh A'), findsOneWidget);
   });
 }

@@ -304,123 +304,9 @@ class _BranchDetailContent extends StatelessWidget {
             label: const Text('Đặt sân ngay'),
             onPressed: discoveryRepository == null
                 ? null
-                : () async {
-                    late final List<Court> courts;
-                    try {
-                      courts = await discoveryRepository!.courtsOfBranch(
-                        branchId,
-                      );
-                    } on Object {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Không tải được danh sách sân. Vui lòng thử lại.',
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-                    if (!context.mounted) return;
-                    if (courts.length == 1) {
-                      context.push(
-                        '/courts/${courts.single.id}/slots?courtName=${Uri.encodeQueryComponent(courts.single.name)}&branchName=${Uri.encodeQueryComponent(data.name)}',
-                      );
-                    } else if (courts.length > 1) {
-                      showDialog<void>(
-                        context: context,
-                        useRootNavigator: true,
-                        builder: (sheetContext) => Dialog(
-                          insetPadding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 48,
-                          ),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: 440,
-                              maxHeight: 560,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    24,
-                                    20,
-                                    8,
-                                    8,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          'Chọn sân để xem lịch',
-                                          style: Theme.of(sheetContext)
-                                              .textTheme
-                                              .titleLarge,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Đóng',
-                                        icon: const Icon(Icons.close),
-                                        onPressed: () =>
-                                            Navigator.pop(sheetContext),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Divider(height: 1),
-                                Flexible(
-                                  child: ListView.separated(
-                                    shrinkWrap: true,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                    itemCount: courts.length,
-                                    separatorBuilder: (_, _) => const Divider(
-                                      height: 1,
-                                      indent: 24,
-                                      endIndent: 24,
-                                    ),
-                                    itemBuilder: (_, index) {
-                                      final court = courts[index];
-                                      return ListTile(
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 24,
-                                            ),
-                                        leading: const Icon(
-                                          Icons.stadium_outlined,
-                                        ),
-                                        title: Text(court.name),
-                                        subtitle: Text(_courtPrice(court)),
-                                        trailing: const Icon(
-                                          Icons.chevron_right,
-                                        ),
-                                        onTap: () {
-                                          Navigator.pop(sheetContext);
-                                          context.push(
-                                            '/courts/${court.id}/slots?courtName=${Uri.encodeQueryComponent(court.name)}&branchName=${Uri.encodeQueryComponent(data.name)}',
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Chi nhánh chưa có sân hoạt động.'),
-                        ),
-                      );
-                    }
-                  },
+                : () => context.push(
+                    '/branches/$branchId/slots?branchName=${Uri.encodeQueryComponent(data.name)}',
+                  ),
           ),
         ),
       ),
@@ -500,7 +386,7 @@ class _BranchCourtsState extends State<_BranchCourts> {
                   subtitle: Text(_courtPrice(court)),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => context.push(
-                    '/courts/${court.id}/slots?courtName=${Uri.encodeQueryComponent(court.name)}&branchName=${Uri.encodeQueryComponent(widget.branch.name)}',
+                    '/branches/${widget.branchId}/slots?court=${court.id}&branchName=${Uri.encodeQueryComponent(widget.branch.name)}',
                   ),
                 ),
               ),

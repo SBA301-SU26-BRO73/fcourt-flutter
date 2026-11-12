@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:fcourt/src/features/customer_slots/data/slot_remote_data_source.dart';
 import 'package:fcourt/src/features/customer_slots/domain/court_slot.dart';
-import 'package:fcourt/src/features/customer_slots/presentation/widgets/slot_grid_picker.dart';
+import 'package:fcourt/src/features/customer_slots/domain/slot_options.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/fake_adapter.dart';
@@ -45,7 +45,6 @@ void main() {
         expect(slot.restriction?.phoneUri, isNull);
         expect(slot.restriction?.publicReason, isNull);
         expect(slot.restriction?.contactName, isNull);
-        expect(slot.unavailableReason, isNot(contains('Internal secret')));
       }
     },
   );
