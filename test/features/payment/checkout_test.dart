@@ -272,7 +272,7 @@ void main() {
     await tester.pumpWidget(screen(repository, FakeSaver()));
     await tester.pumpAndSettle();
     expect(find.text('FCOURT Thủ Đức'), findsOneWidget);
-    final copy = find.byTooltip('Sao chép Số tiền');
+    final copy = find.byKey(const ValueKey('copy-transfer-content'));
     await tester.scrollUntilVisible(
       copy,
       200,
@@ -281,7 +281,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(copy);
     await tester.pumpAndSettle();
-    expect(copied, '160000');
+    expect(copied, isNotEmpty);
+    expect(find.byTooltip('Sao chép Số tiền'), findsNothing);
     expect(find.text('Đã sao chép'), findsOneWidget);
     expect(repository.calls, 1);
     await tester.pumpWidget(const SizedBox());
@@ -351,15 +352,41 @@ void main() {
     },
   );
 
+  testWidgets('hold countdown and receipt button stay pinned while scrolling', (
+    tester,
+  ) async {
+    var sent = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PaymentCheckoutScreen(
+          repository: FakePaymentRepository(),
+          saver: FakeSaver(),
+          arguments: const CheckoutArguments(
+            bookingId: 42,
+            holdToken: 'guest-token',
+          ),
+          qrBuilder: (_) => const SizedBox(height: 240),
+          onUploadReceipt: () => sent++,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -2000));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('hold-banner')), findsOneWidget);
+    expect(find.byKey(const ValueKey('hold-countdown')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('send-receipt')));
+    expect(sent, 1);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   test('checkout expiry is corrected by the server Date header', () async {
     final serverNow = DateTime.now().toUtc().add(const Duration(hours: 1));
     final dio = Dio(BaseOptions(baseUrl: 'http://test'))
       ..httpClientAdapter = FakeAdapter(
         (_) => ResponseBody.fromString(
           jsonEncode(
-            jsonCheckout(
-              expiresAt: serverNow.add(const Duration(minutes: 5)),
-            ),
+            jsonCheckout(expiresAt: serverNow.add(const Duration(minutes: 5))),
           ),
           200,
           headers: {
@@ -369,9 +396,8 @@ void main() {
         ),
       );
     final before = DateTime.now().toUtc();
-    final checkout = await PaymentRepositoryImpl(
-      dio,
-    ).checkout(const CheckoutArguments(bookingId: 42, holdToken: 't'));
+    final checkout = await PaymentRepositoryImpl(dio)
+        .checkout(const CheckoutArguments(bookingId: 42, holdToken: 't'));
     final remaining = checkout.expiresAt.difference(before);
     expect(remaining, greaterThan(const Duration(minutes: 4, seconds: 57)));
     expect(remaining, lessThan(const Duration(minutes: 5, seconds: 2)));

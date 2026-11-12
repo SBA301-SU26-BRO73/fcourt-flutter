@@ -319,21 +319,21 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (widget.onHome != null)
+                    if (widget.onViewBooking != null)
                       FilledButton.icon(
+                        key: const ValueKey('receipt-booking'),
+                        onPressed: widget.onViewBooking,
+                        icon: const Icon(Icons.receipt_long_outlined),
+                        label: const Text('Xem đơn của tôi'),
+                      ),
+                    if (widget.onHome != null && widget.onViewBooking != null)
+                      const SizedBox(height: 10),
+                    if (widget.onHome != null)
+                      OutlinedButton.icon(
                         key: const ValueKey('receipt-home'),
                         onPressed: widget.onHome,
                         icon: const Icon(Icons.home_outlined),
                         label: const Text('Về trang chủ'),
-                      ),
-                    if (widget.onHome != null && widget.onViewBooking != null)
-                      const SizedBox(height: 10),
-                    if (widget.onViewBooking != null)
-                      OutlinedButton.icon(
-                        key: const ValueKey('receipt-booking'),
-                        onPressed: widget.onViewBooking,
-                        icon: const Icon(Icons.receipt_long_outlined),
-                        label: const Text('Xem đơn đặt sân'),
                       ),
                   ],
                 ),

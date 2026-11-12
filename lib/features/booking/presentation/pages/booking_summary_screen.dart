@@ -7,7 +7,6 @@ import '../../domain/entities/booking_selection.dart';
 import '../../domain/repositories/booking_repository.dart';
 import '../../domain/usecases/hold_booking.dart';
 import '../bloc/booking_cubit.dart';
-import '../../../promos/presentation/promo_code_input.dart';
 
 /// SCRUM-23 supplies the selected slots and optional signed-in profile.
 /// SCRUM-33 supplies onHeld to open checkout with the returned hold session.
@@ -55,6 +54,7 @@ class _SummaryFormState extends State<_SummaryForm> {
   late final TextEditingController _name;
   late final TextEditingController _phone;
   late String _promoCode;
+  late final bool _needsName, _needsPhone;
 
   @override
   void initState() {
@@ -62,6 +62,8 @@ class _SummaryFormState extends State<_SummaryForm> {
     _name = TextEditingController(text: widget.arguments.customerName);
     _phone = TextEditingController(text: widget.arguments.phone);
     _promoCode = widget.arguments.promoCode;
+    _needsName = widget.arguments.customerName.trim().isEmpty;
+    _needsPhone = validateBookingPhone(widget.arguments.phone) != null;
   }
 
   @override
@@ -102,6 +104,50 @@ class _SummaryFormState extends State<_SummaryForm> {
             state.status == BookingStatus.held;
         return Scaffold(
           appBar: AppBar(title: const Text('Tóm tắt đặt sân')),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (state.error case final message?)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          message,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    ),
+                  FilledButton(
+                    onPressed: locked
+                        ? null
+                        : () {
+                            if (_form.currentState!.validate()) {
+                              context.read<BookingCubit>().submit(
+                                selection,
+                                _name.text,
+                                _phone.text,
+                              );
+                            }
+                          },
+                    child: state.status == BookingStatus.submitting
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Giữ chỗ 5 phút & thanh toán'),
+                  ),
+                ],
+              ),
+            ),
+          ),
           body: SafeArea(
             child: Center(
               child: ConstrainedBox(
@@ -159,77 +205,56 @@ class _SummaryFormState extends State<_SummaryForm> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      TextFormField(
-                        controller: _name,
-                        enabled: !locked,
-                        decoration: const InputDecoration(
-                          labelText: 'Họ tên người đặt',
+                      if (_needsName)
+                        TextFormField(
+                          controller: _name,
+                          enabled: !locked,
+                          decoration: const InputDecoration(
+                            labelText: 'Họ tên người đặt',
+                          ),
+                          textCapitalization: TextCapitalization.words,
+                          autofillHints: const [AutofillHints.name],
+                          maxLength: 100,
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Vui lòng nhập họ tên'
+                              : null,
                         ),
-                        textCapitalization: TextCapitalization.words,
-                        autofillHints: const [AutofillHints.name],
-                        maxLength: 100,
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
-                            ? 'Vui lòng nhập họ tên'
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _phone,
-                        enabled: !locked,
-                        decoration: const InputDecoration(
-                          labelText: 'Số điện thoại',
+                      if (_needsPhone)
+                        TextFormField(
+                          controller: _phone,
+                          enabled: !locked,
+                          decoration: const InputDecoration(
+                            labelText: 'Số điện thoại',
+                          ),
+                          keyboardType: TextInputType.phone,
+                          autofillHints: const [
+                            AutofillHints.telephoneNumberNational,
+                          ],
+                          maxLength: 10,
+                          validator: validateBookingPhone,
                         ),
-                        keyboardType: TextInputType.phone,
-                        autofillHints: const [
-                          AutofillHints.telephoneNumberNational,
-                        ],
-                        maxLength: 10,
-                        validator: validateBookingPhone,
-                      ),
-                      const SizedBox(height: 12),
-                      PromoCodeInput(
-                        initialCode: widget.arguments.promoCode,
-                        readOnly: locked,
-                        onChanged: (code) => _promoCode = code,
-                        helperText:
-                            'Mã sẽ được kiểm tra và áp dụng ở bước thanh toán.',
-                      ),
-                      if (state.error case final message?)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Semantics(
-                            liveRegion: true,
+                      if (!_needsName && !_needsPhone)
+                        ListTile(
+                          key: const ValueKey('summary-contact'),
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.person_outline),
+                          title: Text(_name.text.trim()),
+                          subtitle: Text(_phone.text.trim()),
+                        ),
+                      const SizedBox(height: 8),
+                      Row(
+                        key: const ValueKey('hold-notice'),
+                        children: [
+                          const Icon(Icons.timer_outlined, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
                             child: Text(
-                              message,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
+                              'Chỗ được giữ 5 phút kể từ khi bạn bấm nút bên dưới. Mã khuyến mãi nhập ở bước thanh toán.',
+                              style: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ),
-                        ),
-                      const SizedBox(height: 20),
-                      FilledButton(
-                        onPressed: locked
-                            ? null
-                            : () {
-                                if (_form.currentState!.validate()) {
-                                  context.read<BookingCubit>().submit(
-                                    selection,
-                                    _name.text,
-                                    _phone.text,
-                                  );
-                                }
-                              },
-                        child: state.status == BookingStatus.submitting
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Tiến hành giữ chỗ & thanh toán'),
+                        ],
                       ),
                     ],
                   ),

@@ -22,6 +22,7 @@ void main() {
               selection: selection(),
               customerName: 'Minh',
               phone: '0912345678',
+              promoCode: 'SAVE_25',
               onHeld: (checkout) {
                 held = checkout;
                 payment = CheckoutArguments(
@@ -33,25 +34,10 @@ void main() {
           ),
         ),
       );
-      await tester.scrollUntilVisible(
-        find.byType(PromoCodeInput),
-        150,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Mã khuyến mãi'),
-        ' save_25 ',
-      );
-      expect(
-        tester.widget<PromoCodeInput>(find.byType(PromoCodeInput)).onApply,
-        isNull,
-      );
-      await tester.scrollUntilVisible(
-        find.text('Tiến hành giữ chỗ & thanh toán'),
-        150,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.text('Tiến hành giữ chỗ & thanh toán'));
+      expect(find.byType(PromoCodeInput), findsNothing);
+      expect(find.byType(TextFormField), findsNothing);
+      expect(find.byKey(const ValueKey('hold-notice')), findsOneWidget);
+      await tester.tap(find.text('Giữ chỗ 5 phút & thanh toán'));
       await tester.pumpAndSettle();
       expect(repository.calls, 1);
       expect(held!.hold.token, 'token');

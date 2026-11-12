@@ -89,8 +89,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(BookingSummaryScreen), findsOneWidget);
       expect(find.text('Test Branch'), findsOneWidget);
-      await tester.ensureVisible(find.text('Tiến hành giữ chỗ & thanh toán'));
-      await tester.tap(find.text('Tiến hành giữ chỗ & thanh toán'));
+      await tester.ensureVisible(find.text('Giữ chỗ 5 phút & thanh toán'));
+      await tester.tap(find.text('Giữ chỗ 5 phút & thanh toán'));
       // Keep the route test independent of the external QR image provider.
       for (var i = 0; i < 25; i++) {
         await tester.pump(const Duration(milliseconds: 100));
