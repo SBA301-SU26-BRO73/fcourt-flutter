@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/theme/tokens.dart';
+import '../../../../app/widgets/circle_icon_button.dart';
+import '../../../../app/widgets/floating_bottom_bar.dart';
+import '../../../../app/widgets/photo_empty_state.dart';
+import '../../../../features/admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../domain/branch_image.dart';
 import 'admin_branch_images_cubit.dart';
 import 'widgets/branch_image_lightbox.dart';
@@ -21,34 +26,30 @@ class AdminBranchImagesScreen extends StatelessWidget {
         ..showSnackBar(SnackBar(content: Text(state.notice!))),
       builder: (context, state) {
         final cubit = context.read<AdminBranchImagesCubit>();
+        final ready = !state.loading && state.loadError == null;
         return Scaffold(
           appBar: AppBar(
             title: Text(
               branchName == null ? 'Ảnh chi nhánh' : 'Ảnh · $branchName',
             ),
           ),
-          floatingActionButton: state.loading || state.loadError != null
-              ? null
-              : FloatingActionButton.extended(
-                  key: const Key('add-images'),
-                  onPressed: state.uploading || state.full
+          bottomNavigationBar: ready
+              ? FloatingBottomBar(
+                  priceText: '${state.images.length}/$maxBranchImages ảnh',
+                  caption:
+                      'Tối đa ${maxBranchImageBytes ~/ (1024 * 1024)} MB mỗi ảnh',
+                  actionKey: const Key('add-images'),
+                  actionLabel: state.uploading
+                      ? 'Đang tải lên…'
+                      : state.full
+                      ? 'Đã đủ $maxBranchImages ảnh'
+                      : 'Thêm ảnh',
+                  actionIcon: Icons.add_photo_alternate_outlined,
+                  onAction: state.uploading || state.full
                       ? null
                       : cubit.addImages,
-                  icon: state.uploading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.add_photo_alternate_outlined),
-                  label: Text(
-                    state.uploading
-                        ? 'Đang tải lên…'
-                        : state.full
-                        ? 'Đã đủ $maxBranchImages ảnh'
-                        : 'Thêm ảnh',
-                  ),
-                ),
+                )
+              : null,
           body: _body(context, state, cubit),
         );
       },
@@ -63,67 +64,48 @@ class AdminBranchImagesScreen extends StatelessWidget {
     if (state.loading) return const Center(child: CircularProgressIndicator());
     if (state.loadError != null) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(state.loadError!),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: cubit.load, child: const Text('Thử lại')),
-          ],
+        child: PhotoEmptyState(
+          message: state.loadError!,
+          action: FilledButton(
+            onPressed: cubit.load,
+            child: const Text('Thử lại'),
+          ),
         ),
       );
     }
     if (state.images.isEmpty) {
       return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Text(
-            'Chi nhánh chưa có ảnh. Bấm "Thêm ảnh" để chọn nhiều ảnh cùng lúc.',
-            textAlign: TextAlign.center,
-          ),
+        child: PhotoEmptyState(
+          title: 'Chưa có ảnh',
+          message: 'Chi nhánh chưa có ảnh. Bấm "Thêm ảnh" để chọn nhiều ảnh cùng lúc.',
         ),
       );
     }
     final urls = [for (final image in state.images) image.url];
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '${state.images.length}/$maxBranchImages ảnh · tối đa '
-              '${maxBranchImageBytes ~/ (1024 * 1024)} MB mỗi ảnh',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-        ),
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 4 / 3,
-            ),
-            itemCount: state.images.length,
-            itemBuilder: (context, i) {
-              final image = state.images[i];
-              return _ImageTile(
-                image: image,
-                deleting: state.deleting.contains(image.id),
-                onOpen: () => showBranchImageLightbox(
-                  context,
-                  urls: urls,
-                  initialIndex: i,
-                ),
-                onDelete: () => _confirmDelete(context, cubit, image),
-              );
-            },
-          ),
-        ),
-      ],
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(
+        ownerPad,
+        8,
+        ownerPad,
+        FloatingBottomBar.clearance,
+      ),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        childAspectRatio: 4 / 3,
+      ),
+      itemCount: state.images.length,
+      itemBuilder: (context, i) {
+        final image = state.images[i];
+        return _ImageTile(
+          image: image,
+          deleting: state.deleting.contains(image.id),
+          onOpen: () =>
+              showBranchImageLightbox(context, urls: urls, initialIndex: i),
+          onDelete: () => _confirmDelete(context, cubit, image),
+        );
+      },
     );
   }
 
@@ -169,34 +151,44 @@ class _ImageTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(16),
-    child: Stack(
-      fit: StackFit.expand,
-      children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onOpen,
-          child: BranchImageView(url: image.url),
-        ),
-        if (deleting)
-          const ColoredBox(
-            color: Colors.black45,
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else
-          Positioned(
-            top: 4,
-            right: 4,
-            child: IconButton.filled(
-              key: Key('delete-image-${image.id}'),
-              tooltip: 'Xóa ảnh',
-              style: IconButton.styleFrom(backgroundColor: Colors.black54),
-              icon: const Icon(Icons.delete_outline, color: Colors.white),
-              onPressed: onDelete,
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Radii.lg),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(Radii.lg - 1),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onOpen,
+              child: BranchImageView(url: image.url),
             ),
-          ),
-      ],
-    ),
-  );
+            if (deleting)
+              ColoredBox(
+                color: colors.scrim.withValues(alpha: .45),
+                child: const Center(child: CircularProgressIndicator()),
+              )
+            else
+              Positioned(
+                top: 0,
+                right: 0,
+                child: CircleIconButton(
+                  key: Key('delete-image-${image.id}'),
+                  icon: Icons.delete_outline,
+                  tooltip: 'Xóa ảnh',
+                  onImage: true,
+                  size: 34,
+                  onPressed: onDelete,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }

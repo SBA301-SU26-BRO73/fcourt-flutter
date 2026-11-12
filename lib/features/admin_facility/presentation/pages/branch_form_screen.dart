@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/theme/tokens.dart';
+import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../../domain/entities/branch.dart';
 import '../../domain/entities/branch_rules.dart';
 import '../../domain/entities/clock_time.dart';
@@ -161,208 +163,240 @@ class _BranchFormState extends State<_BranchForm> {
     return Form(
       key: _formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+      child: Column(
         children: [
-          const _SectionTitle('Thông tin chi nhánh'),
-          TextFormField(
-            key: const Key('branch-name'),
-            controller: _name,
-            textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(labelText: 'Tên chi nhánh *'),
-            validator: (v) => BranchRules.required(
-              v,
-              'tên chi nhánh',
-              max: BranchRules.maxName,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            key: const Key('branch-address'),
-            controller: _address,
-            textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'Địa chỉ (số nhà, đường) *',
-            ),
-            validator: (v) =>
-                BranchRules.required(v, 'địa chỉ', max: BranchRules.maxAddress),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            key: const Key('branch-city'),
-            initialValue: _city,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Tỉnh/Thành phố *'),
-            items: [
-              for (final name in _provinceOptions)
-                DropdownMenuItem(value: name, child: Text(name)),
-            ],
-            onChanged: (value) => setState(() {
-              _city = value;
-              _district = null;
-            }),
-            validator: (v) => v == null ? 'Vui lòng chọn tỉnh/thành' : null,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            // Đổi tỉnh thì dựng lại để xóa quận/huyện đã chọn.
-            key: ValueKey('branch-district-$_city'),
-            initialValue: _district,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Quận/Huyện'),
-            items: [
-              for (final name in _districtOptions)
-                DropdownMenuItem(value: name, child: Text(name)),
-            ],
-            onChanged: (value) => setState(() => _district = value),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _ward,
-            textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(labelText: 'Phường/Xã'),
-            validator: (v) => BranchRules.optional(
-              v,
-              'phường/xã',
-              max: BranchRules.maxWardOrDistrict,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _phone,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(labelText: 'Số điện thoại'),
-            validator: BranchRules.phone,
-          ),
-          const SizedBox(height: 24),
-          const _SectionTitle('Giờ hoạt động'),
-          FormField<void>(
-            // Validator đọc trực tiếp _open/_close nên luôn đúng giờ mới nhất.
-            validator: (_) => BranchRules.timeRange(_open, _close),
-            builder: (field) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(ownerPad, 0, ownerPad, 24),
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TimeTile(
-                        key: const Key('branch-open'),
-                        label: 'Mở cửa',
-                        time: _open,
-                        onTap: () async {
-                          await _pickTime(open: true);
-                          field.didChange(null);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _TimeTile(
-                        key: const Key('branch-close'),
-                        label: 'Đóng cửa',
-                        time: _close,
-                        onTap: () async {
-                          await _pickTime(open: false);
-                          field.didChange(null);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                if (field.hasError)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8, left: 12),
-                    child: Text(
-                      field.errorText!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                const OwnerSectionTitle('Thông tin chi nhánh', top: 8),
+                OwnerField(
+                  label: 'Tên chi nhánh *',
+                  child: TextFormField(
+                    key: const Key('branch-name'),
+                    controller: _name,
+                    textInputAction: TextInputAction.next,
+                    style: ownerInputText,
+                    decoration: ownerInput(hint: 'Sân Cầu Lông Ba Đình'),
+                    validator: (v) => BranchRules.required(
+                      v,
+                      'tên chi nhánh',
+                      max: BranchRules.maxName,
                     ),
                   ),
+                ),
+                OwnerField(
+                  label: 'Địa chỉ (số nhà, đường) *',
+                  child: TextFormField(
+                    key: const Key('branch-address'),
+                    controller: _address,
+                    textInputAction: TextInputAction.next,
+                    style: ownerInputText,
+                    decoration: ownerInput(hint: '48 Vạn Bảo'),
+                    validator: (v) => BranchRules.required(
+                      v,
+                      'địa chỉ',
+                      max: BranchRules.maxAddress,
+                    ),
+                  ),
+                ),
+                OwnerField(
+                  label: 'Tỉnh/Thành phố *',
+                  child: DropdownButtonFormField<String>(
+                    key: const Key('branch-city'),
+                    initialValue: _city,
+                    isExpanded: true,
+                    style: ownerDropdownText(context),
+                    decoration: ownerInput(hint: 'Chọn tỉnh/thành'),
+                    items: [
+                      for (final name in _provinceOptions)
+                        DropdownMenuItem(value: name, child: Text(name)),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _city = value;
+                      _district = null;
+                    }),
+                    validator: (v) =>
+                        v == null ? 'Vui lòng chọn tỉnh/thành' : null,
+                  ),
+                ),
+                OwnerField(
+                  label: 'Quận/Huyện',
+                  child: DropdownButtonFormField<String>(
+                    // Đổi tỉnh thì dựng lại để xóa quận/huyện đã chọn.
+                    key: ValueKey('branch-district-$_city'),
+                    initialValue: _district,
+                    isExpanded: true,
+                    style: ownerDropdownText(context),
+                    decoration: ownerInput(hint: 'Chọn quận/huyện'),
+                    items: [
+                      for (final name in _districtOptions)
+                        DropdownMenuItem(value: name, child: Text(name)),
+                    ],
+                    onChanged: (value) => setState(() => _district = value),
+                  ),
+                ),
+                OwnerField(
+                  label: 'Phường/Xã',
+                  child: TextFormField(
+                    controller: _ward,
+                    textInputAction: TextInputAction.next,
+                    style: ownerInputText,
+                    decoration: ownerInput(hint: 'Phường Vĩnh Phúc'),
+                    validator: (v) => BranchRules.optional(
+                      v,
+                      'phường/xã',
+                      max: BranchRules.maxWardOrDistrict,
+                    ),
+                  ),
+                ),
+                OwnerField(
+                  label: 'Số điện thoại',
+                  child: TextFormField(
+                    controller: _phone,
+                    keyboardType: TextInputType.phone,
+                    style: ownerInputText,
+                    decoration: ownerInput(hint: '0123 456 789'),
+                    validator: BranchRules.phone,
+                  ),
+                ),
+                const OwnerSectionTitle('Giờ hoạt động'),
+                FormField<void>(
+                  // Validator đọc trực tiếp _open/_close nên luôn đúng giờ mới nhất.
+                  validator: (_) => BranchRules.timeRange(_open, _close),
+                  builder: (field) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _TimeTile(
+                              key: const Key('branch-open'),
+                              label: 'Mở cửa',
+                              time: _open,
+                              onTap: () async {
+                                await _pickTime(open: true);
+                                field.didChange(null);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _TimeTile(
+                              key: const Key('branch-close'),
+                              label: 'Đóng cửa',
+                              time: _close,
+                              onTap: () async {
+                                await _pickTime(open: false);
+                                field.didChange(null);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (field.hasError)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8, left: 12),
+                          child: Text(
+                            field.errorText!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const OwnerSectionTitle('Thanh toán VietQR'),
+                OwnerField(
+                  label: 'Ngân hàng *',
+                  child: DropdownButtonFormField<String>(
+                    key: const Key('branch-bank'),
+                    initialValue: _bankBin,
+                    isExpanded: true,
+                    style: ownerDropdownText(context),
+                    decoration: ownerInput(hint: 'Chọn ngân hàng'),
+                    items: [
+                      for (final bank in VietQrBank.all)
+                        DropdownMenuItem(
+                          value: bank.bin,
+                          child: Text('${bank.shortName} (${bank.bin})'),
+                        ),
+                      if (_bankBin != null &&
+                          VietQrBank.byBin(_bankBin) == null)
+                        DropdownMenuItem(
+                          value: _bankBin,
+                          child: Text(
+                            '${widget.initial?.bankName} ($_bankBin)',
+                          ),
+                        ),
+                    ],
+                    onChanged: (value) => setState(() => _bankBin = value),
+                    validator: BranchRules.bankBin,
+                  ),
+                ),
+                OwnerField(
+                  label: 'Số tài khoản *',
+                  child: TextFormField(
+                    key: const Key('branch-account'),
+                    controller: _account,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    maxLength: 20,
+                    style: ownerInputText,
+                    decoration: ownerInput(hint: '0123456789'),
+                    validator: BranchRules.accountNumber,
+                  ),
+                ),
+                OwnerField(
+                  label: 'Tên chủ tài khoản *',
+                  child: TextFormField(
+                    key: const Key('branch-account-name'),
+                    controller: _accountName,
+                    textCapitalization: TextCapitalization.characters,
+                    style: ownerInputText,
+                    decoration: ownerInput(
+                      hint: 'NGUYEN VAN A',
+                      helper:
+                          'Viết hoa không dấu như trên thẻ, ví dụ NGUYEN VAN A',
+                    ),
+                    validator: BranchRules.accountName,
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          const _SectionTitle('Thanh toán VietQR'),
-          DropdownButtonFormField<String>(
-            key: const Key('branch-bank'),
-            initialValue: _bankBin,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Ngân hàng *'),
-            items: [
-              for (final bank in VietQrBank.all)
-                DropdownMenuItem(
-                  value: bank.bin,
-                  child: Text('${bank.shortName} (${bank.bin})'),
-                ),
-              if (_bankBin != null && VietQrBank.byBin(_bankBin) == null)
-                DropdownMenuItem(
-                  value: _bankBin,
-                  child: Text('${widget.initial?.bankName} ($_bankBin)'),
-                ),
-            ],
-            onChanged: (value) => setState(() => _bankBin = value),
-            validator: BranchRules.bankBin,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            key: const Key('branch-account'),
-            controller: _account,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            maxLength: 20,
-            decoration: const InputDecoration(labelText: 'Số tài khoản *'),
-            validator: BranchRules.accountNumber,
-          ),
-          const SizedBox(height: 4),
-          TextFormField(
-            key: const Key('branch-account-name'),
-            controller: _accountName,
-            textCapitalization: TextCapitalization.characters,
-            decoration: const InputDecoration(
-              labelText: 'Tên chủ tài khoản *',
-              helperText: 'Viết hoa không dấu như trên thẻ, ví dụ NGUYEN VAN A',
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(ownerPad, 8, ownerPad, 12),
+              child: BlocBuilder<BranchFormBloc, BranchFormState>(
+                buildWhen: (p, c) => p.status != c.status,
+                builder: (context, state) {
+                  final busy = state.status == BranchFormStatus.submitting;
+                  return SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: const Key('branch-submit'),
+                      onPressed: busy ? null : _submit,
+                      icon: busy
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check, size: 18),
+                      label: Text(editing ? 'Lưu thay đổi' : 'Tạo chi nhánh'),
+                    ),
+                  );
+                },
+              ),
             ),
-            validator: BranchRules.accountName,
-          ),
-          const SizedBox(height: 24),
-          BlocBuilder<BranchFormBloc, BranchFormState>(
-            buildWhen: (p, c) => p.status != c.status,
-            builder: (context, state) {
-              final busy = state.status == BranchFormStatus.submitting;
-              return FilledButton.icon(
-                key: const Key('branch-submit'),
-                onPressed: busy ? null : _submit,
-                icon: busy
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check),
-                label: Text(editing ? 'Lưu thay đổi' : 'Tạo chi nhánh'),
-              );
-            },
           ),
         ],
       ),
     );
   }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Text(
-      text,
-      style: Theme.of(context).textTheme.titleSmall
-          ?.copyWith(fontWeight: FontWeight.bold),
-    ),
-  );
 }
 
 class _TimeTile extends StatelessWidget {
@@ -378,15 +412,17 @@ class _TimeTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(4),
-    child: InputDecorator(
-      decoration: InputDecoration(
-        labelText: label,
-        suffixIcon: const Icon(Icons.access_time),
+  Widget build(BuildContext context) => OwnerField(
+    label: label,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(Radii.md),
+      child: InputDecorator(
+        decoration: ownerInput(
+          suffixIcon: const Icon(Icons.access_time, size: 18),
+        ),
+        child: Text(time.format(), style: ownerInputText),
       ),
-      child: Text(time.format()),
     ),
   );
 }

@@ -18,6 +18,7 @@ class FloatingBottomBar extends StatelessWidget {
     this.actionIcon = Icons.arrow_forward,
     this.filled = false,
     this.loading = false,
+    this.actionKey,
   });
 
   /// Space a scrolling body leaves at its end when the bar overlaps it.
@@ -35,6 +36,9 @@ class FloatingBottomBar extends StatelessWidget {
   final IconData? actionIcon;
   final bool filled;
   final bool loading;
+
+  /// Key of the action button (tests, scroll-to).
+  final Key? actionKey;
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +116,7 @@ class FloatingBottomBar extends StatelessWidget {
               ),
               const SizedBox(width: Gap.md),
               FilledButton(
+                key: actionKey,
                 onPressed: enabled ? onAction : null,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(0, Gap.touch),

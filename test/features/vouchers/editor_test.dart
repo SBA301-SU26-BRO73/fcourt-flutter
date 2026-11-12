@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fcourt/core/error/failure.dart';
+import 'package:fcourt/features/admin_dashboard/presentation/widgets/owner_ui.dart';
 import 'package:fcourt/features/vouchers/domain/voucher.dart';
 import 'package:fcourt/features/vouchers/domain/voucher_draft.dart';
 import 'package:fcourt/features/vouchers/domain/voucher_repository.dart';
@@ -62,7 +63,11 @@ Future<void> openEditor(
   await tester.pumpAndSettle();
 }
 
-Finder field(String label) => find.widgetWithText(TextField, label);
+/// The field under the label (the label sits above the field, not inside).
+Finder field(String label) => find.descendant(
+  of: find.ancestor(of: find.text(label), matching: find.byType(OwnerField)),
+  matching: find.byType(TextField),
+);
 
 void main() {
   testWidgets('create form supports fixed VND discount and optional cap', (

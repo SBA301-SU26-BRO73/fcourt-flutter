@@ -190,12 +190,12 @@ void main() {
       tester,
     ) async {
       final (repo, picker) = await open(tester);
-      expect(find.text('2/10 ảnh · tối đa 5 MB mỗi ảnh'), findsOneWidget);
+      expect(find.text('2/10 ảnh'), findsOneWidget);
       picker.next = [picked('a.jpg'), picked('b.jpg')];
       await tester.tap(find.byKey(const Key('add-images')));
       await tester.pumpAndSettle();
       expect(repo.uploaded.single, ['a.jpg', 'b.jpg']);
-      expect(find.text('4/10 ảnh · tối đa 5 MB mỗi ảnh'), findsOneWidget);
+      expect(find.text('4/10 ảnh'), findsOneWidget);
       expect(find.text('Đã thêm 2 ảnh.'), findsOneWidget);
     });
 
@@ -230,7 +230,7 @@ void main() {
 
     testWidgets('full gallery disables adding', (tester) async {
       await open(tester, [for (var i = 1; i <= 10; i++) i]);
-      final button = tester.widget<FloatingActionButton>(
+      final button = tester.widget<FilledButton>(
         find.byKey(const Key('add-images')),
       );
       expect(button.onPressed, isNull);

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/widgets/filter_pill.dart';
+import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../../domain/entities/court_lock.dart';
 
 /// Giữ nội dung form khóa dùng chung cho lịch tuần (SCRUM-50) và màn bao sân
@@ -99,68 +101,77 @@ class LockDetailsFields extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SegmentedButton<LockType>(
-              key: const Key('lock-type'),
-              segments: [
-                for (final type in LockType.values)
-                  ButtonSegment(value: type, label: Text(type.label)),
-              ],
-              selected: {editor.type},
-              onSelectionChanged: (value) => editor.type = value.first,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const Key('lock-reason'),
-              controller: editor.reason,
-              maxLength: 500,
-              decoration: InputDecoration(
-                labelText: 'Lý do (chỉ chủ sân thấy) *',
-                errorText: show ? editor.reasonError : null,
-                counterText: '',
-              ),
-              onChanged: (_) => editor.refresh(),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              key: const Key('lock-notes'),
-              controller: editor.notes,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'Ghi chú nội bộ',
-                errorText: show ? editor.notesError : null,
+            OwnerField(
+              label: 'Loại khóa',
+              child: Wrap(
+                key: const Key('lock-type'),
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final type in LockType.values)
+                    FilterPill(
+                      type.label,
+                      selected: editor.type == type,
+                      onTap: () => editor.type = type,
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Thông tin hiển thị cho khách (tùy chọn)',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              key: const Key('lock-public-reason'),
-              controller: editor.publicReason,
-              decoration: InputDecoration(
-                labelText: 'Nội dung công khai',
-                errorText: show ? editor.publicReasonError : null,
+            OwnerField(
+              label: 'Lý do (chỉ chủ sân thấy) *',
+              child: TextField(
+                key: const Key('lock-reason'),
+                controller: editor.reason,
+                maxLength: 500,
+                style: ownerInputText,
+                decoration: ownerInput(
+                  hint: 'Sửa sàn, bảo trì…',
+                  error: show ? editor.reasonError : null,
+                ),
+                onChanged: (_) => editor.refresh(),
               ),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              key: const Key('lock-contact-name'),
-              controller: editor.contactName,
-              decoration: InputDecoration(
-                labelText: 'Người liên hệ',
-                errorText: show ? editor.contactNameError : null,
+            OwnerField(
+              label: 'Ghi chú nội bộ',
+              child: TextField(
+                key: const Key('lock-notes'),
+                controller: editor.notes,
+                maxLines: 2,
+                style: ownerInputText,
+                decoration: ownerInput(error: show ? editor.notesError : null),
               ),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              key: const Key('lock-contact-phone'),
-              controller: editor.contactPhone,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: 'Số điện thoại liên hệ',
-                errorText: show ? editor.phoneError : null,
+            const OwnerSectionTitle('Hiển thị cho khách (tùy chọn)', top: 6),
+            OwnerField(
+              label: 'Nội dung công khai',
+              child: TextField(
+                key: const Key('lock-public-reason'),
+                controller: editor.publicReason,
+                style: ownerInputText,
+                decoration: ownerInput(
+                  error: show ? editor.publicReasonError : null,
+                ),
+              ),
+            ),
+            OwnerField(
+              label: 'Người liên hệ',
+              child: TextField(
+                key: const Key('lock-contact-name'),
+                controller: editor.contactName,
+                style: ownerInputText,
+                decoration: ownerInput(
+                  error: show ? editor.contactNameError : null,
+                ),
+              ),
+            ),
+            OwnerField(
+              label: 'Số điện thoại liên hệ',
+              child: TextField(
+                key: const Key('lock-contact-phone'),
+                controller: editor.contactPhone,
+                keyboardType: TextInputType.phone,
+                style: ownerInputText,
+                decoration: ownerInput(error: show ? editor.phoneError : null),
               ),
             ),
           ],

@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/theme/tokens.dart';
+import '../../../../app/widgets/circle_icon_button.dart';
+import '../../../../app/widgets/filter_pill.dart';
+import '../../../../app/widgets/floating_bottom_bar.dart';
+import '../../../../app/widgets/tint_tag.dart';
+import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
 import '../../domain/entities/calendar_slot.dart';
 import '../../domain/entities/court_lock.dart';
 import '../bloc/court_calendar_bloc.dart';
@@ -24,7 +30,6 @@ class CourtCalendarScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
       builder: (_) => _LockFormSheet(selectedCount: count),
     );
     if (details != null) bloc.add(CalendarLockSubmitted(details));
@@ -52,7 +57,6 @@ class CourtCalendarScreen extends StatelessWidget {
             context: context,
             isScrollControlled: true,
             useSafeArea: true,
-            showDragHandle: true,
             builder: (_) => _LockDetailSheet(
               lock: lock,
               onUnlock: () => bloc.add(CalendarUnlockRequested(lock.id)),
@@ -126,6 +130,7 @@ class CourtCalendarScreen extends StatelessWidget {
 
   Widget _body(BuildContext context, CourtCalendarState state) {
     final bloc = context.read<CourtCalendarBloc>();
+    final colors = Theme.of(context).colorScheme;
     if (state.status == CalendarStatus.failure && state.days.isEmpty) {
       return FacilityErrorView(
         message: state.message ?? 'Không tải được lịch sân',
@@ -134,35 +139,57 @@ class CourtCalendarScreen extends StatelessWidget {
             : bloc.add(const CalendarRefreshed()),
       );
     }
-    return Column(
-      children: [
-        _Toolbar(state: state),
-        if (state.status == CalendarStatus.loading || state.submitting)
-          const LinearProgressIndicator(),
-        if (state.status == CalendarStatus.failure)
-          MaterialBanner(
-            content: Text(state.message ?? 'Không tải được lịch sân'),
-            actions: [
-              TextButton(
-                onPressed: () => bloc.add(const CalendarRefreshed()),
-                child: const Text('Thử lại'),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: ownerPad),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Toolbar(state: state),
+          if (state.status == CalendarStatus.loading || state.submitting)
+            const LinearProgressIndicator(),
+          if (state.status == CalendarStatus.failure)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OwnerNote(
+                      state.message ?? 'Không tải được lịch sân',
+                      size: 12,
+                      color: colors.error,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => bloc.add(const CalendarRefreshed()),
+                    child: const Text('Thử lại'),
+                  ),
+                ],
               ),
-            ],
+            ),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: CalendarLegend(),
           ),
-        const CalendarLegend(),
-        Expanded(
-          child: state.days.isEmpty
-              ? const SizedBox.shrink()
-              : CourtCalendarGrid(
-                  state: state,
-                  onCellTap: (date, slot) => _onCell(context, date, slot),
-                ),
-        ),
-      ],
+          Expanded(
+            child: state.days.isEmpty
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: EdgeInsets.only(
+                      bottom: state.selected.isEmpty ? 16 : 0,
+                    ),
+                    child: CourtCalendarGrid(
+                      state: state,
+                      onCellTap: (date, slot) => _onCell(context, date, slot),
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
 
+/// Ngày/Tuần dạng viên thuốc và thanh chuyển ngày (mockup: `.pill`, nút tròn).
 class _Toolbar extends StatelessWidget {
   const _Toolbar({required this.state});
 
@@ -171,43 +198,58 @@ class _Toolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<CourtCalendarBloc>();
+    final colors = Theme.of(context).colorScheme;
     final dates = state.visibleDates;
     final title = state.mode == CalendarMode.day
         ? formatDay(dates.first)
         : '${formatDay(dates.first)} - ${formatDay(dates.last)}';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
       child: Column(
         children: [
-          SegmentedButton<CalendarMode>(
+          Row(
             key: const Key('calendar-mode'),
-            segments: const [
-              ButtonSegment(value: CalendarMode.day, label: Text('Ngày')),
-              ButtonSegment(value: CalendarMode.week, label: Text('Tuần')),
+            children: [
+              FilterPill(
+                'Ngày',
+                selected: state.mode == CalendarMode.day,
+                onTap: () =>
+                    bloc.add(const CalendarModeChanged(CalendarMode.day)),
+              ),
+              const SizedBox(width: 8),
+              FilterPill(
+                'Tuần',
+                selected: state.mode == CalendarMode.week,
+                onTap: () =>
+                    bloc.add(const CalendarModeChanged(CalendarMode.week)),
+              ),
             ],
-            selected: {state.mode},
-            onSelectionChanged: (value) =>
-                bloc.add(CalendarModeChanged(value.first)),
           ),
+          const SizedBox(height: 4),
           Row(
             children: [
-              IconButton(
+              CircleIconButton(
                 key: const Key('calendar-prev'),
                 tooltip: 'Trước',
-                icon: const Icon(Icons.chevron_left),
+                icon: Icons.chevron_left,
                 onPressed: () => bloc.add(const CalendarShifted(-1)),
               ),
               Expanded(
                 child: Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -.5,
+                    color: colors.onSurface,
+                  ),
                 ),
               ),
-              IconButton(
+              CircleIconButton(
                 key: const Key('calendar-next'),
                 tooltip: 'Sau',
-                icon: const Icon(Icons.chevron_right),
+                icon: Icons.chevron_right,
                 onPressed: () => bloc.add(const CalendarShifted(1)),
               ),
             ],
@@ -218,6 +260,7 @@ class _Toolbar extends StatelessWidget {
   }
 }
 
+/// Thanh nổi ở đáy khi đã chọn ô (mockup "bottom-price").
 class _SelectionBar extends StatelessWidget {
   const _SelectionBar({
     required this.count,
@@ -233,26 +276,27 @@ class _SelectionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: Row(
-          children: [
-            Expanded(child: Text('Đã chọn $count ô')),
-            TextButton(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: TextButton(
               onPressed: busy ? null : onClear,
               child: const Text('Bỏ chọn'),
             ),
-            const SizedBox(width: 8),
-            FilledButton.icon(
-              key: const Key('open-lock-form'),
-              onPressed: busy ? null : onLock,
-              icon: const Icon(Icons.lock_outline),
-              label: const Text('Khóa sân / Bao sân'),
-            ),
-          ],
+          ),
         ),
-      ),
+        FloatingBottomBar(
+          priceText: 'Đã chọn $count ô',
+          actionLabel: 'Khóa sân / Bao sân',
+          actionIcon: Icons.lock_outline,
+          actionKey: const Key('open-lock-form'),
+          onAction: busy ? null : onLock,
+        ),
+      ],
     );
   }
 }
@@ -278,33 +322,37 @@ class _LockFormSheetState extends State<_LockFormSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        0,
-        16,
-        MediaQuery.of(context).viewInsets.bottom + 16,
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Khóa ${widget.selectedCount} khung giờ đã chọn',
-              style: Theme.of(context).textTheme.titleLarge,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          OwnerSheetHeader(
+            title: 'Khóa ${widget.selectedCount} khung giờ đã chọn',
+            onClose: () => Navigator.pop(context),
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(ownerPad, 12, ownerPad, 8),
+              child: LockDetailsFields(editor: _editor),
             ),
-            const SizedBox(height: 12),
-            LockDetailsFields(editor: _editor),
-            const SizedBox(height: 16),
-            FilledButton(
-              key: const Key('submit-lock'),
-              onPressed: () {
-                final details = _editor.build();
-                if (details != null) Navigator.pop(context, details);
-              },
-              child: const Text('Xác nhận khóa'),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(ownerPad, 8, ownerPad, 12),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                key: const Key('submit-lock'),
+                onPressed: () {
+                  final details = _editor.build();
+                  if (details != null) Navigator.pop(context, details);
+                },
+                child: const Text('Xác nhận khóa'),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -348,35 +396,77 @@ class _LockDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context).textTheme;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(lock.type.label, style: theme.titleLarge),
-            const SizedBox(height: 8),
-            Text('${_when(lock.startAt)} - ${_when(lock.endAt)}'),
-            const SizedBox(height: 8),
-            Text('Lý do: ${lock.reason}'),
-            if (lock.notes != null) Text('Ghi chú: ${lock.notes}'),
-            if (lock.publicReason != null)
-              Text('Hiển thị cho khách: ${lock.publicReason}'),
-            if (lock.contactName != null || lock.contactPhone != null)
-              Text(
-                'Liên hệ: ${[lock.contactName, lock.contactPhone].whereType<String>().join(' · ')}',
-              ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              key: const Key('unlock-lock'),
-              onPressed: () => _confirm(context),
-              icon: const Icon(Icons.lock_open),
-              label: const Text('Mở khóa'),
+    final colors = Theme.of(context).colorScheme;
+    final tone = lock.type == LockType.privateEvent
+        ? context.fc.info
+        : context.fc.neutral;
+    final contact = [
+      lock.contactName,
+      lock.contactPhone,
+    ].whereType<String>().join(' · ');
+    Widget row(String label, String value) => Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: colors.onSurfaceVariant,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const OwnerSheetHeader(title: 'Khung giờ đã khóa', closable: false),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(ownerPad, 12, ownerPad, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TintTag(lock.type.label, tone: tone),
+                ),
+                row(
+                  'Thời gian',
+                  '${_when(lock.startAt)} - ${_when(lock.endAt)}',
+                ),
+                Text(
+                  'Lý do: ${lock.reason}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (lock.notes != null) OwnerNote('Ghi chú: ${lock.notes}'),
+                if (lock.publicReason != null)
+                  OwnerNote('Hiển thị cho khách: ${lock.publicReason}'),
+                if (contact.isNotEmpty) OwnerNote('Liên hệ: $contact'),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  key: const Key('unlock-lock'),
+                  onPressed: () => _confirm(context),
+                  icon: const Icon(Icons.lock_open, size: 18),
+                  label: const Text('Mở khóa'),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
