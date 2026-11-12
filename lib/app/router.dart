@@ -18,6 +18,7 @@ import '../features/admin_bookings/presentation/admin_booking_cubit.dart';
 import '../features/admin_bookings/presentation/admin_booking_management_screen.dart';
 import '../features/vouchers/presentation/voucher_cubit.dart';
 import '../features/vouchers/presentation/voucher_management_screen.dart';
+import 'post_payment_navigation.dart';
 import '../features/refunds/presentation/admin_refund_approval_screen.dart';
 import '../features/refunds/presentation/customer_refund_screen.dart';
 import '../features/transactions/presentation/admin_transaction_history_screen.dart';
@@ -495,8 +496,7 @@ GoRouter createRouter(
                 saver: saver,
                 arguments: arguments,
                 promos: dependencies.promos,
-                onFreeConfirmed: () =>
-                    context.go('/payments/ticket', extra: arguments),
+                onFreeConfirmed: () => showTicketOverBookings(context, arguments),
                 onUploadReceipt: () =>
                     context.push('/payments/receipt', extra: arguments),
               );
@@ -544,10 +544,10 @@ GoRouter createRouter(
                 repository: repository,
                 picker: picker,
                 arguments: args,
-                onConfirmed: () => context.go('/payments/ticket', extra: args),
-                onSupport: () => context.go('/bookings/${args.bookingId}'),
+                onConfirmed: () => showTicketOverBookings(context, args),
+                onSupport: () => showBookingOverList(context, args.bookingId),
                 onHome: () => context.go(AppRoutes.home),
-                onViewBooking: () => context.go('/bookings/${args.bookingId}'),
+                onViewBooking: () => showBookingOverList(context, args.bookingId),
               );
             },
           ),
@@ -569,7 +569,13 @@ GoRouter createRouter(
                   facility.branchRepository,
                   facility.courtRepository,
                 )..initialize(),
-                child: const AdminBookingManagementScreen(),
+                child: AdminBookingManagementScreen(
+                  onReviewPayment: dependencies.adminPaymentRepository == null
+                      ? null
+                      : (booking) => context.push(
+                          '/admin/branches/${booking.branchId}/payments',
+                        ),
+                ),
               );
             },
           ),
@@ -775,7 +781,12 @@ GoRouter createRouter(
               child: HealthPage(config: dependencies.config),
             ),
           ),
-          ...adminFacilityRoutes(dependencies.adminFacility),
+          ...adminFacilityRoutes(
+            dependencies.adminFacility,
+            hasPayments: dependencies.adminPaymentRepository != null,
+            hasRefunds: dependencies.adminRefunds != null,
+            hasTransactions: dependencies.adminTransactions != null,
+          ),
           FcRoute(
             path: AppRoutes.superAdminOverview,
             builder: (context, state) {
