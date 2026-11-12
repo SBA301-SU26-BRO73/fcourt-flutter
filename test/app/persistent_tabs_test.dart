@@ -137,14 +137,7 @@ void main() {
       await tab('Hoạt động');
       expect(find.text('Hiện vẫn chưa có hoạt động nào'), findsOneWidget);
       await tab('Thông báo');
-      expect(find.text('Siêu ưu đãi'), findsOneWidget);
-      expect(find.text('Mới trên SportCourt'), findsOneWidget);
-      await tester.tap(find.text('Siêu ưu đãi'));
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassTabBar), findsNothing);
-      expect(find.text('Thêm niềm vui cho buổi chơi'), findsOneWidget);
-      await tester.pageBack();
-      await tester.pumpAndSettle();
+      expect(find.text('Thông báo chưa khả dụng'), findsOneWidget);
       await tab('Khám phá');
       expect(find.byType(CustomerHomeScreen), findsOneWidget);
       expect(find.text('Sân hiển thị khi chọn tất cả'), findsOneWidget);

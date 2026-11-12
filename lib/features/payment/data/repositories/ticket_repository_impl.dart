@@ -56,7 +56,12 @@ class TicketRepositoryImpl implements TicketRepository {
       // Only fetch the same API path; never forward credentials to an upstream-supplied URL.
       final image = await dio.get<List<int>>(
         '$path/qr',
-        options: Options(headers: headers, responseType: ResponseType.bytes),
+        // Dio mặc định gửi `Accept: application/json`; endpoint này chỉ trả image/png nên
+        // gateway sẽ trả 406 nếu không ghi đè.
+        options: Options(
+          headers: {...headers, 'Accept': 'image/png'},
+          responseType: ResponseType.bytes,
+        ),
       );
       final bytes = image.data;
       const signature = [137, 80, 78, 71, 13, 10, 26, 10];

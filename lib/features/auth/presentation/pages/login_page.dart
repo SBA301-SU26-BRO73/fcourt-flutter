@@ -64,6 +64,7 @@ class _LoginPageState extends State<LoginPage> {
                   constraints: const BoxConstraints(maxWidth: 440),
                   child: Form(
                     key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -176,6 +177,10 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: () =>
                               context.push(AppRoutes.registerCustomer),
                           child: const Text('Chưa có tài khoản? Đăng ký'),
+                        ),
+                        TextButton(
+                          onPressed: () => context.push('/branches'),
+                          child: const Text('Xem sân không cần đăng nhập'),
                         ),
                         TextButton(
                           onPressed: () =>

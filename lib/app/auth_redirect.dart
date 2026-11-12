@@ -29,6 +29,13 @@ const publicRoutes = {
   AppRoutes.forgotPassword,
 };
 
+/// Khách chưa đăng nhập được xem chi nhánh, sân và lưới slot (BE mở `GET /api/public/**`);
+/// giữ chỗ và đặt sân vẫn bắt đăng nhập.
+bool isGuestBrowseRoute(String location) =>
+    location == '/branches' ||
+    RegExp(r'^/branches/[0-9]+$').hasMatch(location) ||
+    RegExp(r'^/courts/[0-9]+/slots$').hasMatch(location);
+
 /// Quyết định chuyển hướng theo trạng thái đăng nhập; `null` nghĩa là ở lại.
 ///
 /// - [AppRoutes.resetPassword] mở được ở mọi trạng thái: link trong email có thể đến khi app
@@ -43,7 +50,9 @@ String? authRedirect(AuthStatus status, String location, {UserRole? role}) {
     case AuthStatus.unknown:
       return location == AppRoutes.splash ? null : AppRoutes.splash;
     case AuthStatus.unauthenticated:
-      return publicRoutes.contains(location) ? null : AppRoutes.login;
+      return publicRoutes.contains(location) || isGuestBrowseRoute(location)
+          ? null
+          : AppRoutes.login;
     case AuthStatus.offlineStaff:
       return location == AppRoutes.offlineCheckIn
           ? null

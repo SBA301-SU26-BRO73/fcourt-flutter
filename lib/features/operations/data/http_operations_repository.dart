@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/error/failure.dart';
+import '../domain/check_in_failure.dart';
 import '../domain/schedule.dart';
 
 class HttpOperationsRepository implements OperationsRepository {
@@ -45,11 +46,11 @@ class HttpOperationsRepository implements OperationsRepository {
     return value.substring(0, 5);
   }
 
-  Future<T> call<T>(Future<T> Function() action) async {
+  Future<T> call<T>(Future<T> Function() action, {bool checkIn = false}) async {
     try {
       return await action();
     } on DioException catch (e) {
-      throw failureFromDio(e);
+      throw checkIn ? checkInFailureFromDio(e) : failureFromDio(e);
     } on TypeError {
       throw const UnknownFailure('Dữ liệu lịch sân không hợp lệ');
     } on FormatException {
@@ -92,7 +93,7 @@ class HttpOperationsRepository implements OperationsRepository {
   );
 
   @override
-  Future<TicketPreview> preview(String code) => call(() async {
+  Future<TicketPreview> preview(String code) => call(checkIn: true, () async {
     final r = (await dio.post<Map<String, dynamic>>(
       '/api/staff/check-in/preview',
       data: {'checkInCode': code},
@@ -116,7 +117,7 @@ class HttpOperationsRepository implements OperationsRepository {
 
   @override
   Future<int> checkIn(String code, String key, {bool manual = false}) =>
-      call(() async {
+      call(checkIn: true, () async {
         final r = (await dio.post<Map<String, dynamic>>(
           '/api/staff/check-in/${manual ? 'manual' : 'verify'}',
           data: {'checkInCode': code},

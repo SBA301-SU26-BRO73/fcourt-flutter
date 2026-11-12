@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/error/failure.dart';
 import '../../../core/network/command_key.dart';
+import '../domain/check_in_failure.dart';
 import '../domain/schedule.dart';
 
 class CheckInDialog extends StatefulWidget {
@@ -81,7 +82,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
           ),
           title: Text(p.offline ? 'HỢP LỆ (OFFLINE)' : 'Nhận sân thành công'),
           content: Text(
-            '${p.name}\n${p.courtName}\n${p.date} · ${p.start}–${p.end}${p.offline ? '\nĐã ghi trên máy này. Đang chờ đối soát máy chủ.' : ''}',
+            '${p.name}\n${p.courtName}\n${displayDate(p.date)} · ${p.start}–${p.end}${p.offline ? '\nĐã ghi trên máy này. Đang chờ đối soát máy chủ.' : ''}',
           ),
           actions: [
             FilledButton(
@@ -118,7 +119,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
             if (_busy) const LinearProgressIndicator(),
             if (_preview case final p?)
               Text(
-                '${p.name}\n${p.courtName}\n${p.date} · ${p.start}–${p.end}',
+                '${p.name}\n${p.courtName}\n${displayDate(p.date)} · ${p.start}–${p.end}',
               ),
             if (_error != null)
               Text(

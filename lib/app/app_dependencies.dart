@@ -51,6 +51,8 @@ import '../features/payment/data/repositories/payment_repository_impl.dart';
 import '../features/payment/data/repositories/qr_gallery_saver.dart';
 import '../features/payment/domain/repositories/payment_repository.dart';
 import '../features/transactions/data/ledger_report_exporter.dart';
+import '../features/notifications/data/notifications_repository_impl.dart';
+import '../features/notifications/domain/app_notification.dart';
 import '../features/refunds/domain/admin_refunds.dart';
 import '../features/refunds/data/admin_refunds_impl.dart';
 import '../features/refunds/domain/refund.dart';
@@ -133,6 +135,7 @@ class AppDependencies {
     this.adminRefunds,
     this.ledgerExporter,
     this.reviews,
+    this.notificationsRepository,
     this.reviewPhotoPicker,
     this.reviewPhotoUploader,
     this.promos,
@@ -183,6 +186,7 @@ class AppDependencies {
   final AdminRefunds? adminRefunds;
   final LedgerReportExporter? ledgerExporter;
   final ReviewRepository? reviews;
+  final NotificationsRepository? notificationsRepository;
   final ReviewPhotoPicker? reviewPhotoPicker;
   final ReviewPhotoUploader? reviewPhotoUploader;
   final PromoRepository? promos;
@@ -336,6 +340,7 @@ class AppDependencies {
       ),
       refundRepository: RefundRepositoryImpl(dio),
       adminRefunds: AdminRefundsImpl(dio),
+      notificationsRepository: NotificationsRepositoryImpl(dio),
       ticketRepository: TicketRepositoryImpl(dio),
       ticketSaver: TicketGallerySaver(),
       adminPaymentRepository: AdminPaymentRepositoryImpl(dio),

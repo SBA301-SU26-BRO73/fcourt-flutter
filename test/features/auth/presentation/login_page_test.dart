@@ -74,6 +74,20 @@ void main() {
     expect(find.text('Email không hợp lệ'), findsOneWidget);
   });
 
+  testWidgets('lỗi email biến mất ngay khi nhập lại email đúng', (tester) async {
+    await pumpPage(tester);
+
+    await tester.enterText(field('Email'), 'not-an-email');
+    await tester.enterText(field('Mật khẩu'), 'x');
+    await tester.tap(submitButton());
+    await tester.pump();
+    expect(find.text('Email không hợp lệ'), findsOneWidget);
+
+    await tester.enterText(field('Email'), 'customer01@demo.com');
+    await tester.pump();
+    expect(find.text('Email không hợp lệ'), findsNothing);
+  });
+
   testWidgets('đăng nhập đúng thì phiên được mở với vai trò của người dùng', (tester) async {
     when(() => repository.login(email: 'customer@demo.com', password: 'S3cret-pass'))
         .thenAnswer((_) async => adminUser);

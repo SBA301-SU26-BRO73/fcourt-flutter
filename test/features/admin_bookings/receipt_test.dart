@@ -51,4 +51,47 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+
+  testWidgets('pending receipt shows the review action only when a handler is given', (
+    tester,
+  ) async {
+    final row = bookingRow(1);
+    AdminBooking build(String? payment) => AdminBooking(
+      id: row.id,
+      code: row.code,
+      branchId: row.branchId,
+      branchName: row.branchName,
+      courtId: row.courtId,
+      courtName: row.courtName,
+      date: row.date,
+      createdAt: row.createdAt,
+      status: row.status,
+      amount: row.amount,
+      paymentStatus: payment,
+    );
+    var reviewed = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AdminBookingDetail(
+          booking: build('PENDING'),
+          onReviewPayment: () => reviewed++,
+        ),
+      ),
+    );
+    await tester.tap(find.text('Duyệt / từ chối biên lai'));
+    expect(reviewed, 1);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AdminBookingDetail(
+          booking: build('CONFIRMED'),
+          onReviewPayment: () => reviewed++,
+        ),
+      ),
+    );
+    expect(find.text('Duyệt / từ chối biên lai'), findsNothing);
+    await tester.pumpWidget(
+      MaterialApp(home: AdminBookingDetail(booking: build('PENDING'))),
+    );
+    expect(find.text('Duyệt / từ chối biên lai'), findsNothing);
+  });
 }

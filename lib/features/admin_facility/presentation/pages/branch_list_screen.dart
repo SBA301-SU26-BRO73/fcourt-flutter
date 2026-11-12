@@ -17,6 +17,9 @@ class BranchListScreen extends StatelessWidget {
     required this.onOpenCourts,
     this.onOpenDashboard,
     this.onOpenImages,
+    this.onOpenPayments,
+    this.onOpenRefunds,
+    this.onOpenTransactions,
   });
 
   final Future<Branch?> Function() onCreateBranch;
@@ -26,6 +29,11 @@ class BranchListScreen extends StatelessWidget {
 
   /// Mở màn quản lý ảnh chi nhánh (SCRUM-48); null thì không hiện nút.
   final void Function(Branch branch)? onOpenImages;
+
+  /// Duyệt/từ chối biên lai, hoàn tiền và sổ giao dịch của từng chi nhánh (null thì ẩn).
+  final void Function(Branch branch)? onOpenPayments;
+  final void Function(Branch branch)? onOpenRefunds;
+  final void Function(Branch branch)? onOpenTransactions;
 
   Future<void> _create(BuildContext context) async {
     final created = await onCreateBranch();
@@ -126,6 +134,15 @@ class BranchListScreen extends StatelessWidget {
                   onImages: onOpenImages == null
                       ? null
                       : () => onOpenImages!(branch),
+                  onPayments: onOpenPayments == null
+                      ? null
+                      : () => onOpenPayments!(branch),
+                  onRefunds: onOpenRefunds == null
+                      ? null
+                      : () => onOpenRefunds!(branch),
+                  onTransactions: onOpenTransactions == null
+                      ? null
+                      : () => onOpenTransactions!(branch),
                 );
               },
             ),
@@ -159,12 +176,18 @@ class BranchCard extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     this.onImages,
+    this.onPayments,
+    this.onRefunds,
+    this.onTransactions,
   });
 
   final Branch branch;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback? onImages;
+  final VoidCallback? onPayments;
+  final VoidCallback? onRefunds;
+  final VoidCallback? onTransactions;
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +256,33 @@ class BranchCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _InfoRow(Icons.grid_view_rounded, '${branch.courtCount} sân'),
+                  if (onPayments != null || onRefunds != null || onTransactions != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Wrap(
+                        spacing: 8,
+                        children: [
+                          if (onPayments != null)
+                            ActionChip(
+                              avatar: const Icon(Icons.fact_check_outlined, size: 18),
+                              label: const Text('Biên lai'),
+                              onPressed: onPayments,
+                            ),
+                          if (onRefunds != null)
+                            ActionChip(
+                              avatar: const Icon(Icons.currency_exchange, size: 18),
+                              label: const Text('Hoàn tiền'),
+                              onPressed: onRefunds,
+                            ),
+                          if (onTransactions != null)
+                            ActionChip(
+                              avatar: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+                              label: const Text('Giao dịch'),
+                              onPressed: onTransactions,
+                            ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),

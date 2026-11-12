@@ -54,3 +54,33 @@ abstract interface class BookingRepository {
   Future<BookingPage> history(String status, {int page = 0});
   Future<Booking> detail(int id);
 }
+
+/// Gộp các slot liền nhau: `07:00–07:30`, `07:30–08:00` -> `07:00–08:00`. Slot không liền
+/// nhau hoặc không đúng dạng `HH:mm–HH:mm` được giữ nguyên.
+List<String> mergeSlotRanges(List<String> slots) {
+  final pattern = RegExp(r'^(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})$');
+  final result = <String>[];
+  String? start;
+  String? end;
+  void flush() {
+    if (start != null) result.add('$start–$end');
+    start = null;
+    end = null;
+  }
+
+  for (final slot in slots) {
+    final m = pattern.firstMatch(slot.trim());
+    if (m == null) {
+      flush();
+      result.add(slot);
+    } else if (end == m[1]) {
+      end = m[2];
+    } else {
+      flush();
+      start = m[1];
+      end = m[2];
+    }
+  }
+  flush();
+  return result;
+}
