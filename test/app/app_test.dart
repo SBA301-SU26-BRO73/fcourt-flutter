@@ -192,7 +192,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Tài khoản'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Đăng xuất'));
+    await tester.tap(find.text('Đăng xuất'));
     await tester.pumpAndSettle();
 
     verify(() => repository.logout()).called(1);

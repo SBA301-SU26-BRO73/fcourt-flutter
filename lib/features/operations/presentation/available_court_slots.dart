@@ -62,57 +62,53 @@ class _AvailableCourtSlotsState extends State<AvailableCourtSlots> {
       }
       final slots = snapshot.data ?? [];
       if (slots.isEmpty) return const Text('Chưa có lịch mở sân cho ngày này.');
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: slots.map((slot) {
-            final session = widget.sessions
-                .where(
-                  (s) =>
-                      s.date == widget.date &&
-                      [
-                        'CONFIRMED',
-                        'CHECKED_IN',
-                        'PENDING_PAYMENT',
-                        'AWAITING_CONFIRMATION',
-                      ].contains(s.status) &&
-                      s.start.compareTo(slot.start) <= 0 &&
-                      (s.end == '00:00' || s.end.compareTo(slot.start) > 0),
-                )
-                .firstOrNull;
-            final free = slot.available && session == null;
-            final playing = session?.playing == true;
-            final start = _hhmm(slot.start);
-            final status = free
-                ? 'Trống'
-                : playing
-                ? 'Đang chơi'
-                : session != null
-                ? 'Đã đặt'
-                : widget.date == businessToday() && _ended(slot)
-                ? 'Đã qua'
-                : 'Không trống';
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Semantics(
-                label: '$start $status',
-                child: OutlinedButton(
-                  style: playing
-                      ? OutlinedButton.styleFrom(
-                          disabledBackgroundColor: context.fc.danger.container,
-                          disabledForegroundColor: context.fc.danger.color,
-                        )
-                      : null,
-                  onPressed: free ? () => widget.onSelected(slot) : null,
-                  child: Text(
-                    '$start\n${playing ? '$status · ${session!.name.isEmpty ? 'Khách vãng lai' : session.name}' : status}',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+      return Wrap(
+        spacing: Gap.sm,
+        runSpacing: Gap.sm,
+        children: slots.map((slot) {
+          final session = widget.sessions
+              .where(
+                (s) =>
+                    s.date == widget.date &&
+                    [
+                      'CONFIRMED',
+                      'CHECKED_IN',
+                      'PENDING_PAYMENT',
+                      'AWAITING_CONFIRMATION',
+                    ].contains(s.status) &&
+                    s.start.compareTo(slot.start) <= 0 &&
+                    (s.end == '00:00' || s.end.compareTo(slot.start) > 0),
+              )
+              .firstOrNull;
+          final free = slot.available && session == null;
+          final playing = session?.playing == true;
+          final start = _hhmm(slot.start);
+          final status = free
+              ? 'Trống'
+              : playing
+              ? 'Đang chơi'
+              : session != null
+              ? 'Đã đặt'
+              : widget.date == businessToday() && _ended(slot)
+              ? 'Đã qua'
+              : 'Không trống';
+          return Semantics(
+            label: '$start $status',
+            child: OutlinedButton(
+              style: playing
+                  ? OutlinedButton.styleFrom(
+                      disabledBackgroundColor: context.fc.danger.container,
+                      disabledForegroundColor: context.fc.danger.color,
+                    )
+                  : null,
+              onPressed: free ? () => widget.onSelected(slot) : null,
+              child: Text(
+                '$start\n${playing ? '$status · ${session!.name.isEmpty ? 'Khách vãng lai' : session.name}' : status}',
+                textAlign: TextAlign.center,
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        }).toList(),
       );
     },
   );

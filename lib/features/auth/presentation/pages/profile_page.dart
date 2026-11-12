@@ -160,7 +160,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ListTile(
                   leading: const Icon(Icons.palette_outlined),
                   title: const Text('Cài đặt'),
-                                    trailing: const Icon(Icons.chevron_right_rounded),
+                  trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => context.push('/settings'),
                 ),
                 const Divider(indent: 56, endIndent: 16),
@@ -174,11 +174,8 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           const SizedBox(height: Gap.xl),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: colors.error,
-              side: BorderSide(color: colors.error),
-            ),
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: colors.error),
             onPressed: () =>
                 context.read<AuthBloc>().add(const AuthLogoutRequested()),
             icon: const Icon(Icons.logout_rounded),

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/widgets/fc_widgets.dart';
+import '../../../../app/widgets/sport_icon.dart';
 import '../../domain/entities/court_type.dart';
 import '../../domain/entities/court_type_input.dart';
 import '../../domain/usecases/save_court_type.dart';
 import '../bloc/catalog_form_bloc.dart';
 import '../bloc/catalog_list_bloc.dart';
-import '../formatters.dart';
 import '../widgets/catalog_notice.dart';
 import '../widgets/catalog_list_view.dart';
 import '../widgets/confirm_delete_dialog.dart';
@@ -24,7 +25,8 @@ class CourtTypesTab extends StatefulWidget {
   State<CourtTypesTab> createState() => _CourtTypesTabState();
 }
 
-class _CourtTypesTabState extends State<CourtTypesTab> with AutomaticKeepAliveClientMixin {
+class _CourtTypesTabState extends State<CourtTypesTab>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
@@ -50,7 +52,11 @@ class _CourtTypesTabState extends State<CourtTypesTab> with AutomaticKeepAliveCl
       bloc.add(const CatalogRefreshed());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(editing == null ? 'Đã thêm loại sân' : 'Đã lưu loại sân')),
+          SnackBar(
+            content: Text(
+              editing == null ? 'Đã thêm loại sân' : 'Đã lưu loại sân',
+            ),
+          ),
         );
       }
     }
@@ -61,7 +67,8 @@ class _CourtTypesTabState extends State<CourtTypesTab> with AutomaticKeepAliveCl
     final confirmed = await confirmDelete(
       context,
       title: 'Xóa loại sân?',
-      message: 'Loại sân "${courtType.name}" sẽ bị xóa khỏi danh mục. '
+      message:
+          'Loại sân "${courtType.name}" sẽ bị xóa khỏi danh mục. '
           'Các sân đã dùng loại này không bị ảnh hưởng.',
     );
     if (confirmed) bloc.add(CatalogItemDeleted(courtType.id));
@@ -102,7 +109,6 @@ class _CourtTypesTabState extends State<CourtTypesTab> with AutomaticKeepAliveCl
   }
 }
 
-
 class _CourtTypeCard extends StatelessWidget {
   const _CourtTypeCard({
     required this.courtType,
@@ -118,32 +124,33 @@ class _CourtTypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = parseHexColor(courtType.color);
+    final colors = Theme.of(context).colorScheme;
     final subtitle = [
       if (courtType.nameEn != null) courtType.nameEn!,
       if (courtType.description != null) courtType.description!,
     ].join(' · ');
-    return Card(
+    return FcCard(
+      padding: EdgeInsets.zero,
       child: ListTile(
         onTap: deleting ? null : onTap,
         leading: CircleAvatar(
-          backgroundColor: color ?? Theme.of(context).colorScheme.primaryContainer,
-          child: Text(
-            courtType.name.isEmpty ? '?' : courtType.name.characters.first.toUpperCase(),
-            style: TextStyle(
-              color: color == null
-                  ? Theme.of(context).colorScheme.onPrimaryContainer
-                  : (color.computeLuminance() > 0.5 ? Colors.black : Colors.white),
-            ),
+          backgroundColor: colors.primaryContainer,
+          child: SportIcon.named(
+            courtType.name,
+            color: colors.onPrimaryContainer,
           ),
         ),
         title: Text(courtType.name),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (subtitle.isNotEmpty) Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+            if (subtitle.isNotEmpty)
+              Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 4),
-            StatusChip(courtType.active ? 'Hoạt động' : 'Tạm ngưng', highlighted: courtType.active),
+            StatusChip(
+              courtType.active ? 'Hoạt động' : 'Tạm ngưng',
+              highlighted: courtType.active,
+            ),
           ],
         ),
         trailing: deleting

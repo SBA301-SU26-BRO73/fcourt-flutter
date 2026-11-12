@@ -204,6 +204,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Sân 1'), findsOneWidget);
     expect(find.textContaining('Chờ nhận sân'), findsOneWidget);
-    expect(find.text('Quét vé'), findsOneWidget);
+    expect(find.text('Nhập mã vé'), findsOneWidget);
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/widgets/fc_widgets.dart';
 import '../bloc/catalog_list_bloc.dart';
 
 /// Khung danh sách phân trang dùng chung: vòng chờ, lỗi kèm thử lại, danh sách rỗng,
@@ -46,9 +47,11 @@ class CatalogListView<T> extends StatelessWidget {
               children: [
                 SizedBox(
                   height: 380,
-                  child: _Message(
-                    icon: Icons.inbox_outlined,
-                    text: emptyMessage,
+                  child: Center(
+                    child: EmptyState(
+                      icon: Icons.inbox_outlined,
+                      message: emptyMessage,
+                    ),
                   ),
                 ),
               ],
@@ -59,11 +62,19 @@ class CatalogListView<T> extends StatelessWidget {
           onRefresh: onRefresh,
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 112),
+            padding: const EdgeInsets.fromLTRB(
+              Gap.md,
+              Gap.md,
+              Gap.md,
+              Gap.fabClearance,
+            ),
             itemCount: state.items.length + (state.hasMore ? 1 : 0),
             itemBuilder: (context, index) {
               if (index < state.items.length) {
-                return itemBuilder(context, state.items[index]);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: Gap.sm),
+                  child: itemBuilder(context, state.items[index]),
+                );
               }
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),

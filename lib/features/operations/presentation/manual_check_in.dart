@@ -73,6 +73,7 @@ class _ManualCheckInState extends State<ManualCheckIn> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('Dùng mã trên vé khi không quét được QR.'),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _code,
                 autofocus: true,
