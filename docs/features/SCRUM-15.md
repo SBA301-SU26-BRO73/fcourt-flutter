@@ -87,7 +87,7 @@ danh sách `errors` (chuỗi hoặc `{field, message}`) trong `ServerFailure`.
 
 ## Kiểm chứng
 
-Xem phần "Kiểm chứng chung" trong `docs/SCRUM-13.md` (chạy một lần cho cả
+Xem phần "Kiểm chứng chung" trong `docs/features/SCRUM-13.md` (chạy một lần cho cả
 nhánh `feature/Tuan-SCRUM-15-admin-facility-dashboard`). Test riêng của task:
 
 - `test/features/admin_facility/data/facility_repositories_test.dart`:
