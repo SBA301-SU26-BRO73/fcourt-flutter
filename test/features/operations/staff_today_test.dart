@@ -297,9 +297,9 @@ void main() {
       final loader = FontLoader('MaterialIcons')
         ..addFont(Future.value(ByteData.sublistView(icons.readAsBytesSync())));
       await loader.load();
-      final f = FontLoader('BeVietnamPro');
-      for (final n in ['Regular', 'Medium', 'Bold']) {
-        final bytes = File('assets/fonts/BeVietnamPro-$n.ttf')
+      final f = FontLoader('PlusJakartaSans');
+      for (final n in ['Regular', 'SemiBold', 'Bold']) {
+        final bytes = File('assets/fonts/PlusJakartaSans-$n.ttf')
             .readAsBytesSync();
         f.addFont(
           Future.value(ByteData.sublistView(Uint8List.fromList(bytes))),

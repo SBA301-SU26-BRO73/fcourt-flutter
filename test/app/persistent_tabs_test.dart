@@ -1,3 +1,4 @@
+import 'package:fcourt/app/widgets/floating_nav_bar.dart';
 import 'package:fcourt/app/app.dart';
 import 'package:fcourt/app/app_dependencies.dart';
 import 'package:fcourt/core/config/app_config.dart';
@@ -78,12 +79,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(venues.requests, [null]);
       expect(find.text('Sân hiển thị khi chọn tất cả'), findsOneWidget);
-      expect(find.byType(NavigationBar), findsOneWidget);
-      // Solid Material 3 bar: the body ends above it.
+      expect(find.byType(FloatingNavBar), findsOneWidget);
+      // Floating bar: the body ends above it.
       expect(find.byType(BackButton), findsNothing);
       expect(find.byKey(const ValueKey('discovery-scroll-hint')), findsNothing);
       expect(
-        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+        tester
+            .widget<FloatingNavBar>(find.byType(FloatingNavBar))
+            .selectedIndex,
         0,
       );
 
@@ -91,21 +94,21 @@ void main() {
         await tester.tap(
           find
               .descendant(
-                of: find.byType(NavigationBar),
+                of: find.byType(FloatingNavBar),
                 matching: find.text(label),
               )
               .hitTestable()
               .first,
         );
         await tester.pumpAndSettle();
-        expect(find.byType(NavigationBar), findsOneWidget);
+        expect(find.byType(FloatingNavBar), findsOneWidget);
       }
 
       await tab('Đơn của tôi');
       expect(find.byType(BookingHistoryScreen), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(NavigationBar),
+          of: find.byType(FloatingNavBar),
           matching: find.text('Hoạt động'),
         ),
         findsNothing,
@@ -118,7 +121,7 @@ void main() {
       await tester.tap(find.byTooltip('Tài khoản'));
       await tester.pumpAndSettle();
       expect(find.byType(ProfilePage), findsOneWidget);
-      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.byType(FloatingNavBar), findsNothing);
       expect(find.byType(BackButton), findsOneWidget);
       await tester.tap(find.text('Hồ sơ'));
       await tester.pumpAndSettle();
@@ -127,7 +130,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
-      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byType(FloatingNavBar), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     },
   );

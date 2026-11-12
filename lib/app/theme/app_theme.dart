@@ -7,16 +7,22 @@ import 'tokens.dart';
 class AppColors {
   const AppColors._();
 
-  /// Seed of the Material 3 colour scheme: the single teal accent.
-  static const primary = Color(0xFF006E65);
+  /// Seed of the Material 3 colour scheme: the indigo accent (light mode).
+  static const primary = Color(0xFF4F3FE8);
+
+  /// Lime accent of the dark mode and the rank badge on photos.
+  static const lime = Color(0xFFE4F45A);
+
+  /// Deep indigo of the filled bottom bar (light mode).
+  static const indigoDeep = Color(0xFF3928B9);
 }
 
-/// Material 3 theme. Flat solid surfaces (no gradients, glass or glow), one
-/// teal accent, cards one step above the page, secondary text at AA contrast.
+/// WP3b theme (approved mock-up): white page with an indigo accent, or navy
+/// page with a lime accent; Plus Jakarta Sans; radii 16 to 24; pill buttons.
 /// Every colour comes from [SlotPickerPalette] and [FcTokens].
 class AppTheme {
   const AppTheme._();
-  static const fontFamily = 'BeVietnamPro';
+  static const fontFamily = 'PlusJakartaSans';
 
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
@@ -31,45 +37,44 @@ class AppTheme {
       primary: p.accent,
       onPrimary: p.onAccent,
       primaryContainer: p.accentSoft,
-      onPrimaryContainer: dark
-          ? const Color(0xFFBFEFE6)
-          : const Color(0xFF00403A),
-      // One accent only: secondary and tertiary are quiet teal-greys.
-      secondary: dark ? const Color(0xFFB0CCC7) : const Color(0xFF3E5651),
-      onSecondary: dark ? const Color(0xFF173F3B) : Colors.white,
+      onPrimaryContainer: dark ? AppColors.lime : AppColors.indigoDeep,
+      secondary: dark ? const Color(0xFFB9C7DD) : const Color(0xFF3D4A63),
+      onSecondary: dark ? const Color(0xFF142334) : Colors.white,
       secondaryContainer: p.accentSoft,
-      onSecondaryContainer: dark
-          ? const Color(0xFFBFEFE6)
-          : const Color(0xFF00403A),
-      tertiary: dark ? const Color(0xFFB0CCC7) : const Color(0xFF3E5651),
-      onTertiary: dark ? const Color(0xFF173F3B) : Colors.white,
-      tertiaryContainer: p.surfaceRaised,
-      onTertiaryContainer: p.text,
+      onSecondaryContainer: dark ? AppColors.lime : AppColors.indigoDeep,
+      tertiary: dark ? const Color(0xFF8CE4B5) : const Color(0xFF0E7550),
+      onTertiary: dark ? const Color(0xFF0E1A2B) : Colors.white,
+      tertiaryContainer: dark
+          ? const Color(0xFF163E36)
+          : const Color(0xFFE6F5ED),
+      onTertiaryContainer: dark
+          ? const Color(0xFF8CE4B5)
+          : const Color(0xFF0E7550),
       error: p.danger,
       onError: dark ? const Color(0xFF601410) : Colors.white,
-      errorContainer: dark ? const Color(0xFF5C1A16) : const Color(0xFFFBE0DD),
+      errorContainer: dark ? const Color(0xFF4F2326) : const Color(0xFFFCE4E1),
       onErrorContainer: dark
           ? const Color(0xFFFFDAD6)
           : const Color(0xFF601410),
       surface: p.background,
       onSurface: p.text,
       onSurfaceVariant: p.muted,
-      surfaceContainerLowest: dark ? const Color(0xFF0B1013) : Colors.white,
+      surfaceContainerLowest: dark ? const Color(0xFF0A1424) : Colors.white,
       surfaceContainerLow: p.surface,
       surfaceContainer: p.surfaceRaised,
       surfaceContainerHigh: dark
-          ? const Color(0xFF263136)
-          : const Color(0xFFE1ECE9),
+          ? const Color(0xFF1F3048)
+          : const Color(0xFFFFFFFF),
       surfaceContainerHighest: dark
-          ? const Color(0xFF2E3A40)
-          : const Color(0xFFD8E5E2),
-      outline: dark ? const Color(0xFF879A9E) : const Color(0xFF6B7F85),
+          ? const Color(0xFF28405C)
+          : const Color(0xFFECECF6),
+      outline: dark ? const Color(0xFF8396B0) : const Color(0xFF8791A6),
       outlineVariant: p.line,
-      inverseSurface: dark ? const Color(0xFFE3EEEC) : const Color(0xFF223237),
-      onInverseSurface: dark ? const Color(0xFF14252A) : Colors.white,
-      inversePrimary: dark ? const Color(0xFF006E65) : const Color(0xFF7FD8C9),
+      inverseSurface: dark ? const Color(0xFFF3F6FF) : const Color(0xFF172238),
+      onInverseSurface: dark ? const Color(0xFF142334) : Colors.white,
+      inversePrimary: dark ? const Color(0xFF4F3FE8) : const Color(0xFFC9C3FF),
       surfaceTint: Colors.transparent,
-      shadow: Colors.black,
+      shadow: const Color(0xFF14213C),
     );
   }
 
@@ -117,12 +122,21 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         foregroundColor: scheme.onSurface,
-        centerTitle: false,
+        centerTitle: true,
         elevation: 0,
+        toolbarHeight: 58,
         systemOverlayStyle:
             (dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
                 .copyWith(statusBarColor: Colors.transparent),
-        titleTextStyle: text.titleLarge,
+        titleTextStyle: text.titleMedium?.copyWith(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (_) => const _RoundNavIcon(Icons.chevron_left),
+        closeButtonIconBuilder: (_) => const _RoundNavIcon(Icons.close),
+        drawerButtonIconBuilder: (_) => const _RoundNavIcon(Icons.menu),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
@@ -145,7 +159,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerLow,
+        fillColor: scheme.surfaceContainer,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: Gap.lg,
           vertical: Gap.lg,
@@ -159,8 +173,8 @@ class AppTheme {
         helperStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
         prefixIconColor: scheme.onSurfaceVariant,
         suffixIconColor: scheme.onSurfaceVariant,
-        border: input(scheme.outline),
-        enabledBorder: input(scheme.outline),
+        border: input(scheme.outlineVariant),
+        enabledBorder: input(scheme.outlineVariant),
         disabledBorder: input(scheme.outlineVariant),
         focusedBorder: input(scheme.primary, 2),
         errorBorder: input(scheme.error),
@@ -190,7 +204,7 @@ class AppTheme {
           minimumSize: const Size(Gap.touch, Gap.touch),
           padding: buttonPadding,
           foregroundColor: scheme.onSurface,
-          side: BorderSide(color: scheme.outline),
+          side: BorderSide(color: scheme.outlineVariant, width: 1.4),
           shape: pill,
           textStyle: buttonText,
         ),
@@ -219,8 +233,8 @@ class AppTheme {
         extendedTextStyle: buttonText,
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
-        selectedColor: scheme.primaryContainer,
+        backgroundColor: scheme.surfaceContainer,
+        selectedColor: scheme.primary,
         side: BorderSide(color: scheme.outlineVariant),
         shape: pill,
         showCheckmark: false,
@@ -228,8 +242,14 @@ class AppTheme {
         labelStyle: TextStyle(
           fontFamily: fontFamily,
           color: scheme.onSurface,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+        secondaryLabelStyle: TextStyle(
+          fontFamily: fontFamily,
+          color: scheme.onPrimary,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
         ),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
@@ -238,7 +258,7 @@ class AppTheme {
           backgroundColor: scheme.surfaceContainerLow,
           selectedBackgroundColor: scheme.primaryContainer,
           selectedForegroundColor: scheme.onPrimaryContainer,
-          side: BorderSide(color: scheme.outline),
+          side: BorderSide(color: scheme.outlineVariant),
           textStyle: buttonText,
         ),
       ),
@@ -249,7 +269,7 @@ class AppTheme {
         labelColor: scheme.primary,
         unselectedLabelColor: scheme.onSurfaceVariant,
         labelStyle: buttonText,
-        unselectedLabelStyle: buttonText.copyWith(fontWeight: FontWeight.w500),
+        unselectedLabelStyle: buttonText.copyWith(fontWeight: FontWeight.w600),
         overlayColor: WidgetStatePropertyAll(
           scheme.primary.withValues(alpha: .08),
         ),
@@ -305,6 +325,9 @@ class AppTheme {
         backgroundColor: scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         indicatorColor: scheme.primaryContainer,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.md),
+        ),
         elevation: 0,
         height: 72,
         labelTextStyle: WidgetStateProperty.resolveWith(
@@ -313,7 +336,7 @@ class AppTheme {
             fontSize: 12,
             fontWeight: states.contains(WidgetState.selected)
                 ? FontWeight.w700
-                : FontWeight.w500,
+                : FontWeight.w600,
             color: states.contains(WidgetState.selected)
                 ? scheme.onSurface
                 : scheme.onSurfaceVariant,
@@ -322,7 +345,7 @@ class AppTheme {
         iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
             color: states.contains(WidgetState.selected)
-                ? scheme.onPrimaryContainer
+                ? scheme.primary
                 : scheme.onSurfaceVariant,
           ),
         ),
@@ -334,7 +357,7 @@ class AppTheme {
           fontFamily: fontFamily,
           color: scheme.onInverseSurface,
           fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
         actionTextColor: scheme.inversePrimary,
         elevation: 2,
@@ -368,8 +391,8 @@ class AppTheme {
     );
   }
 
-  /// Be Vietnam Pro, three weights (400, 500, 700). Screen titles stay at 22sp
-  /// and below; nothing is smaller than 12sp.
+  /// Plus Jakarta Sans, three weights (400, 600, 700). Screen titles stay at
+  /// 22sp and below; nothing is smaller than 12sp.
   static TextTheme _textTheme(TextTheme base, ColorScheme scheme) {
     TextStyle? style(
       TextStyle? source,
@@ -418,8 +441,29 @@ class AppTheme {
       bodyMedium: style(base.bodyMedium, FontWeight.w400, 14, height: 1.5),
       bodySmall: style(base.bodySmall, FontWeight.w400, 12, height: 1.45),
       labelLarge: style(base.labelLarge, FontWeight.w700, 14),
-      labelMedium: style(base.labelMedium, FontWeight.w500, 12),
-      labelSmall: style(base.labelSmall, FontWeight.w500, 12),
+      labelMedium: style(base.labelMedium, FontWeight.w600, 12),
+      labelSmall: style(base.labelSmall, FontWeight.w600, 12),
+    );
+  }
+}
+
+/// Circle with a thin line around an icon: the back, close and menu buttons of
+/// every AppBar (mock-up: 42dp circle, hairline border).
+class _RoundNavIcon extends StatelessWidget {
+  const _RoundNavIcon(this.icon);
+  final IconData icon;
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: colors.surfaceContainerLow,
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Icon(icon, size: 24, color: colors.onSurface),
     );
   }
 }
