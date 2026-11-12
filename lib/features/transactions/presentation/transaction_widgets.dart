@@ -53,6 +53,7 @@ class TransactionTile extends StatelessWidget {
   final PaymentTransaction entry;
   @override
   Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.symmetric(vertical: 4),
     child: ListTile(
       title: Text('${entry.branch} · ${entry.court}'),
       subtitle: Column(
@@ -81,7 +82,7 @@ class TransactionTile extends StatelessWidget {
         ],
       ),
       trailing: Text(
-        '${entry.amount >= 0 ? '+' : ''}${vnd(entry.amount)}',
+        '${entry.amount >= 0 && entry.status == 'SUCCESS' && entry.transactionType != 'REFUND' ? '+' : ''}${vnd(entry.amount)}',
         style: TextStyle(
           color: entry.transactionType == 'REFUND'
               ? Theme.of(context).colorScheme.error
