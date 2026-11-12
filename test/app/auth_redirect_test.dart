@@ -67,6 +67,23 @@ void main() {
       expect(authRedirect(AuthStatus.authenticated, AppRoutes.profile), isNull);
     });
 
+    test('khách chưa đăng nhập xem được chi nhánh, sân và lưới slot nhưng không đặt được', () {
+      for (final path in ['/branches', '/branches/12', '/courts/9/slots']) {
+        expect(authRedirect(AuthStatus.unauthenticated, path), isNull, reason: path);
+      }
+      for (final path in [
+        '/booking/summary',
+        '/booking/confirm',
+        '/bookings',
+        '/bookings/5',
+        '/payments/checkout',
+        '/branches/abc',
+        '/courts/9/slots/x',
+      ]) {
+        expect(authRedirect(AuthStatus.unauthenticated, path), AppRoutes.login, reason: path);
+      }
+    });
+
     test('quản lý nhân viên chỉ dành cho chủ sân', () {
       expect(authRedirect(AuthStatus.authenticated, AppRoutes.staff, role: UserRole.admin), isNull);
       for (final role in [UserRole.customer, UserRole.staff, UserRole.superAdmin]) {

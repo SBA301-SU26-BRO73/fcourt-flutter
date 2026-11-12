@@ -178,6 +178,10 @@ class _LoginPageState extends State<LoginPage> {
                           child: const Text('Chưa có tài khoản? Đăng ký'),
                         ),
                         TextButton(
+                          onPressed: () => context.push('/branches'),
+                          child: const Text('Xem sân không cần đăng nhập'),
+                        ),
+                        TextButton(
                           onPressed: () =>
                               context.push(AppRoutes.registerOwner),
                           child: const Text('Đăng ký làm chủ sân'),
