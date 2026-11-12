@@ -1,13 +1,13 @@
-import '../../../../app/widgets/account_actions.dart';
-import '../../../../app/widgets/fc_widgets.dart';
-import '../../domain/entities/user_role.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/auth_redirect.dart';
-
+import '../../../../app/theme/app_theme.dart';
+import '../../../../app/widgets/account_actions.dart';
+import '../../../../app/widgets/fc_widgets.dart';
+import '../../../../app/widgets/wp3b_widgets.dart';
+import '../../domain/entities/user_role.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/change_password_bloc.dart';
 import '../bloc/profile_bloc.dart';
@@ -79,21 +79,23 @@ class _ProfilePageState extends State<ProfilePage> {
         leading: const AccountBackButton(),
         title: const Text('Tài khoản'),
         actions: [
-          IconButton(
+          CircleIconButton(
+            icon: Icons.settings_outlined,
             tooltip: 'Cài đặt',
             onPressed: () => context.push('/settings'),
-            icon: const Icon(Icons.settings_outlined),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(Gap.screen, Gap.sm, Gap.screen, 32),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, Gap.xxl),
         children: [
           FcCard(
+            radius: 22,
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 28,
+                  radius: 26,
                   backgroundColor: colors.primaryContainer,
                   foregroundColor: colors.onPrimaryContainer,
                   child: Text(
@@ -102,6 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         : 'F',
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: colors.onPrimaryContainer,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -114,72 +117,89 @@ class _ProfilePageState extends State<ProfilePage> {
                         user?.displayName ?? 'Tài khoản',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
+                      const SizedBox(height: 3),
                       Text(
                         user?.email ?? '',
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 11,
                           color: colors.onSurfaceVariant,
                         ),
                       ),
+                      if (user != null) ...[
+                        const SizedBox(height: 8),
+                        TintTag(user.role.label),
+                      ],
                     ],
                   ),
                 ),
                 const SizedBox(width: Gap.sm),
                 FilledButton.tonal(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    textStyle: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   onPressed: () => context.push('/profile/edit'),
                   child: const Text('Hồ sơ'),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: Gap.xxl),
-          const SectionHeader('Tổng quát'),
-          const SizedBox(height: Gap.md),
+          const SizedBox(height: 16),
           FcCard(
-            padding: const EdgeInsets.symmetric(vertical: Gap.xs),
+            radius: 22,
+            padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
               children: [
                 if (user?.role == UserRole.customer) ...[
-                  ListTile(
-                    leading: const Icon(Icons.confirmation_number_outlined),
-                    title: const Text('Lịch sử đặt sân'),
-                    trailing: const Icon(Icons.chevron_right_rounded),
+                  _AccountRow(
+                    icon: Icons.confirmation_number_outlined,
+                    title: 'Lịch sử đặt sân',
                     onTap: () => context.go('/bookings'),
                   ),
-                  const Divider(indent: 56, endIndent: 16),
-                  ListTile(
-                    leading: const Icon(Icons.receipt_long_outlined),
-                    title: const Text('Lịch sử giao dịch'),
-                    trailing: const Icon(Icons.chevron_right_rounded),
+                  const _RowDivider(),
+                  _AccountRow(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Lịch sử giao dịch',
                     onTap: () => context.push('/payments/history'),
                   ),
-                  const Divider(indent: 56, endIndent: 16),
+                  const _RowDivider(),
                 ],
-                ListTile(
-                  leading: const Icon(Icons.palette_outlined),
-                  title: const Text('Cài đặt'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                _AccountRow(
+                  icon: Icons.palette_outlined,
+                  title: 'Cài đặt',
                   onTap: () => context.push('/settings'),
                 ),
-                const Divider(indent: 56, endIndent: 16),
-                ListTile(
-                  leading: const Icon(Icons.lock_outline_rounded),
-                  title: const Text('Đổi mật khẩu'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                const _RowDivider(),
+                _AccountRow(
+                  icon: Icons.lock_outline_rounded,
+                  title: 'Đổi mật khẩu',
                   onTap: _changePassword,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: Gap.xl),
-          TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: colors.error),
-            onPressed: () =>
-                context.read<AuthBloc>().add(const AuthLogoutRequested()),
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('Đăng xuất'),
+          const SizedBox(height: 16),
+          FcCard(
+            radius: 22,
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: _AccountRow(
+              icon: Icons.logout_rounded,
+              title: 'Đăng xuất',
+              danger: true,
+              onTap: () =>
+                  context.read<AuthBloc>().add(const AuthLogoutRequested()),
+            ),
           ),
         ],
       ),
@@ -208,18 +228,19 @@ class _ProfilePageState extends State<ProfilePage> {
             leading: const AccountBackButton(),
             title: const Text('Hồ sơ'),
             actions: [
-              IconButton(
+              CircleIconButton(
+                icon: Icons.settings_outlined,
                 tooltip: 'Cài đặt',
-                icon: const Icon(Icons.settings_outlined),
                 onPressed: () => context.push(AppRoutes.settings),
               ),
+              const SizedBox(width: 8),
             ],
           ),
           body: SafeArea(
             child: Align(
               alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 640),
                   child: Form(
@@ -230,22 +251,59 @@ class _ProfilePageState extends State<ProfilePage> {
                         Text(
                           'Thông tin cá nhân',
                           style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                              ?.copyWith(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -.7,
+                              ),
                         ),
-                        const SizedBox(height: 8),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.mail_outline),
-                          title: Text(user?.email ?? ''),
-                          subtitle: Text(user?.role.label ?? ''),
+                        const SizedBox(height: 14),
+                        FcCard(
+                          radius: 22,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.mail_outline,
+                                size: 20,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      user?.email ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      user?.role.label ?? '',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 17),
                         if (state.status == SubmissionStatus.failure &&
                             fieldErrors.isEmpty) ...[
                           ErrorBanner(
                             AuthMessages.localize(state.message ?? ''),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 17),
                         ],
                         AuthTextField(
                           controller: _fullName,
@@ -253,7 +311,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           validator: AuthValidators.fullName,
                           serverError: fieldErrors['fullName'],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 17),
                         AuthTextField(
                           controller: _phone,
                           label: 'Số điện thoại',
@@ -263,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           serverError: fieldErrors['phone'],
                           onSubmitted: (_) => _submit(),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 22),
                         FilledButton(
                           onPressed: state.isSubmitting ? null : _submit,
                           child: state.isSubmitting
@@ -276,13 +334,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                 )
                               : const Text('Lưu thay đổi'),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         OutlinedButton.icon(
                           onPressed: _changePassword,
                           icon: const Icon(Icons.lock_reset),
                           label: const Text('Đổi mật khẩu'),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         OutlinedButton.icon(
                           onPressed: () => context.read<AuthBloc>().add(
                             const AuthLogoutRequested(),
@@ -301,4 +359,67 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
   }
+}
+
+/// One row of the account list: 42dp tinted circle icon, 13px title, chevron.
+class _AccountRow extends StatelessWidget {
+  const _AccountRow({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.danger = false,
+  });
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final tone = danger ? context.fc.danger : null;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: tone?.container ?? colors.primaryContainer,
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: tone?.color ?? colors.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: tone?.color ?? colors.onSurface,
+                ),
+              ),
+            ),
+            if (!danger)
+              Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RowDivider extends StatelessWidget {
+  const _RowDivider();
+  @override
+  Widget build(BuildContext context) =>
+      const Divider(height: 1, indent: 70, endIndent: 14);
 }

@@ -3,7 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/auth_redirect.dart';
-import '../../../../app/widgets/fc_widgets.dart';
+import '../../../../app/theme/app_theme.dart';
+import '../../../../app/widgets/wp3b_widgets.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/login_bloc.dart';
 import '../bloc/submission_state.dart';
@@ -11,7 +12,10 @@ import '../messages.dart';
 import '../validators.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/google_mark.dart';
 
+/// WP3b mock-up screen 1: photo on top (323dp, 30dp lower corners, navy scrim),
+/// then the form on the page background.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -53,47 +57,44 @@ class _LoginPageState extends State<LoginPage> {
         final theme = Theme.of(context);
         final colors = theme.colorScheme;
         return Scaffold(
-          body: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Gap.screen,
-                  vertical: Gap.xl,
-                ),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 440),
-                  child: Form(
-                    key: _formKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            key: const ValueKey('login-skip'),
-                            onPressed: () => context.push('/branches'),
-                            child: const Text('Bỏ qua'),
-                          ),
-                        ),
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: BrandMark(size: 40),
-                        ),
-                        const SizedBox(height: Gap.md),
-                        Text(
-                          'Đăng nhập',
-                          style: theme.textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: Gap.lg),
-                        Column(
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _LoginPhoto(),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 23, 24, 23),
+                      child: Form(
+                        key: _formKey,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            Text(
+                              'Chào bạn trở lại',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -.7,
+                              ),
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              'Đăng nhập để tiếp tục đặt sân.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontSize: 12,
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 21),
                             if (state.status == SubmissionStatus.failure) ...[
                               ErrorBanner(
                                 AuthMessages.localize(state.message ?? ''),
                               ),
-                              const SizedBox(height: Gap.lg),
+                              const SizedBox(height: 17),
                             ],
                             AuthTextField(
                               controller: _email,
@@ -104,7 +105,7 @@ class _LoginPageState extends State<LoginPage> {
                               validator: AuthValidators.email,
                               serverError: fieldErrors['email'],
                             ),
-                            const SizedBox(height: Gap.lg),
+                            const SizedBox(height: 17),
                             AuthTextField(
                               controller: _password,
                               label: 'Mật khẩu',
@@ -114,18 +115,30 @@ class _LoginPageState extends State<LoginPage> {
                               autofillHints: const [AutofillHints.password],
                               validator: AuthValidators.loginPassword,
                               serverError: fieldErrors['password'],
+                              labelTrailing: InkWell(
+                                onTap: () =>
+                                    context.push(AppRoutes.forgotPassword),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 8,
+                                    bottom: 0,
+                                  ),
+                                  child: Text(
+                                    'Quên mật khẩu?',
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: colors.primary,
+                                        ),
+                                  ),
+                                ),
+                              ),
                               onSubmitted: (_) => _submit(),
                             ),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () =>
-                                    context.push(AppRoutes.forgotPassword),
-                                child: const Text('Quên mật khẩu?'),
-                              ),
-                            ),
-                            const SizedBox(height: Gap.xs),
+                            const SizedBox(height: 17),
                             FilledButton(
+                              style: _loginButton,
                               onPressed: state.isSubmitting ? null : _submit,
                               child: state.isSubmitting
                                   ? const SizedBox(
@@ -135,28 +148,37 @@ class _LoginPageState extends State<LoginPage> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Text('Đăng nhập'),
+                                  : const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('Đăng nhập'),
+                                        SizedBox(width: 8),
+                                        Icon(Icons.arrow_forward, size: 18),
+                                      ],
+                                    ),
                             ),
-                            const SizedBox(height: Gap.lg),
+                            const SizedBox(height: 18),
                             Row(
                               children: [
-                                const Expanded(child: Divider()),
+                                const Expanded(child: Divider(height: 1)),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: Gap.md,
+                                    horizontal: 14,
                                   ),
                                   child: Text(
                                     'hoặc',
                                     style: theme.textTheme.bodySmall?.copyWith(
+                                      fontSize: 10,
                                       color: colors.onSurfaceVariant,
                                     ),
                                   ),
                                 ),
-                                const Expanded(child: Divider()),
+                                const Expanded(child: Divider(height: 1)),
                               ],
                             ),
-                            const SizedBox(height: Gap.lg),
+                            const SizedBox(height: 18),
                             OutlinedButton(
+                              style: _loginButton,
                               onPressed: state.isSubmitting
                                   ? null
                                   : () => context.read<LoginBloc>().add(
@@ -165,25 +187,45 @@ class _LoginPageState extends State<LoginPage> {
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  _GoogleMark(),
-                                  SizedBox(width: 10),
+                                  GoogleMark(size: 20),
+                                  SizedBox(width: 12),
                                   Text('Tiếp tục với Google'),
                                 ],
                               ),
                             ),
+                            const SizedBox(height: 14),
+                            Center(
+                              child: TextButton(
+                                onPressed: () =>
+                                    context.push(AppRoutes.registerCustomer),
+                                child: Text.rich(
+                                  TextSpan(
+                                    text: 'Chưa có tài khoản? ',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: colors.onSurface,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: 'Đăng ký',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          color: colors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: Gap.lg),
-                        TextButton(
-                          onPressed: () =>
-                              context.push(AppRoutes.registerCustomer),
-                          child: const Text('Chưa có tài khoản? Đăng ký'),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         );
@@ -192,26 +234,99 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-/// Dấu "G" của Google trong vòng tròn, để nút đăng nhập Google nhận ra ngay.
-class _GoogleMark extends StatelessWidget {
-  const _GoogleMark();
+/// Mock-up buttons: 50dp tall, 12px label.
+final _loginButton = ButtonStyle(
+  minimumSize: const WidgetStatePropertyAll(Size(48, 50)),
+  textStyle: WidgetStatePropertyAll(
+    TextStyle(
+      fontFamily: AppTheme.fontFamily,
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+    ),
+  ),
+);
+
+class _LoginPhoto extends StatelessWidget {
+  const _LoginPhoto();
+
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      width: 24,
-      height: 24,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: colors.outline),
-      ),
-      child: Text(
-        'G',
-        style: TextStyle(
-          fontWeight: FontWeight.w800,
-          fontSize: 13,
-          color: colors.onSurface,
+    final top = MediaQuery.paddingOf(context).top;
+    return SizedBox(
+      height: 323 + top,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              SportImages.onboarding,
+              fit: BoxFit.cover,
+              alignment: const Alignment(0, -.1),
+              excludeFromSemantics: true,
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.center,
+                  colors: [Color(0xB0102845), Color(0x00102845)],
+                ),
+              ),
+            ),
+            Positioned(
+              right: 20,
+              top: top < 44 ? 53 : top + 9,
+              child: Material(
+                color: const Color(0xDFFFFFFF),
+                shape: const StadiumBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  key: const ValueKey('login-skip'),
+                  onTap: () => context.push('/branches'),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                    child: Text(
+                      'Bỏ qua',
+                      style: TextStyle(
+                        color: Color(0xFF263451),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const Positioned(
+              left: 24,
+              bottom: 26,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'FCourt',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 35,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1.5,
+                      height: 1.15,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Hẹn nhau trên sân.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

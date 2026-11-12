@@ -11,19 +11,11 @@ import '../../domain/entities/user_role.dart';
 import '../bloc/auth_bloc.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({
-    super.key,
-    this.discoveryRepository,
-    this.adminTodo,
-    this.staffToday,
-  });
+  const HomePage({super.key, this.discoveryRepository, this.adminTodo});
   final DiscoveryRepository? discoveryRepository;
 
   /// Khối "Việc cần làm" của chủ sân; thay cho banner chào ở đầu trang chủ.
   final Widget? adminTodo;
-
-  /// Staff: today orders with one-tap check-in.
-  final Widget? staffToday;
 
   static String titleFor(UserRole role) => switch (role) {
     UserRole.customer => 'Đặt sân',
@@ -111,10 +103,6 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: Gap.xl),
                   if (user.role == UserRole.admin && adminTodo != null) ...[
                     adminTodo!,
-                    const SizedBox(height: Gap.xl),
-                  ],
-                  if (user.role == UserRole.staff && staffToday != null) ...[
-                    staffToday!,
                     const SizedBox(height: Gap.xl),
                   ],
                   if (user.role == UserRole.customer) ...[

@@ -49,7 +49,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder field(String label) => find.widgetWithText(TextFormField, label);
+  Finder field(String label) => find.byKey(ValueKey('auth-field-$label'));
 
   Future<void> fillForm(WidgetTester tester) async {
     await tester.enterText(field('Họ và tên chủ sân'), 'Chu San');

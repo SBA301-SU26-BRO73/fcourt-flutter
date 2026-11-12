@@ -47,7 +47,7 @@ void main() {
     );
   }
 
-  Finder field(String label) => find.widgetWithText(TextFormField, label);
+  Finder field(String label) => find.byKey(ValueKey('auth-field-$label'));
 
   Future<void> fillForm(WidgetTester tester, {String confirm = 'S3cret-pass'}) async {
     await tester.enterText(field('Họ và tên'), 'An Nguyen');

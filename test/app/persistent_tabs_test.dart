@@ -125,7 +125,7 @@ void main() {
       expect(find.byType(BackButton), findsOneWidget);
       await tester.tap(find.text('Hồ sơ'));
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(TextFormField, 'Họ và tên'), findsOneWidget);
+      expect(find.byKey(const ValueKey('auth-field-Họ và tên')), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
       await tester.pageBack();

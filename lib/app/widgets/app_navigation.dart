@@ -32,7 +32,7 @@ List<NavDestination> navDestinations(UserRole role) => switch (role) {
     NavDestination('Tài khoản', Icons.person_outline, AppRoutes.profile),
   ],
   UserRole.staff => const [
-    NavDestination('Tổng quan', Icons.home_outlined, AppRoutes.home),
+    NavDestination('Hôm nay', Icons.home_outlined, AppRoutes.home),
     NavDestination(
       'Lịch sân',
       Icons.calendar_today_outlined,

@@ -1,6 +1,3 @@
-import 'dart:io';
-import 'dart:ui' as ui;
-
 import 'package:dio/dio.dart';
 import 'package:fcourt/app/theme/app_theme.dart';
 import 'package:fcourt/core/error/failure.dart';
@@ -9,19 +6,17 @@ import 'package:fcourt/features/auth/domain/entities/user_role.dart';
 import 'package:fcourt/features/auth/domain/usecases/logout.dart';
 import 'package:fcourt/features/auth/domain/usecases/restore_session.dart';
 import 'package:fcourt/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:fcourt/features/auth/presentation/pages/home_page.dart';
 import 'package:fcourt/features/operations/data/http_operations_repository.dart';
 import 'package:fcourt/features/operations/domain/schedule.dart';
 import 'package:fcourt/features/operations/presentation/staff_today_cubit.dart';
-import 'package:fcourt/features/operations/presentation/staff_today_orders.dart';
+import 'package:fcourt/features/operations/presentation/staff_today_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../helpers/fake_adapter.dart';
+import '../../helpers/wp3b_shots.dart';
 import '../auth/helpers.dart';
 
 CourtSession _s(int id, String start, String status, {String name = 'Khoa'}) =>
@@ -194,7 +189,7 @@ void main() {
     );
   });
 
-  group('StaffTodayOrders widget', () {
+  group('StaffTodayScreen widget', () {
     Future<void> pumpHome(
       WidgetTester tester,
       _Repo repo,
@@ -222,11 +217,9 @@ void main() {
         routes: [
           GoRoute(
             path: '/',
-            builder: (_, _) => HomePage(
-              staffToday: StaffTodayOrders(
-                repository: repo,
-                onOpenSchedule: () {},
-              ),
+            builder: (_, _) => StaffTodayScreen(
+              repository: repo,
+              clock: () => DateTime(2026, 11, 12),
             ),
           ),
         ],
@@ -253,7 +246,9 @@ void main() {
     ) async {
       final repo = _Repo();
       await pumpHome(tester, repo, Brightness.light, GlobalKey());
-      expect(find.text('Đơn hôm nay'), findsOneWidget);
+      expect(find.text('Hôm nay'), findsOneWidget);
+      expect(find.text('Nhân viên · Thứ Năm, 12/11'), findsOneWidget);
+      expect(find.text('Chào Phương'), findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Nhận sân'), findsNWidgets(2));
       await tester.tap(_rowButton(12));
       await tester.pumpAndSettle();
@@ -262,7 +257,7 @@ void main() {
       await tester.tap(_dialogConfirm());
       await tester.pumpAndSettle();
       expect(repo.calls.single.$1, 12);
-      expect(find.text('Đã nhận sân'), findsOneWidget);
+      expect(find.text('Đã nhận sân'), findsNWidgets(3));
       expect(find.widgetWithText(FilledButton, 'Nhận sân'), findsOneWidget);
     });
 
@@ -287,38 +282,34 @@ void main() {
       expect(find.text('Vé đã được sử dụng để nhận sân.'), findsOneWidget);
     });
 
-    final dir = Platform.environment['AREA_C_SHOTS'];
-    testWidgets('screenshots staff home', (tester) async {
-      if (dir == null) return;
-      final root = Platform.environment['FLUTTER_ROOT'];
-      final icons = File(
-        '$root/bin/cache/artifacts/material_fonts/materialicons-regular.otf',
-      );
-      final loader = FontLoader('MaterialIcons')
-        ..addFont(Future.value(ByteData.sublistView(icons.readAsBytesSync())));
-      await loader.load();
-      final f = FontLoader('PlusJakartaSans');
-      for (final n in ['Regular', 'SemiBold', 'Bold']) {
-        final bytes = File('assets/fonts/PlusJakartaSans-$n.ttf')
-            .readAsBytesSync();
-        f.addFont(
-          Future.value(ByteData.sublistView(Uint8List.fromList(bytes))),
+    for (final b in Brightness.values) {
+      testWidgets('matches the WP3b staff screen (${b.name})', (tester) async {
+        final auth = MockAuthRepository();
+        final bloc = AuthBloc(RestoreSession(auth), Logout(auth))
+          ..add(
+            AuthSignedIn(
+              const AuthUser(
+                id: 1,
+                email: 'a@b.c',
+                role: UserRole.staff,
+                status: 'ACTIVE',
+                fullName: 'Nguyễn Thị Linh',
+              ),
+            ),
+          );
+        addTearDown(bloc.close);
+        await pumpShot(
+          tester,
+          b,
+          StaffTodayScreen(
+            repository: _Repo(),
+            clock: () => DateTime(2026, 11, 12),
+          ),
+          name: 'staff-today',
+          wrap: (child) => BlocProvider.value(value: bloc, child: child),
         );
-      }
-      await f.load();
-      for (final b in Brightness.values) {
-        final key = GlobalKey();
-        await pumpHome(tester, _Repo(), b, key);
-        await tester.runAsync(() async {
-          final boundary =
-              key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-          final image = await boundary.toImage(pixelRatio: 2);
-          final data = await image.toByteData(format: ui.ImageByteFormat.png);
-          File('$dir/home-staff-${b.name}.png')
-            ..createSync(recursive: true)
-            ..writeAsBytesSync(data!.buffer.asUint8List());
-        });
-      }
-    });
+        expect(find.text('Chào Linh'), findsOneWidget);
+      });
+    }
   });
 }

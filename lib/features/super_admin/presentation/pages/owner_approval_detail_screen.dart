@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../app/widgets/fc_widgets.dart';
+import '../../../../app/widgets/wp3b_widgets.dart';
 import '../../domain/entities/court_owner.dart';
 import '../bloc/owner_detail_cubit.dart';
 import '../widgets/owner_decision_dialogs.dart';
@@ -120,18 +122,34 @@ class _OwnerDetailBody extends StatelessWidget {
     final legal = owner.legalDocuments;
     final courtImages = owner.courtImages;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
         if (submitting) const LinearProgressIndicator(),
-        Card(
+        FcCard(
+          radius: 22,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(owner.fullName, style: theme.textTheme.titleLarge),
+                Text(
+                  owner.fullName,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -.5,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Chip(label: Text(_statusLabel(owner.status))),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TintTag(
+                    _statusLabel(owner.status),
+                    tone: owner.isPending
+                        ? context.fc.warning
+                        : context.fc.neutral,
+                  ),
+                ),
                 if (!owner.isPending)
                   Text(
                     'Hồ sơ không còn ở trạng thái chờ duyệt.',
@@ -161,10 +179,22 @@ class _OwnerDetailBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Giấy phép kinh doanh / CCCD', style: theme.textTheme.titleMedium),
+        Text(
+          'Giấy phép kinh doanh / CCCD',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 8),
         if (legal.isEmpty)
-          const Text('Chủ sân chưa tải lên giấy tờ pháp lý.')
+          Text(
+            'Chủ sân chưa tải lên giấy tờ pháp lý.',
+            style: TextStyle(
+              fontSize: 12,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
         else
           for (final (index, doc) in legal.indexed)
             OwnerDocumentThumbnail(
@@ -175,7 +205,13 @@ class _OwnerDetailBody extends StatelessWidget {
             ),
         if (courtImages.isNotEmpty) ...[
           const SizedBox(height: 16),
-          Text('Ảnh sân', style: theme.textTheme.titleMedium),
+          Text(
+            'Ảnh sân',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 8),
           for (final (index, doc) in courtImages.indexed)
             OwnerDocumentThumbnail(
@@ -219,7 +255,13 @@ class _InfoRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 130,
-            child: Text(label, style: theme.textTheme.bodySmall),
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 11,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
           Expanded(
             child: Text(
@@ -229,7 +271,10 @@ class _InfoRow extends StatelessWidget {
                       fontStyle: FontStyle.italic,
                       color: theme.colorScheme.onSurfaceVariant,
                     )
-                  : theme.textTheme.bodyMedium,
+                  : theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
             ),
           ),
         ],

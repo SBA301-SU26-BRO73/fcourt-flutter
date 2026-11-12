@@ -9,6 +9,7 @@ import 'package:fcourt/features/super_admin/domain/entities/platform_overview.da
 import 'package:fcourt/features/super_admin/domain/repositories/platform_overview_repository.dart';
 import 'package:fcourt/features/super_admin/presentation/bloc/platform_overview_cubit.dart';
 import 'package:fcourt/features/super_admin/presentation/pages/super_admin_overview_screen.dart';
+import '../../helpers/wp3b_shots.dart';
 import 'package:fcourt/features/super_admin/presentation/widgets/growth_line_chart.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -289,5 +290,25 @@ void main() {
       expect(find.text('Tổng GMV đặt sân'), findsOneWidget);
       expect(repo.calls, hasLength(2));
     });
+  });
+
+  group('WP3b screenshots', () {
+    for (final b in Brightness.values) {
+      testWidgets('overview matches the WP3b look (${b.name})', (tester) async {
+        final repo = _Repo((_) async => _overview());
+        await pumpShot(
+          tester,
+          b,
+          const SuperAdminOverviewScreen(),
+          name: 'super-admin-overview',
+          size: const Size(390, 1100),
+          wrap: (child) => BlocProvider(
+            create: (_) => PlatformOverviewCubit(GetPlatformOverview(repo))..load(),
+            child: child,
+          ),
+        );
+        expect(find.text('Thống kê nền tảng'), findsOneWidget);
+      });
+    }
   });
 }

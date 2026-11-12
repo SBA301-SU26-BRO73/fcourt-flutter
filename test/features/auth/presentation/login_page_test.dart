@@ -42,7 +42,7 @@ void main() {
     );
   }
 
-  Finder field(String label) => find.widgetWithText(TextFormField, label);
+  Finder field(String label) => find.byKey(ValueKey('auth-field-$label'));
   Finder submitButton() => find.widgetWithText(FilledButton, 'Đăng nhập');
 
   Future<void> fillAndSubmit(WidgetTester tester) async {
