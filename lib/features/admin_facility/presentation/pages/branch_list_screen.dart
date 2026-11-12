@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/widgets/fc_widgets.dart';
 import '../../domain/entities/branch.dart';
 import '../bloc/branch_list_bloc.dart';
 import '../widgets/facility_formatters.dart';
@@ -110,7 +111,12 @@ class BranchListScreen extends StatelessWidget {
               );
             },
             child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
+              padding: const EdgeInsets.fromLTRB(
+                Gap.screen,
+                Gap.sm,
+                Gap.screen,
+                Gap.fabClearance,
+              ),
               itemCount: state.branches.length + 1,
               separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
@@ -168,7 +174,7 @@ class _EmptyBranches extends StatelessWidget {
   );
 }
 
-/// Thẻ chi nhánh phong cách thể thao: dải màu, địa chỉ, giờ mở cửa, số sân.
+/// Thẻ chi nhánh: tên, địa chỉ, giờ mở cửa, số sân và các lối tắt có nhãn.
 class BranchCard extends StatelessWidget {
   const BranchCard({
     super.key,
@@ -191,114 +197,75 @@ class BranchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final active = branch.status == BranchStatus.active;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [scheme.primary, scheme.tertiary],
+    return FcCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const IconBadge(Icons.store_mall_directory_outlined, size: 40),
+              const SizedBox(width: Gap.md),
+              Expanded(
+                child: Text(
+                  branch.name,
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.sports_tennis, color: scheme.onPrimary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      branch.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: scheme.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  if (!active)
-                    Chip(
-                      label: const Text('Ngừng hoạt động'),
-                      visualDensity: VisualDensity.compact,
-                      backgroundColor: scheme.surfaceContainerHighest,
-                    ),
-                  if (onImages != null)
-                    IconButton(
-                      tooltip: 'Ảnh chi nhánh',
-                      color: scheme.onPrimary,
-                      icon: const Icon(Icons.photo_library_outlined),
-                      onPressed: onImages,
-                    ),
-                  IconButton(
-                    tooltip: 'Sửa chi nhánh',
-                    color: scheme.onPrimary,
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: onEdit,
-                  ),
-                ],
+              if (!active)
+                StatusPill('Ngừng hoạt động', tone: context.fc.neutral),
+            ],
+          ),
+          const SizedBox(height: Gap.md),
+          _InfoRow(Icons.place_outlined, branch.fullAddress),
+          const SizedBox(height: Gap.sm),
+          _InfoRow(
+            Icons.schedule,
+            'Mở cửa ${branch.openTime.format()} – ${branch.closeTime.format()}',
+          ),
+          const SizedBox(height: Gap.sm),
+          _InfoRow(Icons.grid_view_rounded, '${branch.courtCount} sân'),
+          const SizedBox(height: Gap.md),
+          Wrap(
+            spacing: Gap.sm,
+            runSpacing: Gap.sm,
+            children: [
+              ActionChip(
+                avatar: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Sửa'),
+                onPressed: onEdit,
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _InfoRow(Icons.place_outlined, branch.fullAddress),
-                  const SizedBox(height: 8),
-                  _InfoRow(
-                    Icons.schedule,
-                    'Mở cửa ${branch.openTime.format()} – '
-                    '${branch.closeTime.format()}',
+              if (onImages != null)
+                ActionChip(
+                  avatar: const Icon(Icons.photo_library_outlined, size: 18),
+                  label: const Text('Ảnh'),
+                  onPressed: onImages,
+                ),
+              if (onPayments != null)
+                ActionChip(
+                  avatar: const Icon(Icons.fact_check_outlined, size: 18),
+                  label: const Text('Biên lai'),
+                  onPressed: onPayments,
+                ),
+              if (onRefunds != null)
+                ActionChip(
+                  avatar: const Icon(Icons.currency_exchange, size: 18),
+                  label: const Text('Hoàn tiền'),
+                  onPressed: onRefunds,
+                ),
+              if (onTransactions != null)
+                ActionChip(
+                  avatar: const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 18,
                   ),
-                  const SizedBox(height: 8),
-                  _InfoRow(Icons.grid_view_rounded, '${branch.courtCount} sân'),
-                  if (onPayments != null ||
-                      onRefunds != null ||
-                      onTransactions != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Wrap(
-                        spacing: 8,
-                        children: [
-                          if (onPayments != null)
-                            ActionChip(
-                              avatar: const Icon(
-                                Icons.fact_check_outlined,
-                                size: 18,
-                              ),
-                              label: const Text('Biên lai'),
-                              onPressed: onPayments,
-                            ),
-                          if (onRefunds != null)
-                            ActionChip(
-                              avatar: const Icon(
-                                Icons.currency_exchange,
-                                size: 18,
-                              ),
-                              label: const Text('Hoàn tiền'),
-                              onPressed: onRefunds,
-                            ),
-                          if (onTransactions != null)
-                            ActionChip(
-                              avatar: const Icon(
-                                Icons.account_balance_wallet_outlined,
-                                size: 18,
-                              ),
-                              label: const Text('Giao dịch'),
-                              onPressed: onTransactions,
-                            ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
+                  label: const Text('Giao dịch'),
+                  onPressed: onTransactions,
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

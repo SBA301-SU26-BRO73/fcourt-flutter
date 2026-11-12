@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../app/widgets/fc_widgets.dart';
 import '../domain/voucher.dart';
 import '../domain/voucher_usage_repository.dart';
 import 'voucher_usage_history_dialog.dart';
@@ -167,7 +168,12 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
                   ),
                 ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 112),
+                padding: const EdgeInsets.fromLTRB(
+                  Gap.md,
+                  0,
+                  Gap.md,
+                  Gap.fabClearance,
+                ),
                 sliver: SliverList.builder(
                   itemCount: state.items.length,
                   itemBuilder: (context, index) {
@@ -199,7 +205,6 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
                           ),
                   ),
                 ),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
         ),

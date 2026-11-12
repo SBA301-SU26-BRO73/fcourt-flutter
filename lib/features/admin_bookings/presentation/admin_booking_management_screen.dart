@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/widgets/fc_widgets.dart';
 import '../domain/admin_booking.dart';
 import '../domain/admin_booking_status.dart';
 import 'admin_booking_cubit.dart';
@@ -43,6 +44,21 @@ class _AdminBookingManagementScreenState
       cubit.setDate(picked);
     }
   }
+
+  void _openDetail(BuildContext context, AdminBooking row) => showDialog<void>(
+    context: context,
+    builder: (_) => Dialog.fullscreen(
+      child: AdminBookingDetail(
+        booking: row,
+        onReviewPayment: widget.onReviewPayment == null
+            ? null
+            : () {
+                Navigator.of(context).pop();
+                widget.onReviewPayment!(row);
+              },
+      ),
+    ),
+  );
 
   Future<void> _openFilters(
     AdminBookingCubit cubit,
@@ -287,38 +303,37 @@ class _AdminBookingManagementScreenState
                   itemCount: state.items.length,
                   itemBuilder: (context, index) {
                     final row = state.items[index];
-                    return Card(
-                      child: ListTile(
-                        title: Text(
-                          '${row.code} · ${row.customerName ?? 'Khách đặt sân'}',
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: Gap.sm),
+                      child: FcCard(
+                        onTap: () => _openDetail(context, row),
+                        child: Row(
                           children: [
-                            Text(
-                              '${row.courtName} · ${DateFormat('dd/MM/yyyy').format(row.date)}',
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${row.code} · ${row.customerName ?? 'Khách đặt sân'}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall,
+                                  ),
+                                  const SizedBox(height: Gap.xs),
+                                  Text(
+                                    '${row.courtName} · ${DateFormat('dd/MM/yyyy').format(row.date)}',
+                                  ),
+                                  if (row.customerPhone != null)
+                                    Text(row.customerPhone!),
+                                  Text(adminBookingMoney(row.amount)),
+                                  const SizedBox(height: Gap.sm),
+                                  BookingStatusBadge(row.status),
+                                ],
+                              ),
                             ),
-                            if (row.customerPhone != null)
-                              Text(row.customerPhone!),
-                            Text(adminBookingMoney(row.amount)),
-                            BookingStatusBadge(row.status),
+                            const Icon(Icons.chevron_right),
                           ],
                         ),
-                        onTap: () => showDialog<void>(
-                          context: context,
-                          builder: (_) => Dialog.fullscreen(
-                            child: AdminBookingDetail(
-                              booking: row,
-                              onReviewPayment: widget.onReviewPayment == null
-                                  ? null
-                                  : () {
-                                      Navigator.of(context).pop();
-                                      widget.onReviewPayment!(row);
-                                    },
-                            ),
-                          ),
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
                       ),
                     );
                   },

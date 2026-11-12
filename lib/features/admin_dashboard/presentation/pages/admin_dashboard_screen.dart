@@ -9,7 +9,7 @@ import '../../domain/entities/dashboard_stats.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../widgets/booking_status_pie_chart.dart';
 import '../widgets/compact_currency.dart';
-import '../../../../app/theme/tokens.dart';
+import '../../../../app/widgets/fc_widgets.dart';
 
 /// SCRUM-13: tổng quan doanh thu, lượt đặt, sân hoạt động và tỷ lệ lấp đầy.
 class AdminDashboardScreen extends StatelessWidget {
@@ -46,23 +46,39 @@ class AdminDashboardScreen extends StatelessWidget {
                 initialBranchId: state.selectedBranchId,
               ),
             ),
-          if (onOpenAnalytics != null)
-            IconButton(
-              tooltip: 'Phân tích',
-              icon: const Icon(Icons.insights_outlined),
-              onPressed: onOpenAnalytics,
-            ),
-          IconButton(
-            tooltip: 'Gói dịch vụ',
-            icon: const Icon(Icons.workspace_premium_outlined),
-            onPressed: () => context.push('/admin/subscription'),
+          PopupMenuButton<String>(
+            tooltip: 'Thêm tùy chọn',
+            onSelected: (value) => switch (value) {
+              'analytics' => onOpenAnalytics?.call(),
+              'plan' => context.push('/admin/subscription'),
+              _ => onOpenBranches?.call(),
+            },
+            itemBuilder: (_) => [
+              if (onOpenAnalytics != null)
+                const PopupMenuItem(
+                  value: 'analytics',
+                  child: ListTile(
+                    leading: Icon(Icons.insights_outlined),
+                    title: Text('Phân tích'),
+                  ),
+                ),
+              const PopupMenuItem(
+                value: 'plan',
+                child: ListTile(
+                  leading: Icon(Icons.workspace_premium_outlined),
+                  title: Text('Gói dịch vụ'),
+                ),
+              ),
+              if (onOpenBranches != null)
+                const PopupMenuItem(
+                  value: 'branches',
+                  child: ListTile(
+                    leading: Icon(Icons.store_mall_directory_outlined),
+                    title: Text('Chi nhánh'),
+                  ),
+                ),
+            ],
           ),
-          if (onOpenBranches != null)
-            IconButton(
-              tooltip: 'Chi nhánh',
-              icon: const Icon(Icons.store_mall_directory_outlined),
-              onPressed: onOpenBranches,
-            ),
         ],
       ),
       body: BlocBuilder<DashboardBloc, DashboardState>(
@@ -144,21 +160,18 @@ class AdminDashboardScreen extends StatelessWidget {
             )
           : grid,
       const SizedBox(height: 16),
-      Card(
+      FcCard(
         key: const ValueKey('dashboard-chart'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Trạng thái đặt sân',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              BookingStatusPieChart(counts: stats.bookingStatusCounts),
-            ],
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Trạng thái đặt sân',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            BookingStatusPieChart(counts: stats.bookingStatusCounts),
+          ],
         ),
       ),
     ];
@@ -291,36 +304,31 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: color.withValues(alpha: 0.15),
-              child: Icon(icon, color: color, size: 18),
-            ),
-            const Spacer(),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                style: textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+    return FcCard(
+      padding: const EdgeInsets.all(Gap.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: color.withValues(alpha: 0.15),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const Spacer(),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
             ),
-            Text(label, style: textTheme.bodySmall),
-            if (caption != null)
-              Text(
-                caption!,
-                style: textTheme.labelSmall?.copyWith(color: color),
-              ),
-          ],
-        ),
+          ),
+          Text(label, style: textTheme.bodySmall),
+          if (caption != null)
+            Text(caption!, style: textTheme.labelSmall?.copyWith(color: color)),
+        ],
       ),
     );
   }
@@ -336,8 +344,8 @@ class DashboardSkeleton extends StatelessWidget {
     Widget block({double? height}) => Container(
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(Radii.md),
       ),
     );
     return Shimmer.fromColors(

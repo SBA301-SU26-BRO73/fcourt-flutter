@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../domain/entities/payment_checkout.dart';
 import '../../domain/entities/pending_payment.dart';
 import '../../domain/repositories/admin_payment_repository.dart';
-import '../../../../app/theme/tokens.dart';
+import '../../../../app/widgets/fc_widgets.dart';
 
 class AdminPaymentApprovalScreen extends StatefulWidget {
   const AdminPaymentApprovalScreen({
@@ -144,15 +144,21 @@ class _AdminPaymentApprovalScreenState
               ),
             ),
           for (final payment in _payments)
-            Card(
-              child: ListTile(
-                onTap: () => _review(payment),
-                title: Text('${payment.customerName} · ${payment.bookingCode}'),
-                subtitle: Text(
-                  '${NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0).format(payment.amountVnd)}\n${DateFormat('dd/MM/yyyy HH:mm').format(payment.submittedAt)}',
+            Padding(
+              padding: const EdgeInsets.only(bottom: Gap.sm),
+              child: FcCard(
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  onTap: () => _review(payment),
+                  title: Text(
+                    '${payment.customerName} · ${payment.bookingCode}',
+                  ),
+                  subtitle: Text(
+                    '${NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0).format(payment.amountVnd)}\n${DateFormat('dd/MM/yyyy HH:mm').format(payment.submittedAt)}',
+                  ),
+                  isThreeLine: true,
+                  trailing: const Icon(Icons.chevron_right),
                 ),
-                isThreeLine: true,
-                trailing: const Icon(Icons.chevron_right),
               ),
             ),
           if (_more)

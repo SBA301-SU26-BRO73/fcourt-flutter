@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/clock_time.dart';
 import '../../domain/entities/slot_matrix.dart';
 import '../bloc/slot_template_bloc.dart';
+import '../widgets/day_of_week_chips.dart';
 import '../widgets/facility_formatters.dart';
 import '../widgets/slot_matrix_preview.dart';
 import '../../../../app/theme/tokens.dart';
@@ -232,16 +233,9 @@ class _TemplateBody extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 6,
-                children: [
-                  for (var day = 0; day < 7; day++)
-                    FilterChip(
-                      label: Text(_dayLabels[day]),
-                      selected: state.daysOfWeek.contains(day),
-                      onSelected: (_) => bloc.add(SlotTemplateDayToggled(day)),
-                    ),
-                ],
+              DayOfWeekChips(
+                selected: state.daysOfWeek,
+                onToggle: (day) => bloc.add(SlotTemplateDayToggled(day)),
               ),
               if (state.daysOfWeek.isEmpty)
                 Text(

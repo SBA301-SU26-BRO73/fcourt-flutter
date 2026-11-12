@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/widgets/fc_widgets.dart';
 import '../../domain/entities/branch.dart';
 import '../../domain/entities/court.dart';
 import '../bloc/court_list_bloc.dart';
@@ -154,7 +155,12 @@ class CourtListScreen extends StatelessWidget {
           );
         }
         return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 112),
+          padding: const EdgeInsets.fromLTRB(
+            Gap.md,
+            Gap.md,
+            Gap.md,
+            Gap.fabClearance,
+          ),
           // One full-width card per row on phones so the status badge and the
           // three action icons fit on one line; more columns on wider screens.
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -245,87 +251,90 @@ class CourtCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 4, 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final colors = Theme.of(context).colorScheme;
+    return FcCard(
+      onTap: onTap,
+      padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.sm, Gap.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  CourtStatusBadge(court.status),
-                  const Spacer(),
-                  if (onCalendar != null)
-                    IconButton(
-                      key: Key('court-calendar-${court.id}'),
-                      tooltip: 'Lịch sân',
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.calendar_month_outlined),
-                      onPressed: onCalendar,
-                    ),
-                  IconButton(
-                    key: Key('court-pricing-${court.id}'),
-                    tooltip: 'Cấu hình giá',
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.payments_outlined),
-                    onPressed: onPricing,
-                  ),
-                  IconButton(
-                    tooltip: 'Mẫu khung giờ',
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.view_timeline_outlined),
-                    onPressed: onSlotTemplate,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                court.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  court.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleMedium,
                 ),
               ),
-              Text(typeName, style: textTheme.bodySmall),
-              const SizedBox(height: 4),
-              Text(
-                court.defaultPricePerHour == null
-                    ? 'Chưa đặt giá'
-                    : '${formatVnd(court.defaultPricePerHour!)}/giờ',
-                style: court.defaultPricePerHour == null
-                    ? textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                        fontStyle: FontStyle.italic,
-                      )
-                    : textTheme.bodyMedium,
+              CourtStatusBadge(court.status),
+              const SizedBox(width: Gap.sm),
+            ],
+          ),
+          Text(
+            typeName,
+            style: textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: Gap.xs),
+          Text(
+            court.defaultPricePerHour == null
+                ? 'Chưa đặt giá'
+                : '${formatVnd(court.defaultPricePerHour!)}/giờ',
+            style: court.defaultPricePerHour == null
+                ? textTheme.bodyMedium?.copyWith(
+                    color: colors.error,
+                    fontStyle: FontStyle.italic,
+                  )
+                : textTheme.bodyMedium,
+          ),
+          const SizedBox(height: Gap.xs),
+          Wrap(
+            spacing: Gap.xs,
+            children: [
+              if (onCalendar != null)
+                TextButton.icon(
+                  key: Key('court-calendar-${court.id}'),
+                  onPressed: onCalendar,
+                  icon: const Icon(Icons.calendar_month_outlined, size: 18),
+                  label: const Text('Lịch'),
+                ),
+              TextButton.icon(
+                key: Key('court-pricing-${court.id}'),
+                onPressed: onPricing,
+                icon: const Icon(Icons.payments_outlined, size: 18),
+                label: const Text('Giá'),
               ),
-              const Spacer(),
-              Row(
-                children: [
-                  const Expanded(child: Text('Bảo trì')),
-                  if (updating)
-                    const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: SizedBox.square(
-                        dimension: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  else
-                    Switch(
-                      key: Key('court-maintenance-${court.id}'),
-                      value: court.status == CourtStatus.maintenance,
-                      onChanged: onMaintenanceChanged,
-                    ),
-                ],
+              TextButton.icon(
+                onPressed: onSlotTemplate,
+                icon: const Icon(Icons.view_timeline_outlined, size: 18),
+                label: const Text('Khung giờ'),
               ),
             ],
           ),
-        ),
+          const Spacer(),
+          Row(
+            children: [
+              const Expanded(child: Text('Bảo trì')),
+              if (updating)
+                const Padding(
+                  padding: EdgeInsets.all(14),
+                  child: SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else
+                Switch(
+                  key: Key('court-maintenance-${court.id}'),
+                  value: court.status == CourtStatus.maintenance,
+                  onChanged: onMaintenanceChanged,
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

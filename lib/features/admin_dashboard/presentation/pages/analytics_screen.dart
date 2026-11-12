@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../../app/widgets/fc_widgets.dart';
 import '../../domain/entities/analytics.dart';
 import '../bloc/analytics_bloc.dart';
 import '../widgets/compact_currency.dart';
@@ -119,18 +120,15 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            if (filters != null) ...[const SizedBox(height: 8), filters!],
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
+    return FcCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          if (filters != null) ...[const SizedBox(height: 8), filters!],
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }
@@ -186,8 +184,8 @@ class _SectionBody<T> extends StatelessWidget {
         child: Container(
           height: height,
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            color: scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(Radii.md),
           ),
         ),
       );
@@ -251,7 +249,7 @@ class _RevenueSection extends StatelessWidget {
               '${chart.totalBookings} lượt đặt',
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             RevenueLineChart(chart: chart),
           ],
         ),
@@ -272,7 +270,7 @@ class _OccupancySection extends StatelessWidget {
       title: 'Tỷ lệ lấp đầy',
       child: _SectionBody<RevenueChart>(
         section: state.revenue,
-        height: 130,
+        height: 72,
         builder: (chart) => OccupancyGauge(rate: chart.occupancyRate),
       ),
     );
