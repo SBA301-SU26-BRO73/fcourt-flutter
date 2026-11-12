@@ -51,7 +51,8 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
       widget.repository,
       widget.promos,
       widget.arguments,
-    )..load();
+    );
+    _loadCheckout(_checkout);
   }
 
   @override
@@ -60,17 +61,31 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
     if (oldWidget.arguments.bookingId != widget.arguments.bookingId ||
         oldWidget.arguments.holdToken != widget.arguments.holdToken ||
         oldWidget.promos != widget.promos ||
-        oldWidget.repository != widget.repository) {
+        oldWidget.repository != widget.repository ||
+        oldWidget.arguments.promoCode != widget.arguments.promoCode) {
       _generation++;
       unawaited(_checkout.close());
       _checkout = PromoCheckoutCubit(
         widget.repository,
         widget.promos,
         widget.arguments,
-      )..load();
+      );
+      _loadCheckout(_checkout);
       _expired = false;
       _saving = false;
     }
+  }
+
+  Future<void> _loadCheckout(PromoCheckoutCubit cubit) async {
+    await cubit.load();
+    final code = widget.arguments.promoCode.trim();
+    if (!mounted ||
+        !identical(cubit, _checkout) ||
+        code.isEmpty ||
+        cubit.state.promo?.applied == true) {
+      return;
+    }
+    await cubit.apply(code);
   }
 
   @override

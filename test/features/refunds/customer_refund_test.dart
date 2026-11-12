@@ -121,8 +121,10 @@ void main() {
       await tester.tap(find.text('Gửi yêu cầu hoàn tiền'));
       await tester.pumpAndSettle();
       expect(repo.calls, 1);
-      expect(find.text('Đã gửi yêu cầu hoàn tiền'), findsOneWidget);
-      expect(find.text('Admin tiếp nhận'), findsOneWidget);
+      expect(repo.saved, isNotNull);
+      await tester.pump();
+      expect(find.text('Đã gửi yêu cầu hoàn tiền'), findsNWidgets(2));
+      expect(find.text('Chủ sân đã duyệt'), findsOneWidget);
     },
   );
 }

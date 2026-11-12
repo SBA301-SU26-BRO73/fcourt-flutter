@@ -149,12 +149,12 @@ class _OwnerDetailBody extends StatelessWidget {
                 const _InfoRow(
                   label: 'Số CCCD',
                   value: null,
-                  emptyText: 'Chưa có trong API, xem ảnh giấy tờ bên dưới',
+                  emptyText: 'Xem ảnh giấy tờ bên dưới',
                 ),
                 const _InfoRow(
                   label: 'Tên / mã số doanh nghiệp',
                   value: null,
-                  emptyText: 'Chưa có trong API, xem ảnh giấy tờ bên dưới',
+                  emptyText: 'Xem ảnh giấy tờ bên dưới',
                 ),
               ],
             ),

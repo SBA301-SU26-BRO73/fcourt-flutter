@@ -45,8 +45,11 @@ class CatalogListView<T> extends StatelessWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
                 SizedBox(
-                  height: 320,
-                  child: _Message(icon: Icons.inbox_outlined, text: emptyMessage),
+                  height: 380,
+                  child: _Message(
+                    icon: Icons.inbox_outlined,
+                    text: emptyMessage,
+                  ),
                 ),
               ],
             ),
@@ -56,7 +59,7 @@ class CatalogListView<T> extends StatelessWidget {
           onRefresh: onRefresh,
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 112),
             itemCount: state.items.length + (state.hasMore ? 1 : 0),
             itemBuilder: (context, index) {
               if (index < state.items.length) {

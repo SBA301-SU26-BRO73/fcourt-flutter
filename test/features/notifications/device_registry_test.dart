@@ -26,32 +26,29 @@ class _MemoryPushDeviceStore implements PushDeviceStore {
 }
 
 void main() {
-  test(
-    'PUT /devices sends the contract fields and caches a successful token',
-    () async {
-      final adapter = FakeAdapter((_) => ResponseBody.fromString('', 204));
-      final store = _MemoryPushDeviceStore();
-      final registry = DeviceRegistry(
-        dio: Dio(BaseOptions(baseUrl: 'https://api.test'))
-          ..httpClientAdapter = adapter,
-        store: store,
-        appVersion: () async => '1.0.0',
-      );
+  test('PUT /api/notifications/devices sends contract fields and caches a successful token', () async {
+    final adapter = FakeAdapter((_) => ResponseBody.fromString('', 204));
+    final store = _MemoryPushDeviceStore();
+    final registry = DeviceRegistry(
+      dio: Dio(BaseOptions(baseUrl: 'https://api.test'))
+        ..httpClientAdapter = adapter,
+      store: store,
+      appVersion: () async => '1.0.0',
+    );
 
-      await registry.register('fcm-token');
+    await registry.register('fcm-token');
 
-      final request = adapter.requests.single;
-      expect(request.method, 'PUT');
-      expect(request.path, '/devices');
-      expect(request.data, {
-        'deviceId': 'stable-install-id',
-        'token': 'fcm-token',
-        'platform': 'ANDROID',
-        'appVersion': '1.0.0',
-      });
-      expect(store.tokenCache, 'fcm-token');
-    },
-  );
+    final request = adapter.requests.single;
+    expect(request.method, 'PUT');
+    expect(request.path, '/api/notifications/devices');
+    expect(request.data, {
+      'deviceId': 'stable-install-id',
+      'token': 'fcm-token',
+      'platform': 'ANDROID',
+      'appVersion': '1.0.0',
+    });
+    expect(store.tokenCache, 'fcm-token');
+  });
 
   test(
     'unregister(deleteRemote: false) clears cache without a request',
@@ -91,25 +88,23 @@ void main() {
     expect(store.tokenCache, isNull);
   });
 
-  test(
-    'DELETE /devices/{deviceId} clears local token cache even on error',
-    () async {
-      final adapter = FakeAdapter(
-        (_) => jsonResponse(500, {'error': 'failed'}),
-      );
-      final store = _MemoryPushDeviceStore()..tokenCache = 'cached-token';
-      final registry = DeviceRegistry(
-        dio: Dio(BaseOptions(baseUrl: 'https://api.test'))
-          ..httpClientAdapter = adapter,
-        store: store,
-        appVersion: () async => '1.0.0',
-      );
+  test('DELETE /api/notifications/devices/{deviceId} clears local token cache even on error', () async {
+    final adapter = FakeAdapter((_) => jsonResponse(500, {'error': 'failed'}));
+    final store = _MemoryPushDeviceStore()..tokenCache = 'cached-token';
+    final registry = DeviceRegistry(
+      dio: Dio(BaseOptions(baseUrl: 'https://api.test'))
+        ..httpClientAdapter = adapter,
+      store: store,
+      appVersion: () async => '1.0.0',
+    );
 
-      await expectLater(registry.unregister(), throwsA(isA<DioException>()));
-      expect(adapter.requests.single.method, 'DELETE');
-      expect(adapter.requests.single.path, '/devices/stable-install-id');
-      expect(store.tokenCache, isNull);
-      expect(store.clearCount, 1);
-    },
-  );
+    await expectLater(registry.unregister(), throwsA(isA<DioException>()));
+    expect(adapter.requests.single.method, 'DELETE');
+    expect(
+      adapter.requests.single.path,
+      '/api/notifications/devices/stable-install-id',
+    );
+    expect(store.tokenCache, isNull);
+    expect(store.clearCount, 1);
+  });
 }

@@ -1,4 +1,5 @@
 {
   "APP_ENV": "prod",
-  "API_BASE_URL": "https://fcourt.donan.site"
+  "API_BASE_URL": "https://fcourt.donan.site",
+  "SLOT_WEBSOCKET_URL": "wss://fcourt.donan.site/ws-fcourt"
 }

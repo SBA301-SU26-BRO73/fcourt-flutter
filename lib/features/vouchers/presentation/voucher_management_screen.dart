@@ -28,12 +28,19 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
     if (_editing || repository == null) return;
     setState(() => _editing = true);
     try {
-      await showDialog<void>(context: context, builder: (_) =>
-        VoucherUsageHistoryDialog(repository: repository, voucherId: row.id, code: row.code));
+      await showDialog<void>(
+        context: context,
+        builder: (_) => VoucherUsageHistoryDialog(
+          repository: repository,
+          voucherId: row.id,
+          code: row.code,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _editing = false);
     }
   }
+
   @override
   void initState() {
     super.initState();
@@ -140,7 +147,7 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
                         TextButton(
                           onPressed: state.branchId == null
                               ? cubit.initialize
-                        : cubit.refresh,
+                              : cubit.refresh,
                           child: const Text('Thử lại'),
                         ),
                       ],
@@ -160,7 +167,7 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
                   ),
                 ),
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 112),
                 sliver: SliverList.builder(
                   itemCount: state.items.length,
                   itemBuilder: (context, index) {
@@ -169,10 +176,12 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen>
                       key: ValueKey(row.id),
                       voucher: row,
                       now: DateTime.now().toUtc(),
-                  busy: state.busyIds.contains(row.id),
-                  blocked: state.loading || state.loadingMore || _editing,
+                      busy: state.busyIds.contains(row.id),
+                      blocked: state.loading || state.loadingMore || _editing,
                       onEdit: () => _edit(cubit, id: row.id),
-                      onUsage: widget.usages == null ? null : () => _history(row),
+                      onUsage: widget.usages == null
+                          ? null
+                          : () => _history(row),
                       onEnabled: (enabled) => cubit.setEnabled(row, enabled),
                     );
                   },

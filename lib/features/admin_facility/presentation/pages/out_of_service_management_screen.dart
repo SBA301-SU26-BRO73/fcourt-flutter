@@ -86,7 +86,7 @@ class OutOfServiceManagementScreen extends StatefulWidget {
 class _OutOfServiceManagementScreenState
     extends State<OutOfServiceManagementScreen> {
   final _editor = LockDetailsEditor();
-  bool _allCourts = true;
+  bool _allCourts = false;
   final Set<int> _courtIds = {};
   bool _wholeDay = false;
   late DateTime _firstDay;
@@ -180,7 +180,7 @@ class _OutOfServiceManagementScreenState
     _editor.contactPhone.clear();
     setState(() {
       _courtIds.clear();
-      _allCourts = true;
+      _allCourts = false;
     });
   }
 
@@ -239,7 +239,7 @@ class _OutOfServiceManagementScreenState
           key: const Key('all-courts'),
           contentPadding: EdgeInsets.zero,
           value: _allCourts,
-          onChanged: (value) => setState(() => _allCourts = value ?? true),
+          onChanged: (value) => setState(() => _allCourts = value ?? false),
           title: const Text('Bao tất cả các sân'),
           subtitle: Text('${state.courts.length} sân của chi nhánh'),
         ),
@@ -253,7 +253,9 @@ class _OutOfServiceManagementScreenState
                   label: Text(court.name),
                   selected: _courtIds.contains(court.id),
                   onSelected: (on) => setState(
-                    () => on ? _courtIds.add(court.id) : _courtIds.remove(court.id),
+                    () => on
+                        ? _courtIds.add(court.id)
+                        : _courtIds.remove(court.id),
                   ),
                 ),
             ],
@@ -446,15 +448,16 @@ class _GroupCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(event ? Icons.celebration_outlined : Icons.block, color: color),
+                Icon(
+                  event ? Icons.celebration_outlined : Icons.block,
+                  color: color,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     group.type.label,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(color: color, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -492,7 +495,9 @@ class _GroupCard extends StatelessWidget {
                 key: Key('unlock-group-${group.groupId}'),
                 onPressed: state.submitting ? null : () => _confirm(context),
                 icon: const Icon(Icons.lock_open),
-                label: Text(group.locks.length > 1 ? 'Mở khóa cả nhóm' : 'Mở khóa'),
+                label: Text(
+                  group.locks.length > 1 ? 'Mở khóa cả nhóm' : 'Mở khóa',
+                ),
               ),
             ),
           ],

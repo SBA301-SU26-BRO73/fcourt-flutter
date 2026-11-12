@@ -88,15 +88,30 @@ class _OpenStreetBranchMapState extends State<OpenStreetBranchMap> {
           ],
         ),
         if (_tileError)
-          const Positioned(
-            left: 8,
-            right: 8,
-            bottom: 8,
-            child: Material(
-              child: Padding(
-                padding: EdgeInsets.all(8),
-                child: Text(
-                  'Không tải được nền bản đồ. Bạn vẫn có thể chỉ đường.',
+          Positioned.fill(
+            child: ColoredBox(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 36,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(widget.name, textAlign: TextAlign.center),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Bản đồ tạm thời không khả dụng. Dùng Chỉ đường bên dưới.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

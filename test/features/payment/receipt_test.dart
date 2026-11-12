@@ -133,9 +133,8 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.tap(find.text('Chọn ảnh'));
+      await tester.tap(find.text('Tải biên lai lên'));
       await tester.pump();
-      await tester.tap(find.text('Gửi biên lai'));
       await tester.pump();
       expect(find.textContaining('Đang chờ chủ sân'), findsOneWidget);
       session.result = confirmed;
@@ -167,9 +166,8 @@ void main() {
       );
       await tester.pump();
       expect(find.text('Về trang chủ'), findsNothing);
-      await tester.tap(find.text('Chọn ảnh'));
+      await tester.tap(find.text('Tải biên lai lên'));
       await tester.pump();
-      await tester.tap(find.text('Gửi biên lai'));
       await tester.pump();
       await tester.tap(find.text('Về trang chủ'));
       await tester.tap(find.text('Xem đơn đặt sân'));

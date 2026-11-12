@@ -5,6 +5,7 @@ import 'booking_selection_adapter.dart';
 import '../features/booking/domain/entities/booking_hold.dart';
 import '../features/booking/domain/repositories/booking_creation_repository.dart';
 import '../features/booking/presentation/pages/booking_create_screen.dart';
+import '../features/booking/presentation/guest_booking_lookup_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../src/features/customer_slots/data/stomp_slot_invalidations.dart';
 
@@ -26,6 +27,7 @@ import '../features/transactions/presentation/admin_transaction_history_screen.d
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
 import 'fc_route.dart';
 
 import '../features/auth/domain/usecases/change_password.dart';
@@ -120,9 +122,9 @@ GoRouter createRouter(
   final repository = dependencies.authRepository;
   final catalog = dependencies.catalogRepository;
   var ratingOpen = false;
-  Future<void> rate(BuildContext context, int bookingId) async {
+  Future<bool> rate(BuildContext context, int bookingId) async {
     final reviews = dependencies.reviews;
-    if (ratingOpen || reviews == null) return;
+    if (ratingOpen || reviews == null) return false;
     ratingOpen = true;
     try {
       final result = await showRatingBottomSheet(
@@ -137,6 +139,7 @@ GoRouter createRouter(
           const SnackBar(content: Text('Cảm ơn bạn đã đánh giá sân!')),
         );
       }
+      return result != null;
     } finally {
       ratingOpen = false;
     }
@@ -145,21 +148,44 @@ GoRouter createRouter(
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refreshListenable,
-    redirect: (context, state) => authRedirect(
-      authBloc.state.status,
-      state.matchedLocation,
-      role: authBloc.state.role,
-    ),
+    redirect: (context, state) {
+      final auth = authBloc.state;
+      final redirect = authRedirect(
+        auth.status,
+        state.matchedLocation,
+        role: auth.role,
+        returnTo: state.uri.queryParameters['from'],
+      );
+      if (auth.status == AuthStatus.unauthenticated &&
+          redirect == AppRoutes.login &&
+          state.matchedLocation != AppRoutes.login) {
+        return Uri(
+          path: AppRoutes.login,
+          queryParameters: {'from': state.uri.toString()},
+        ).toString();
+      }
+      return redirect;
+    },
     routes: [
       ShellRoute(
-        builder: (context, state, child) =>
-            AppShell(location: state.uri.path, child: child),
+        builder: (context, state, child) => AppShell(
+          location: state.uri.path,
+          notificationsRepository: dependencies.notificationsRepository,
+          child: child,
+        ),
         routes: [
           FcRoute(path: '/activity', builder: (_, _) => const ActivityPage()),
           FcRoute(
             path: '/notifications',
-            builder: (_, _) =>
-                NotificationsPage(repository: dependencies.notificationsRepository),
+            builder: (_, _) => NotificationsPage(
+              repository: dependencies.notificationsRepository,
+            ),
+          ),
+          FcRoute(
+            path: '/lookup',
+            builder: (_, _) => GuestBookingLookupPage(
+              repository: dependencies.guestBookingLookupRepository,
+            ),
           ),
           FcRoute(
             path: AppRoutes.settings,
@@ -368,6 +394,7 @@ GoRouter createRouter(
               return CustomerRefundScreen(
                 repository: repository,
                 bookingId: id,
+                userId: authBloc.state.user?.id,
               );
             },
           ),
@@ -417,6 +444,7 @@ GoRouter createRouter(
                     ? null
                     : (id) => rate(context, id),
                 repository: repository,
+                cacheUserId: authBloc.state.user?.id,
                 onDetail: (id) => context.push('/bookings/$id'),
                 onTransactions: dependencies.customerTransactions == null
                     ? null
@@ -491,7 +519,8 @@ GoRouter createRouter(
                 saver: saver,
                 arguments: arguments,
                 promos: dependencies.promos,
-                onFreeConfirmed: () => showTicketOverBookings(context, arguments),
+                onFreeConfirmed: () =>
+                    showTicketOverBookings(context, arguments),
                 onUploadReceipt: () =>
                     context.push('/payments/receipt', extra: arguments),
               );
@@ -542,7 +571,8 @@ GoRouter createRouter(
                 onConfirmed: () => showTicketOverBookings(context, args),
                 onSupport: () => showBookingOverList(context, args.bookingId),
                 onHome: () => context.go(AppRoutes.home),
-                onViewBooking: () => showBookingOverList(context, args.bookingId),
+                onViewBooking: () =>
+                    showBookingOverList(context, args.bookingId),
               );
             },
           ),
@@ -695,6 +725,15 @@ GoRouter createRouter(
                     : (selection) {
                         try {
                           final user = authBloc.state.user;
+                          if (user == null) {
+                            context.push(
+                              Uri(
+                                path: AppRoutes.login,
+                                queryParameters: {'from': state.uri.toString()},
+                              ).toString(),
+                            );
+                            return;
+                          }
                           context.push(
                             '/booking/summary',
                             extra: BookingSummaryArguments(
@@ -707,8 +746,8 @@ GoRouter createRouter(
                                     state.uri.queryParameters['courtName'] ??
                                     'Sân #$courtId',
                               ),
-                              customerName: user?.fullName ?? '',
-                              phone: user?.phone ?? '',
+                              customerName: user.fullName ?? '',
+                              phone: user.phone ?? '',
                               onHeld: (checkout) => context.push(
                                 '/booking/confirm',
                                 extra: checkout,

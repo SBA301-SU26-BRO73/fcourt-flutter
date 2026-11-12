@@ -143,69 +143,71 @@ void main() {
     expect(find.text('Cảm ơn bạn'), findsOneWidget);
     expect(find.byType(CircleAvatar), findsOneWidget);
   });
-  testWidgets('review without name or avatar shows the generic label and icon, never a user id', (
-    tester,
-  ) async {
-    final repo = Reviews()
-      ..onList = (_, _) async => ReviewPage(
-        items: [
-          CourtReview(
-            id: 1,
-            branchId: 7,
-            courtId: 2,
-            rating: 4,
-            createdAt: DateTime.utc(2026, 11, 5),
-          ),
-        ],
-        page: 0,
-        total: 1,
-        average: 4,
-        starCounts: const {1: 0, 2: 0, 3: 0, 4: 1, 5: 0},
+  testWidgets(
+    'review without name or avatar shows the generic label and icon, never a user id',
+    (tester) async {
+      final repo = Reviews()
+        ..onList = (_, _) async => ReviewPage(
+          items: [
+            CourtReview(
+              id: 1,
+              branchId: 7,
+              courtId: 2,
+              rating: 4,
+              createdAt: DateTime.utc(2026, 11, 5),
+            ),
+          ],
+          page: 0,
+          total: 1,
+          average: 4,
+          starCounts: const {1: 0, 2: 0, 3: 0, 4: 1, 5: 0},
+        );
+      addTearDown(repo.events.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: ReviewListWidget(repository: repo, branchId: 7)),
+        ),
       );
-    addTearDown(repo.events.close);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: ReviewListWidget(repository: repo, branchId: 7)),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Khách hàng'), findsOneWidget);
-    expect(find.textContaining('#'), findsNothing);
-    expect(find.byIcon(Icons.person_outline), findsOneWidget);
-  });
-  testWidgets('review with an avatar renders it and falls back to the icon when it cannot load', (
-    tester,
-  ) async {
-    final repo = Reviews()
-      ..onList = (_, _) async => ReviewPage(
-        items: [
-          CourtReview(
-            id: 1,
-            branchId: 7,
-            courtId: 2,
-            rating: 5,
-            reviewerName: 'An N.',
-            reviewerAvatarUrl: 'https://lh3.googleusercontent.com/a.jpg',
-            createdAt: DateTime.utc(2026, 11, 5),
-          ),
-        ],
-        page: 0,
-        total: 1,
-        average: 5,
-        starCounts: const {1: 0, 2: 0, 3: 0, 4: 0, 5: 1},
+      await tester.pumpAndSettle();
+      expect(find.text('Khách hàng'), findsOneWidget);
+      expect(find.textContaining('#'), findsNothing);
+      expect(find.byIcon(Icons.person_outline), findsOneWidget);
+    },
+  );
+  testWidgets(
+    'review with an avatar renders it and falls back to the icon when it cannot load',
+    (tester) async {
+      final repo = Reviews()
+        ..onList = (_, _) async => ReviewPage(
+          items: [
+            CourtReview(
+              id: 1,
+              branchId: 7,
+              courtId: 2,
+              rating: 5,
+              reviewerName: 'An N.',
+              reviewerAvatarUrl: 'https://lh3.googleusercontent.com/a.jpg',
+              createdAt: DateTime.utc(2026, 11, 5),
+            ),
+          ],
+          page: 0,
+          total: 1,
+          average: 5,
+          starCounts: const {1: 0, 2: 0, 3: 0, 4: 0, 5: 1},
+        );
+      addTearDown(repo.events.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: ReviewListWidget(repository: repo, branchId: 7)),
+        ),
       );
-    addTearDown(repo.events.close);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: ReviewListWidget(repository: repo, branchId: 7)),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('An N.'), findsOneWidget);
-    expect(find.byType(Image), findsOneWidget);
-    // The test HTTP client refuses network loads, so the error builder shows the icon.
-    expect(find.byIcon(Icons.person_outline), findsOneWidget);
-  });
+      await tester.pumpAndSettle();
+      expect(find.text('An N.'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
+      // The test HTTP client refuses network loads, so the error builder shows the icon.
+      expect(find.byIcon(Icons.person_outline), findsOneWidget);
+    },
+  );
   testWidgets('list refreshes immediately after a review change event', (
     tester,
   ) async {
@@ -247,6 +249,7 @@ void main() {
             id: 1,
             onReview: (value) async {
               id = value;
+              return true;
             },
           ),
         ),

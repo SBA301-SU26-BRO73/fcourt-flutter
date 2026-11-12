@@ -4,14 +4,12 @@ import '../../../core/error/failure.dart';
 
 /// Đổi phản hồi từ chối check-in của staff-operations sang thông báo tiếng Việt.
 ///
-/// BE hiện trả cùng một `detail` ("Booking command rejected") cho mọi lý do, nên khi không
-/// có mã lý do thì dùng câu chung liệt kê các nguyên nhân. Khi BE gửi `code`/`reason`
-/// (CHECKIN_TOO_EARLY, WRONG_DATE, WRONG_BRANCH, ALREADY_CHECKED_IN...) thì hiện đúng lý do.
+/// Backend trả mã từ chối trong ProblemDetail `reason`; khi thiếu hoặc lạ thì dùng câu chung.
 Failure checkInFailureFromDio(DioException e) {
   final failure = failureFromDio(e);
   if (failure is! ServerFailure) return failure;
   final body = e.response?.data;
-  final raw = body is Map ? (body['code'] ?? body['reason']) : null;
+  final raw = body is Map ? body['reason'] : null;
   final byCode = raw is String ? _byCode[raw.toUpperCase()] : null;
   if (byCode != null) {
     return ServerFailure(byCode, statusCode: failure.statusCode);
@@ -33,7 +31,6 @@ Failure checkInFailureFromDio(DioException e) {
 
 const _byCode = {
   'CHECKIN_TOO_EARLY': 'Chưa tới giờ nhận sân. Vui lòng quay lại gần giờ chơi.',
-  'TOO_EARLY': 'Chưa tới giờ nhận sân. Vui lòng quay lại gần giờ chơi.',
   'WRONG_DATE': 'Vé này không phải của ngày hôm nay.',
   'WRONG_BRANCH': 'Vé này thuộc chi nhánh khác.',
   'ALREADY_CHECKED_IN': 'Vé đã được sử dụng để nhận sân.',

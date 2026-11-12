@@ -24,7 +24,7 @@ class BookingDetailScreen extends StatefulWidget {
   final ValueChanged<int>? onTicket;
   final CancellationRepository? cancellation;
   final ValueChanged<int>? onRefund;
-  final Future<void> Function(int)? onReview;
+  final Future<bool> Function(int)? onReview;
 
   /// Opens checkout again for an unpaid booking (transfer + receipt upload).
   final ValueChanged<int>? onPay;
@@ -39,6 +39,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   int _generation = 0;
   bool _loading = false;
   bool _reviewing = false;
+  bool _reviewed = false;
   @override
   void initState() {
     super.initState();
@@ -173,14 +174,21 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                         icon: const Icon(Icons.qr_code),
                         label: const Text('Xuất trình vé QR'),
                       ),
-                    if (b.status == 'COMPLETED' && widget.onReview != null)
+                    if (b.status == 'COMPLETED' &&
+                        widget.onReview != null &&
+                        !_reviewed)
                       OutlinedButton.icon(
                         onPressed: _reviewing
                             ? null
                             : () async {
                                 setState(() => _reviewing = true);
                                 try {
-                                  await widget.onReview!(b.id);
+                                  final submitted = await widget.onReview!(
+                                    b.id,
+                                  );
+                                  if (submitted && mounted) {
+                                    setState(() => _reviewed = true);
+                                  }
                                 } finally {
                                   if (mounted) {
                                     setState(() => _reviewing = false);

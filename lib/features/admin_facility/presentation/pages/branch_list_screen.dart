@@ -110,7 +110,7 @@ class BranchListScreen extends StatelessWidget {
               );
             },
             child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
               itemCount: state.branches.length + 1,
               separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
@@ -256,7 +256,9 @@ class BranchCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _InfoRow(Icons.grid_view_rounded, '${branch.courtCount} sân'),
-                  if (onPayments != null || onRefunds != null || onTransactions != null)
+                  if (onPayments != null ||
+                      onRefunds != null ||
+                      onTransactions != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Wrap(
@@ -264,19 +266,28 @@ class BranchCard extends StatelessWidget {
                         children: [
                           if (onPayments != null)
                             ActionChip(
-                              avatar: const Icon(Icons.fact_check_outlined, size: 18),
+                              avatar: const Icon(
+                                Icons.fact_check_outlined,
+                                size: 18,
+                              ),
                               label: const Text('Biên lai'),
                               onPressed: onPayments,
                             ),
                           if (onRefunds != null)
                             ActionChip(
-                              avatar: const Icon(Icons.currency_exchange, size: 18),
+                              avatar: const Icon(
+                                Icons.currency_exchange,
+                                size: 18,
+                              ),
                               label: const Text('Hoàn tiền'),
                               onPressed: onRefunds,
                             ),
                           if (onTransactions != null)
                             ActionChip(
-                              avatar: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+                              avatar: const Icon(
+                                Icons.account_balance_wallet_outlined,
+                                size: 18,
+                              ),
                               label: const Text('Giao dịch'),
                               onPressed: onTransactions,
                             ),

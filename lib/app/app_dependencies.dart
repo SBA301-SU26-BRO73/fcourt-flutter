@@ -47,6 +47,8 @@ import '../features/catalog/domain/repositories/catalog_repository.dart';
 import '../features/booking/data/datasources/booking_remote_data_source.dart';
 import '../features/booking/data/repositories/booking_repository_impl.dart';
 import '../features/booking/domain/repositories/booking_repository.dart';
+import '../features/booking/data/repositories/guest_booking_lookup_repository_impl.dart';
+import '../features/booking/domain/repositories/guest_booking_lookup_repository.dart';
 import '../features/payment/data/repositories/payment_repository_impl.dart';
 import '../features/payment/data/repositories/qr_gallery_saver.dart';
 import '../features/payment/domain/repositories/payment_repository.dart';
@@ -127,6 +129,7 @@ class AppDependencies {
     this.receiptRepository,
     this.receiptPicker,
     this.bookingRepository,
+    this.guestBookingLookupRepository,
     this.cancellationRepository,
     this.customerTransactions,
     this.courtOwnerApprovalRepository,
@@ -178,6 +181,7 @@ class AppDependencies {
   final ReceiptRepository? receiptRepository;
   final ReceiptPicker? receiptPicker;
   final BookingRepository? bookingRepository;
+  final GuestBookingLookupRepository? guestBookingLookupRepository;
   final CancellationRepository? cancellationRepository;
   final CustomerTransactions? customerTransactions;
   final CourtOwnerApprovalRepository? courtOwnerApprovalRepository;
@@ -347,6 +351,7 @@ class AppDependencies {
       receiptRepository: ReceiptRepositoryImpl(dio),
       receiptPicker: DeviceReceiptPicker(),
       bookingRepository: BookingRepositoryImpl(BookingRemoteDataSource(dio)),
+      guestBookingLookupRepository: GuestBookingLookupRepositoryImpl(dio),
       courtOwnerApprovalRepository: CourtOwnerApprovalRepositoryImpl(
         SuperAdminRemoteDataSource(authDio),
       ),

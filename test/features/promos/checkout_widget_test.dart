@@ -15,12 +15,13 @@ Widget screen(
   PromoPayments payments, {
   int id = 42,
   VoidCallback? onFree,
+  String promoCode = 'SAVE',
 }) => MaterialApp(
   home: PaymentCheckoutScreen(
     repository: payments,
     promos: store,
     saver: FakeSaver(),
-    arguments: CheckoutArguments(bookingId: id, promoCode: 'SAVE'),
+    arguments: CheckoutArguments(bookingId: id, promoCode: promoCode),
     onFreeConfirmed: onFree,
     onUploadReceipt: () {},
     qrBuilder: (uri) => SizedBox(
@@ -32,13 +33,19 @@ Widget screen(
 Future<void> pumpCheckout(
   WidgetTester tester,
   PromoStore store,
-  PromoPayments payments,
-) async {
+  PromoPayments payments, {
+  VoidCallback? onFree,
+  bool settle = true,
+}) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(screen(store, payments));
-  await tester.pumpAndSettle();
+  await tester.pumpWidget(screen(store, payments, onFree: onFree));
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 void main() {
@@ -48,12 +55,7 @@ void main() {
       final store = PromoStore()..finalMinor = 0;
       final payments = PromoPayments(store);
       var confirmed = 0;
-      await pumpCheckout(tester, store, payments);
-      await tester.pumpWidget(
-        screen(store, payments, onFree: () => confirmed++),
-      );
-      await tester.tap(find.text('Áp dụng'));
-      await tester.pumpAndSettle();
+      await pumpCheckout(tester, store, payments, onFree: () => confirmed++);
       expect(find.text('QR:0'), findsNothing);
       expect(find.text('QR:160000'), findsNothing);
       expect(find.byTooltip('Sao chép Số tiền'), findsNothing);
@@ -69,15 +71,16 @@ void main() {
   testWidgets(
     'late apply response does not change checkout for another booking',
     (tester) async {
-      final store = PromoStore()..pending = Completer<PromoApplication>();
+      final pending = Completer<PromoApplication>();
+      final store = PromoStore()..pending = pending;
       final payments = PromoPayments(store);
-      await pumpCheckout(tester, store, payments);
-      await tester.tap(find.text('Áp dụng'));
+      await pumpCheckout(tester, store, payments, settle: false);
       await tester.pump();
-      await tester.pumpWidget(screen(store, payments, id: 43));
+      store.pending = null;
+      await tester.pumpWidget(screen(store, payments, id: 43, promoCode: ''));
       await tester.pumpAndSettle();
       store.applied.add(42);
-      store.pending!.complete(store.application(42));
+      pending.complete(store.application(42));
       await tester.pumpAndSettle();
       expect(
         tester
@@ -102,7 +105,6 @@ void main() {
       final store = PromoStore()
         ..failure = const PromoFailure('Mã khuyến mãi không tồn tại');
       await pumpCheckout(tester, store, PromoPayments(store));
-      await tester.tap(find.text('Áp dụng'));
       await tester.pumpAndSettle();
       final input = find.widgetWithText(TextField, 'Mã khuyến mãi');
       final field = tester.widget<TextField>(input);
@@ -125,9 +127,9 @@ void main() {
   testWidgets(
     'apply removes old QR while pending then displays green discount and final QR',
     (tester) async {
-      final store = PromoStore()..pending = Completer<PromoApplication>();
-      await pumpCheckout(tester, store, PromoPayments(store));
-      await tester.tap(find.text('Áp dụng'));
+      final pending = Completer<PromoApplication>();
+      final store = PromoStore()..pending = pending;
+      await pumpCheckout(tester, store, PromoPayments(store), settle: false);
       await tester.pump();
       expect(find.text('QR:160000'), findsNothing);
       expect(find.byTooltip('Sao chép Số tiền'), findsNothing);
@@ -137,7 +139,7 @@ void main() {
         isTrue,
       );
       store.applied.add(42);
-      store.pending!.complete(store.application(42));
+      pending.complete(store.application(42));
       await tester.pumpAndSettle();
       final original = tester.widget<Text>(find.textContaining('Giá gốc:'));
       expect(original.style!.decoration, TextDecoration.lineThrough);
