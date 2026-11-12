@@ -128,4 +128,18 @@ class HttpOperationsRepository implements OperationsRepository {
         }
         return r['bookingId'] as int;
       });
+
+  @override
+  Future<int> checkInByBooking(int bookingId, String key) =>
+      call(checkIn: true, () async {
+        final r = (await dio.post<Map<String, dynamic>>(
+          '/api/staff/check-in/by-booking',
+          data: {'bookingId': bookingId},
+          options: Options(headers: {'Idempotency-Key': key}),
+        )).data!;
+        if (r['status'] != 'CHECKED_IN') {
+          throw const UnknownFailure('Chưa xác nhận được kết quả nhận sân');
+        }
+        return r['bookingId'] as int;
+      });
 }

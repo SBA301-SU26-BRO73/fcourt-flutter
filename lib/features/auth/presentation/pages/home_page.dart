@@ -11,11 +11,19 @@ import '../../domain/entities/user_role.dart';
 import '../bloc/auth_bloc.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key, this.discoveryRepository, this.adminTodo});
+  const HomePage({
+    super.key,
+    this.discoveryRepository,
+    this.adminTodo,
+    this.staffToday,
+  });
   final DiscoveryRepository? discoveryRepository;
 
   /// Khối "Việc cần làm" của chủ sân; thay cho banner chào ở đầu trang chủ.
   final Widget? adminTodo;
+
+  /// Staff: today orders with one-tap check-in.
+  final Widget? staffToday;
 
   static String titleFor(UserRole role) => switch (role) {
     UserRole.customer => 'Đặt sân',
@@ -105,6 +113,10 @@ class HomePage extends StatelessWidget {
                     adminTodo!,
                     const SizedBox(height: Gap.xl),
                   ],
+                  if (user.role == UserRole.staff && staffToday != null) ...[
+                    staffToday!,
+                    const SizedBox(height: Gap.xl),
+                  ],
                   if (user.role == UserRole.customer) ...[
                     TextField(
                       maxLength: 200,
@@ -190,7 +202,11 @@ List<_Entry> _entries(UserRole role) => switch (role) {
   UserRole.customer => const [
     _Entry('Tìm sân', Icons.search, '/discover'),
     _Entry('Lịch sử đặt sân', Icons.confirmation_number_outlined, '/bookings'),
-    _Entry('Lịch sử giao dịch', Icons.receipt_long_outlined, '/payments/history'),
+    _Entry(
+      'Lịch sử giao dịch',
+      Icons.receipt_long_outlined,
+      '/payments/history',
+    ),
   ],
   UserRole.staff => const [
     _Entry('Lịch hôm nay', Icons.calendar_today_outlined, '/staff/schedule'),
@@ -202,12 +218,24 @@ List<_Entry> _entries(UserRole role) => switch (role) {
     _Entry('Chi nhánh và sân', Icons.account_tree_outlined, '/admin/branches'),
     _Entry('Phân tích', Icons.analytics_outlined, '/admin/analytics'),
     _Entry('Nhân viên', Icons.badge_outlined, '/admin/staff'),
-    _Entry('Gói dịch vụ', Icons.workspace_premium_outlined, '/admin/subscription'),
+    _Entry(
+      'Gói dịch vụ',
+      Icons.workspace_premium_outlined,
+      '/admin/subscription',
+    ),
     _Entry('Quản lý voucher', Icons.local_offer_outlined, '/admin/vouchers'),
   ],
   UserRole.superAdmin => const [
-    _Entry('Thống kê nền tảng', Icons.insights_outlined, '/super-admin/overview'),
-    _Entry('Chủ sân chờ duyệt', Icons.pending_actions_outlined, '/super-admin/owners/pending'),
+    _Entry(
+      'Thống kê nền tảng',
+      Icons.insights_outlined,
+      '/super-admin/overview',
+    ),
+    _Entry(
+      'Chủ sân chờ duyệt',
+      Icons.pending_actions_outlined,
+      '/super-admin/owners/pending',
+    ),
     _Entry('Quản lý danh mục', Icons.category_outlined, '/catalog'),
   ],
 };

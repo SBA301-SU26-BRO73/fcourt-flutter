@@ -54,6 +54,14 @@ class FakeOperations implements OperationsRepository {
     if (error != null) throw error!;
     return 42;
   }
+
+  @override
+  Future<int> checkInByBooking(int bookingId, String key) async {
+    writes++;
+    keys.add(key);
+    if (error != null) throw error!;
+    return bookingId;
+  }
 }
 
 void main() {
