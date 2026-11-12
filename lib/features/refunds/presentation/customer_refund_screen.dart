@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../core/error/failure.dart';
+import '../../../app/widgets/fc_widgets.dart';
 import '../../transactions/presentation/transaction_widgets.dart';
 import '../domain/refund.dart';
 import '../domain/vietnam_banks.dart';
@@ -170,6 +171,8 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final state = _state, request = state?.request;
     return PopScope(
       canPop: !_busy,
@@ -185,37 +188,81 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
           ],
         ),
         body: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(Gap.lg),
           children: [
             if (_loading) const Center(child: CircularProgressIndicator()),
             if (_error != null) ...[
-              Text(_error!),
+              Text(_error!, style: TextStyle(color: colors.error)),
               TextButton(
                 onPressed: _busy ? null : _load,
                 child: const Text('Tải lại trạng thái'),
               ),
             ],
             if (state != null)
-              Text(
-                'Số tiền hoàn theo chính sách: ${vnd(state.amount)}',
-                style: Theme.of(context).textTheme.titleLarge,
+              FcCard(
+                child: Row(
+                  children: [
+                    const IconBadge(Icons.payments_outlined),
+                    const SizedBox(width: Gap.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Số tiền hoàn theo chính sách',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            vnd(state.amount),
+                            style: theme.textTheme.headlineSmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             if (request != null) ...[
-              if (request.status == 'REJECTED')
-                Text(
-                  'Yêu cầu bị từ chối: ${request.note ?? 'Vui lòng liên hệ chủ sân'}',
+              const SizedBox(height: Gap.lg),
+              if (request.status == 'REJECTED') ...[
+                StatusPill(
+                  'Bị từ chối: ${request.note ?? 'Vui lòng liên hệ chủ sân'}',
+                  tone: context.fc.danger,
+                  icon: Icons.block_outlined,
                 ),
-              _RefundProgress(step: request.step),
-              const SizedBox(height: 12),
-              Text(
-                'Thông tin nhận tiền',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              Text(
-                '${request.bankName} · ${request.accountNumber}\n${request.accountName}',
+                const SizedBox(height: Gap.lg),
+              ],
+              FcCard(child: _RefundProgress(step: request.step)),
+              const SizedBox(height: Gap.lg),
+              FcCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Thông tin nhận tiền',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: Gap.sm),
+                    Text(request.bankName, style: theme.textTheme.bodyLarge),
+                    Text(
+                      request.accountNumber,
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                    Text(
+                      request.accountName,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               if (request.proof != null) ...[
-                const Text('Chứng từ hoàn tiền'),
+                const SizedBox(height: Gap.lg),
+                Text('Chứng từ hoàn tiền', style: theme.textTheme.titleSmall),
+                const SizedBox(height: Gap.sm),
                 InteractiveViewer(
                   child: Image.network(
                     request.proof.toString(),
@@ -224,15 +271,20 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                   ),
                 ),
               ],
-            ] else if (state?.eligible == true)
+            ] else if (state?.eligible == true) ...[
+              const SizedBox(height: Gap.lg),
               Form(
                 key: _form,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'Kiểm tra kỹ tài khoản nhận tiền. Chủ sân sẽ chuyển khoản thủ công sau khi duyệt yêu cầu.',
+                    Text(
+                      'Kiểm tra kỹ tài khoản nhận tiền. Chủ sân sẽ chuyển khoản thủ công sau khi duyệt.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Gap.lg),
                     DropdownButtonFormField<String>(
                       initialValue: _bank,
                       isExpanded: true,
@@ -249,7 +301,7 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                           ? null
                           : (v) => setState(() => _bank = v!),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Gap.lg),
                     TextFormField(
                       controller: _account,
                       enabled: !_busy,
@@ -257,25 +309,27 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                       maxLength: 20,
                       decoration: const InputDecoration(
                         labelText: 'Số tài khoản',
+                        counterText: '',
                       ),
                       validator: (v) =>
                           RegExp(r'^[0-9]{6,20}$').hasMatch(v?.trim() ?? '')
                           ? null
                           : 'Nhập số tài khoản từ 6–20 chữ số',
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Gap.lg),
                     TextFormField(
                       controller: _name,
                       enabled: !_busy,
                       maxLength: 150,
                       decoration: const InputDecoration(
                         labelText: 'Tên người thụ hưởng',
+                        counterText: '',
                       ),
                       validator: (v) => (v?.trim().length ?? 0) >= 2
                           ? null
                           : 'Nhập tên người thụ hưởng',
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Gap.lg),
                     TextFormField(
                       controller: _reason,
                       enabled: !_busy,
@@ -283,12 +337,13 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                       maxLines: 3,
                       decoration: const InputDecoration(
                         labelText: 'Lý do hoàn tiền',
+                        counterText: '',
                       ),
                       validator: (v) => v == null || v.trim().isEmpty
                           ? 'Vui lòng nhập lý do'
                           : null,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Gap.xl),
                     FilledButton(
                       onPressed: _busy ? null : _request,
                       child: Text(
@@ -298,6 +353,7 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
                   ],
                 ),
               ),
+            ],
           ],
         ),
       ),
@@ -305,6 +361,8 @@ class _CustomerRefundScreenState extends State<CustomerRefundScreen> {
   }
 }
 
+/// Four steps joined by one continuous line: done steps are filled, the
+/// current one is ringed, the rest are outlined.
 class _RefundProgress extends StatelessWidget {
   const _RefundProgress({required this.step});
   final int step;
@@ -317,27 +375,74 @@ class _RefundProgress extends StatelessWidget {
       'Đang chuyển khoản',
       'Đã hoàn tất',
     ];
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Column(
       children: [
         for (var index = 0; index < labels.length; index++)
-          Row(
-            children: [
-              Icon(
-                index <= step
-                    ? Icons.check_circle
-                    : Icons.radio_button_unchecked,
-                color: index <= step ? colors.primary : colors.outline,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: Text(labels[index])),
-              if (index < labels.length - 1)
-                Text(
-                  index < step ? 'Hoàn tất' : 'Đang chờ',
-                  style: Theme.of(context).textTheme.bodySmall,
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: 24,
+                  child: Column(
+                    children: [
+                      Icon(
+                        index < step
+                            ? Icons.check_circle
+                            : index == step
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: index <= step ? colors.primary : colors.outline,
+                        size: 24,
+                      ),
+                      if (index < labels.length - 1)
+                        Expanded(
+                          child: Container(
+                            width: 2,
+                            color: index < step
+                                ? colors.primary
+                                : colors.outlineVariant,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-            ],
+                const SizedBox(width: Gap.md),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index < labels.length - 1 ? Gap.lg : 0,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            labels[index],
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: index == step
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                              color: index <= step
+                                  ? colors.onSurface
+                                  : colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        if (index < labels.length - 1)
+                          Text(
+                            index < step ? 'Hoàn tất' : 'Đang chờ',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
       ],
     );

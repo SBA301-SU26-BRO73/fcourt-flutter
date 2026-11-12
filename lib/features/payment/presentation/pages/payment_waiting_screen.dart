@@ -359,36 +359,9 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
               children: [
                 if (_receipt != null)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Row(
-                      children: [
-                        for (int step = 0; step < 3; step++)
-                          Expanded(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  step == 2
-                                      ? Icons.check_circle
-                                      : Icons.radio_button_checked,
-                                  color:
-                                      step < 2 ||
-                                          _receipt?.status ==
-                                              ReceiptStatus.confirmed
-                                      ? context.fc.success.color
-                                      : Theme.of(context).colorScheme.outline,
-                                ),
-                                Text(
-                                  [
-                                    'Đã gửi biên lai',
-                                    'Đang đối soát',
-                                    'Xác nhận thành công',
-                                  ][step],
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                    padding: const EdgeInsets.only(bottom: Gap.lg),
+                    child: _ReceiptSteps(
+                      confirmed: _receipt?.status == ReceiptStatus.confirmed,
                     ),
                   ),
                 if (_timedOut) ...[
@@ -404,7 +377,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                   const Center(child: CircularProgressIndicator())
                 else if (pending) ...[
                   const Padding(
-                    padding: EdgeInsets.all(32),
+                    padding: EdgeInsets.all(Gap.lg),
                     child: Center(child: WaitingRipple()),
                   ),
                   const Text(
@@ -436,7 +409,9 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                       child: const Text('Xem hỗ trợ thanh toán'),
                     ),
                 ] else ...[
-                  const Text('Ảnh chuyển khoản, tối đa 5 MB. Chọn xong sẽ tự gửi.'),
+                  const Text(
+                    'Ảnh chuyển khoản, tối đa 5 MB. Chọn xong sẽ tự gửi.',
+                  ),
                   const SizedBox(height: 16),
                   if (_image != null)
                     Padding(
@@ -496,6 +471,63 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Three equal columns: sent, reconciling, confirmed. The current step is
+/// filled in the accent colour, finished steps in the success tone.
+class _ReceiptSteps extends StatelessWidget {
+  const _ReceiptSteps({required this.confirmed});
+  final bool confirmed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final done = context.fc.success.color;
+    const labels = ['Đã gửi', 'Đối soát', 'Xác nhận'];
+    Widget step(int index) {
+      final finished = index == 0 || (confirmed && index >= 1);
+      final current = !confirmed && index == 1;
+      final color = finished
+          ? done
+          : current
+          ? colors.primary
+          : colors.outline;
+      return Expanded(
+        child: Column(
+          children: [
+            Icon(
+              finished
+                  ? Icons.check_circle
+                  : current
+                  ? Icons.hourglass_top_rounded
+                  : Icons.radio_button_unchecked,
+              color: color,
+              size: 28,
+            ),
+            const SizedBox(height: Gap.xs),
+            Text(
+              labels[index],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: finished || current
+                    ? colors.onSurface
+                    : colors.onSurfaceVariant,
+                fontWeight: current ? FontWeight.w700 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [for (var i = 0; i < labels.length; i++) step(i)],
     );
   }
 }

@@ -39,9 +39,14 @@ class SportFilters extends StatelessWidget {
 /// Placeholder for a branch without a photo: flat tonal block with the sport
 /// icon. Never presented as a photograph of a venue.
 class CourtArtwork extends StatelessWidget {
-  const CourtArtwork({super.key, this.height = 150, this.label});
-  final double height;
+  const CourtArtwork({super.key, this.height, this.label, this.sport});
+
+  /// Fixed height, or null to fill whatever the parent gives (e.g. 16:9).
+  final double? height;
   final String? label;
+
+  /// Sport the list is filtered to; its icon replaces the generic picture.
+  final DiscoverySport? sport;
 
   @override
   Widget build(BuildContext context) {
@@ -54,18 +59,23 @@ class CourtArtwork extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.image_outlined,
-            size: 32,
-            color: colors.onSurfaceVariant,
-          ),
-          if (label != null && height >= 120) ...[
+          sport == null
+              ? Icon(
+                  Icons.image_outlined,
+                  size: 32,
+                  color: colors.onSurfaceVariant,
+                )
+              : SportIcon.named(
+                  sport!.label,
+                  size: 36,
+                  color: colors.onSurfaceVariant,
+                ),
+          if (label != null && (height ?? 120) >= 120) ...[
             const SizedBox(height: Gap.xs),
             Text(
               label!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: colors.onSurfaceVariant),
             ),
           ],
         ],
@@ -167,7 +177,9 @@ class DiscoveryMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
     child: EmptyState(
-      icon: onRetry == null ? Icons.search_off_outlined : Icons.cloud_off_outlined,
+      icon: onRetry == null
+          ? Icons.search_off_outlined
+          : Icons.cloud_off_outlined,
       message: message,
       action: onRetry == null
           ? null

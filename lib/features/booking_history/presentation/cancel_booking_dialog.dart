@@ -116,6 +116,10 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
           child: const Text('Giữ đặt sân'),
         ),
         FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
+          ),
           onPressed: _busy || !_policy.allowed ? null : _cancel,
           child: Text(_busy ? 'Đang hủy…' : 'Xác nhận hủy'),
         ),

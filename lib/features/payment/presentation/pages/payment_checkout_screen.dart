@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../domain/entities/payment_checkout.dart';
 import '../../domain/repositories/payment_repository.dart';
+import '../../../../app/widgets/fc_widgets.dart';
 import '../widgets/countdown_timer_widget.dart';
 import '../../../promos/domain/promo_repository.dart';
 import '../../../promos/presentation/promo_checkout_cubit.dart';
@@ -279,7 +280,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                               Center(
                                 child: ConstrainedBox(
                                   constraints: const BoxConstraints(
-                                    maxWidth: 320,
+                                    maxWidth: 240,
                                   ),
                                   child: ColoredBox(
                                     color: Colors.white,
@@ -308,17 +309,31 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              Text(checkout.bankName),
-                              _infoRow('Số tài khoản', checkout.accountNumber),
-                              _infoRow(
-                                'Tên chủ tài khoản',
-                                checkout.accountName,
-                              ),
-                              _infoRow('Số tiền', money),
-                              _infoRow(
-                                'Nội dung chuyển khoản',
-                                checkout.transferContent,
+                              const SizedBox(height: Gap.lg),
+                              FcCard(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: Gap.lg,
+                                  vertical: Gap.sm,
+                                ),
+                                child: Column(
+                                  children: [
+                                    _infoRow('Ngân hàng', checkout.bankName),
+                                    _infoRow(
+                                      'Số tài khoản',
+                                      checkout.accountNumber,
+                                      copyLabel: 'Sao chép số tài khoản',
+                                    ),
+                                    _infoRow(
+                                      'Tên chủ tài khoản',
+                                      checkout.accountName,
+                                    ),
+                                    _infoRow('Số tiền', money),
+                                    _infoRow(
+                                      'Nội dung chuyển khoản',
+                                      checkout.transferContent,
+                                    ),
+                                  ],
+                                ),
                               ),
                               const SizedBox(height: 8),
                               FilledButton.tonalIcon(
@@ -396,11 +411,22 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
     );
   }
 
-  Widget _infoRow(String label, String value) => ListTile(
+  Widget _infoRow(String label, String value, {String? copyLabel}) => ListTile(
     contentPadding: EdgeInsets.zero,
     dense: true,
     title: Text(label),
     subtitle: SelectableText(value),
+    trailing: copyLabel == null
+        ? null
+        : IconButton(
+            tooltip: copyLabel,
+            constraints: const BoxConstraints.tightFor(
+              width: Gap.touch,
+              height: Gap.touch,
+            ),
+            onPressed: () => _copy(value),
+            icon: const Icon(Icons.copy_outlined),
+          ),
   );
 }
 
