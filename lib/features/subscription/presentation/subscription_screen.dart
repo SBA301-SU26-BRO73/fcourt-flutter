@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/widgets/fc_widgets.dart';
+
 import '../domain/subscription.dart';
 import 'subscription_cubit.dart';
 import 'subscription_state.dart';
@@ -83,48 +85,47 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           ),
                         ],
                         if (current != null)
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    current.period.plan.name,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleLarge,
+                          FcCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  current.period.plan.name,
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: StatusPill(
+                                    current.active
+                                        ? 'Đang có hiệu lực'
+                                        : 'Không còn hiệu lực',
+                                    tone: current.active
+                                        ? context.fc.success
+                                        : context.fc.neutral,
                                   ),
-                                  Chip(
-                                    label: Text(
-                                      current.active
-                                          ? 'Đang có hiệu lực'
-                                          : 'Không còn hiệu lực',
+                                ),
+                                if (current.starter)
+                                  const Text('Gói khởi đầu do hệ thống cấp'),
+                                Text(
+                                  'Hiệu lực: ${date(current.period.startDate)} – ${date(current.period.endDate)}',
+                                ),
+                                Text(
+                                  'Ngày hết hạn: ${date(current.period.endDate)} (giờ Việt Nam)',
+                                ),
+                                Text(
+                                  'Hạn mức hiện tại: ${current.period.maxBranches} chi nhánh · ${current.period.maxCourts} sân',
+                                ),
+                                if (current.upcoming.isNotEmpty)
+                                  const Text('Các kỳ đã thanh toán sắp tới'),
+                                for (final next in current.upcoming)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      '${next.plan.name}: ${date(next.startDate)} – ${date(next.endDate)}\n'
+                                      '${next.maxBranches} chi nhánh · ${next.maxCourts} sân',
                                     ),
                                   ),
-                                  if (current.starter)
-                                    const Text('Gói khởi đầu do hệ thống cấp'),
-                                  Text(
-                                    'Hiệu lực: ${date(current.period.startDate)} – ${date(current.period.endDate)}',
-                                  ),
-                                  Text(
-                                    'Ngày hết hạn: ${date(current.period.endDate)} (giờ Việt Nam)',
-                                  ),
-                                  Text(
-                                    'Hạn mức hiện tại: ${current.period.maxBranches} chi nhánh · ${current.period.maxCourts} sân',
-                                  ),
-                                  if (current.upcoming.isNotEmpty)
-                                    const Text('Các kỳ đã thanh toán sắp tới'),
-                                  for (final next in current.upcoming)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Text(
-                                        '${next.plan.name}: ${date(next.startDate)} – ${date(next.endDate)}\n'
-                                        '${next.maxBranches} chi nhánh · ${next.maxCourts} sân',
-                                      ),
-                                    ),
-                                ],
-                              ),
+                              ],
                             ),
                           ),
                         const SizedBox(height: 16),
@@ -148,51 +149,46 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           'Gói và ngày hiệu lực sau thanh toán do máy chủ xác nhận. Gói khác có thể áp dụng từ kỳ kế tiếp.',
                         ),
                         if (payment != null)
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                          FcCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Giao dịch #${payment.orderCode} · ${payment.planName}',
+                                ),
+                                Text(
+                                  '${subscriptionMoney(payment.amount)} / ${payment.cycle.label.toLowerCase()}',
+                                ),
+                                Text(switch (payment.status) {
+                                  SubscriptionPaymentStatus.pending =>
+                                    'Chờ thanh toán',
+                                  SubscriptionPaymentStatus.paid =>
+                                    'Máy chủ đã ghi nhận thanh toán',
+                                  SubscriptionPaymentStatus.expired =>
+                                    'Giao dịch đã hết hạn',
+                                  SubscriptionPaymentStatus.cancelled =>
+                                    'Giao dịch đã hủy',
+                                  SubscriptionPaymentStatus.failed =>
+                                    'Giao dịch thất bại',
+                                }),
+                                if (payment.pending) ...[
                                   Text(
-                                    'Giao dịch #${payment.orderCode} · ${payment.planName}',
+                                    'Hạn thanh toán: ${DateFormat('dd/MM/yyyy HH:mm').format(payment.expiredAt.toUtc().add(const Duration(hours: 7)))} (giờ Việt Nam)',
                                   ),
-                                  Text(
-                                    '${subscriptionMoney(payment.amount)} / ${payment.cycle.label.toLowerCase()}',
-                                  ),
-                                  Text(switch (payment.status) {
-                                    SubscriptionPaymentStatus.pending =>
-                                      'Chờ thanh toán',
-                                    SubscriptionPaymentStatus.paid =>
-                                      'Máy chủ đã ghi nhận thanh toán',
-                                    SubscriptionPaymentStatus.expired =>
-                                      'Giao dịch đã hết hạn',
-                                    SubscriptionPaymentStatus.cancelled =>
-                                      'Giao dịch đã hủy',
-                                    SubscriptionPaymentStatus.failed =>
-                                      'Giao dịch thất bại',
-                                  }),
-                                  if (payment.pending) ...[
-                                    Text(
-                                      'Hạn thanh toán: ${DateFormat('dd/MM/yyyy HH:mm').format(payment.expiredAt.toUtc().add(const Duration(hours: 7)))} (giờ Việt Nam)',
-                                    ),
-                                    TextButton(
-                                      onPressed: locked
-                                          ? null
-                                          : cubit.openPayment,
-                                      child: const Text('Mở lại PayOS'),
-                                    ),
-                                  ],
                                   TextButton(
                                     onPressed: locked
                                         ? null
-                                        : cubit.checkPayment,
-                                    child: const Text(
-                                      'Kiểm tra kết quả thanh toán',
-                                    ),
+                                        : cubit.openPayment,
+                                    child: const Text('Mở lại PayOS'),
                                   ),
                                 ],
-                              ),
+                                TextButton(
+                                  onPressed: locked ? null : cubit.checkPayment,
+                                  child: const Text(
+                                    'Kiểm tra kết quả thanh toán',
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         if (state.paymentError != null)
@@ -215,15 +211,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   ),
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: Gap.screen),
                   sliver: SliverList.builder(
                     itemCount: state.plans.length,
                     itemBuilder: (context, index) {
                       final plan = state.plans[index],
                           price = state.cycle.price(state.plans[index]);
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: Gap.md),
+                        child: FcCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -232,7 +228,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                               if (plan.popular)
-                                const Chip(label: Text('Phổ biến')),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: StatusPill(
+                                    'Phổ biến',
+                                    tone: context.fc.info,
+                                  ),
+                                ),
                               if (plan.tagline != null) Text(plan.tagline!),
                               Text(
                                 '${subscriptionMoney(price)}${price == null ? '' : ' / ${state.cycle.label.toLowerCase()}'}',
@@ -241,16 +243,37 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                 '${plan.maxBranches} chi nhánh · ${plan.maxCourts} sân',
                               ),
                               for (final feature in plan.features)
-                                Text('• $feature'),
-                              FilledButton(
-                                key: ValueKey('checkout-${plan.id}'),
-                                onPressed: buying || price == null
-                                    ? null
-                                    : () => cubit.checkout(plan.id),
-                                child: Text(
-                                  current?.period.plan.id == plan.id
-                                      ? 'Gia hạn gói'
-                                      : 'Nâng cấp / đổi gói',
+                                Padding(
+                                  padding: const EdgeInsets.only(top: Gap.xs),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        Icons.check,
+                                        size: 18,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                      ),
+                                      const SizedBox(width: Gap.sm),
+                                      Expanded(child: Text(feature)),
+                                    ],
+                                  ),
+                                ),
+                              const SizedBox(height: Gap.md),
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton(
+                                  key: ValueKey('checkout-${plan.id}'),
+                                  onPressed: buying || price == null
+                                      ? null
+                                      : () => cubit.checkout(plan.id),
+                                  child: Text(
+                                    current?.period.plan.id == plan.id
+                                        ? 'Gia hạn gói'
+                                        : 'Nâng cấp / đổi gói',
+                                  ),
                                 ),
                               ),
                             ],

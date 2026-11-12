@@ -6,6 +6,7 @@ import '../../domain/entities/clock_time.dart';
 import '../../domain/entities/slot_matrix.dart';
 import '../../domain/entities/slot_template.dart';
 import '../bloc/bulk_apply_template_bloc.dart';
+import 'day_of_week_chips.dart';
 import 'facility_formatters.dart';
 
 const _dayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -276,19 +277,10 @@ class _EditBody extends StatelessWidget {
           onChanged: (v) => bloc.add(BulkPriceChanged(int.tryParse(v))),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 6,
-          children: [
-            for (var day = 0; day < 7; day++)
-              FilterChip(
-                key: Key('bulk-day-$day'),
-                label: Text(_dayLabels[day]),
-                selected: state.daysOfWeek.contains(day),
-                onSelected: enabled
-                    ? (_) => bloc.add(BulkDayToggled(day))
-                    : null,
-              ),
-          ],
+        DayOfWeekChips(
+          keyPrefix: 'bulk-day',
+          selected: state.daysOfWeek,
+          onToggle: enabled ? (day) => bloc.add(BulkDayToggled(day)) : null,
         ),
         for (final warning in warnings)
           Padding(

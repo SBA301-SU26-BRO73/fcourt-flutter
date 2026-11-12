@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/widgets/fc_widgets.dart';
 import '../../../core/error/failure.dart';
 import '../../report_export/domain/report_export.dart';
 import '../../report_export/presentation/revenue_export_button.dart';
@@ -198,23 +199,20 @@ class _AdminTransactionHistoryScreenState
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             if (ledger != null)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Wrap(
-                    spacing: 20,
-                    runSpacing: 12,
-                    children: [
-                      Text(
-                        'Tổng thu\n${vnd(ledger.received)}',
-                        key: const ValueKey('ledger-received'),
-                      ),
-                      Text('Tổng hoàn tiền\n${vnd(ledger.refunded)}'),
-                      Text('Doanh thu thực tế\n${vnd(ledger.netRevenue)}'),
-                      Text('Chờ duyệt\n${vnd(ledger.pending)}'),
-                      Text('Bị từ chối\n${ledger.rejectedCount}'),
-                    ],
-                  ),
+              FcCard(
+                child: Wrap(
+                  spacing: 20,
+                  runSpacing: 12,
+                  children: [
+                    Text(
+                      'Tổng thu\n${vnd(ledger.received)}',
+                      key: const ValueKey('ledger-received'),
+                    ),
+                    Text('Tổng hoàn tiền\n${vnd(ledger.refunded)}'),
+                    Text('Doanh thu thực tế\n${vnd(ledger.netRevenue)}'),
+                    Text('Chờ duyệt\n${vnd(ledger.pending)}'),
+                    Text('Bị từ chối\n${ledger.rejectedCount}'),
+                  ],
                 ),
               ),
             TextField(

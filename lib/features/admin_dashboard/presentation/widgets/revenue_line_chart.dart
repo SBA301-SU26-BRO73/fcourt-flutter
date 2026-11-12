@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/analytics.dart';
 import 'compact_currency.dart';
-import '../../../../app/theme/tokens.dart';
+import '../../../../app/widgets/fc_widgets.dart';
 
 /// Biểu đồ đường doanh thu theo ngày/tuần/tháng. Chạm vào một điểm để xem số
 /// tiền chi tiết trong tooltip.
@@ -50,7 +50,9 @@ class RevenueLineChart extends StatelessWidget {
                 showTitles: true,
                 reservedSize: 56,
                 getTitlesWidget: (value, meta) {
-                  if (value == meta.min) return const SizedBox.shrink();
+                  if (value == meta.min || value == meta.max) {
+                    return const SizedBox.shrink();
+                  }
                   return SideTitleWidget(
                     meta: meta,
                     child: Text(
@@ -108,8 +110,7 @@ class RevenueLineChart extends StatelessWidget {
                 for (var i = 0; i < points.length; i++)
                   FlSpot(i.toDouble(), points[i].revenue.toDouble()),
               ],
-              isCurved: true,
-              preventCurveOverShooting: true,
+              isCurved: false,
               color: lineColor,
               barWidth: 3,
               dotData: FlDotData(show: points.length <= 14),

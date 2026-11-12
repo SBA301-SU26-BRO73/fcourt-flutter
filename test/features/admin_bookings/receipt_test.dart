@@ -39,6 +39,7 @@ void main() {
           ),
         ),
       );
+      await tester.ensureVisible(find.text('Xem biên lai'));
       await tester.tap(find.text('Xem biên lai'));
       await tester.pumpAndSettle();
       expect(opened, uri);

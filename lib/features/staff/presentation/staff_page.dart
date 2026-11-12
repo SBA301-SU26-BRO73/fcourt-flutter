@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../app/widgets/fc_widgets.dart';
 import '../../../core/error/failure.dart';
 import '../../../core/network/command_key.dart';
 import '../domain/staff.dart';
@@ -118,7 +119,12 @@ class _StaffViewState extends State<_StaffView> {
                     ? cubit.initialize()
                     : cubit.load(state.branchId!),
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+                  padding: const EdgeInsets.fromLTRB(
+                    Gap.screen,
+                    Gap.lg,
+                    Gap.screen,
+                    Gap.fabClearance,
+                  ),
                   children: [
                     Text(
                       'Đội ngũ tại cơ sở',
@@ -187,42 +193,83 @@ class _StaffViewState extends State<_StaffView> {
                         ),
                       ),
                     ...state.members.map(
-                      (m) => Column(
-                        children: [
-                          ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                            ),
-                            leading: CircleAvatar(
-                              child: Text(
-                                m.name.isEmpty
-                                    ? '?'
-                                    : m.name.characters.first.toUpperCase(),
+                      (m) => Padding(
+                        padding: const EdgeInsets.only(bottom: Gap.md),
+                        child: FcCard(
+                          onTap: _busy || !m.active
+                              ? null
+                              : () => _edit(state, m),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    child: Text(
+                                      m.name.isEmpty
+                                          ? '?'
+                                          : m.name.characters.first
+                                                .toUpperCase(),
+                                    ),
+                                  ),
+                                  const SizedBox(width: Gap.md),
+                                  Expanded(
+                                    child: Text(
+                                      m.name,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            title: Text(m.name),
-                            subtitle: Text(
-                              '${m.email}\n${m.phone}\n${state.branches.where((b) => b.id == m.branchId).map((b) => b.name).join()}\n${m.active ? 'Đang hoạt động' : 'Đã khóa'}',
-                            ),
-                            isThreeLine: true,
-                            onTap: _busy || !m.active
-                                ? null
-                                : () => _edit(state, m),
+                              const SizedBox(height: Gap.sm),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: m.active
+                                    ? StatusPill(
+                                        'Đang hoạt động',
+                                        tone: context.fc.success,
+                                      )
+                                    : StatusPill(
+                                        'Đã khóa',
+                                        tone: context.fc.danger,
+                                      ),
+                              ),
+                              const SizedBox(height: Gap.sm),
+                              Text(m.email),
+                              Text(m.phone),
+                              Text(
+                                state.branches
+                                    .where((b) => b.id == m.branchId)
+                                    .map((b) => b.name)
+                                    .join(),
+                              ),
+                              const SizedBox(height: Gap.xs),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton.icon(
+                                  style: m.active
+                                      ? TextButton.styleFrom(
+                                          foregroundColor: Theme.of(context)
+                                              .colorScheme
+                                              .error,
+                                        )
+                                      : null,
+                                  onPressed: _busy ? null : () => _toggle(m),
+                                  icon: Icon(
+                                    m.active
+                                        ? Icons.lock_outline
+                                        : Icons.lock_open,
+                                  ),
+                                  label: Text(
+                                    m.active ? 'Khóa tài khoản' : 'Mở khóa',
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton.icon(
-                              onPressed: _busy ? null : () => _toggle(m),
-                              icon: Icon(
-                                m.active ? Icons.lock_outline : Icons.lock_open,
-                              ),
-                              label: Text(
-                                m.active ? 'Khóa tài khoản' : 'Mở khóa',
-                              ),
-                            ),
-                          ),
-                          const Divider(height: 1),
-                        ],
+                        ),
                       ),
                     ),
                     if (state.hasMore)

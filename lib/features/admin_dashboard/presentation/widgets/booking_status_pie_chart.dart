@@ -14,6 +14,15 @@ class BookingStatusPieChart extends StatelessWidget {
   static const pendingColor = ChartColors.warning;
   static const cancelledColor = ChartColors.danger;
 
+  /// Chữ trên lát biểu đồ: đen hoặc trắng, chọn bên đạt tương phản cao hơn
+  /// (>= 4.5:1 với cả ba màu trạng thái).
+  static Color sliceLabelColor(Color slice) {
+    final l = slice.computeLuminance();
+    return (1.05 / (l + 0.05)) >= ((l + 0.05) / 0.05)
+        ? Colors.white
+        : Colors.black;
+  }
+
   List<(String, int, Color)> get _entries => [
     ('Đã xác nhận', counts.confirmed, confirmedColor),
     ('Chờ duyệt', counts.pending, pendingColor),
@@ -41,8 +50,8 @@ class BookingStatusPieChart extends StatelessWidget {
                             color: color,
                             radius: 50,
                             title: '${(value * 100 / total).round()}%',
-                            titleStyle: const TextStyle(
-                              color: Colors.white,
+                            titleStyle: TextStyle(
+                              color: sliceLabelColor(color),
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
