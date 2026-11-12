@@ -16,9 +16,13 @@ class AdminBookingDetail extends StatelessWidget {
     super.key,
     required this.booking,
     this.receiptBuilder,
+    this.onReviewPayment,
   });
   final AdminBooking booking;
   final Widget Function(Uri)? receiptBuilder;
+
+  /// Chỉ hiện khi biên lai đang chờ duyệt: chuyển tới màn Duyệt/Từ chối của chi nhánh.
+  final VoidCallback? onReviewPayment;
   @override
   Widget build(BuildContext context) {
     final row = booking;
@@ -69,6 +73,14 @@ class AdminBookingDetail extends StatelessWidget {
             )
           else
             const Text('Chưa có biên lai được cung cấp'),
+          if (onReviewPayment != null && row.paymentStatus == 'PENDING') ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: onReviewPayment,
+              icon: const Icon(Icons.fact_check_outlined),
+              label: const Text('Duyệt / từ chối biên lai'),
+            ),
+          ],
         ],
       ),
     );

@@ -114,6 +114,34 @@ void main() {
       verify(() => branches.getBranches()).called(2);
     });
 
+    testWidgets('thẻ chi nhánh hiện lối vào biên lai, hoàn tiền, giao dịch', (
+      tester,
+    ) async {
+      when(() => branches.getBranches())
+          .thenAnswer((_) async => [sampleBranch()]);
+      final opened = <String>[];
+      await _pump(
+        tester,
+        BlocProvider(
+          create: (_) =>
+              BranchListBloc(GetBranches(branches))
+                ..add(const BranchListRequested()),
+          child: BranchListScreen(
+            onCreateBranch: () async => null,
+            onEditBranch: (_) async => null,
+            onOpenCourts: (_) {},
+            onOpenPayments: (b) => opened.add('payments${b.id}'),
+            onOpenRefunds: (b) => opened.add('refunds${b.id}'),
+            onOpenTransactions: (b) => opened.add('transactions${b.id}'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Biên lai'));
+      await tester.tap(find.text('Hoàn tiền'));
+      await tester.tap(find.text('Giao dịch'));
+      expect(opened, ['payments1', 'refunds1', 'transactions1']);
+    });
+
     testWidgets('form tạo mới báo lỗi các trường bắt buộc, không gọi API', (
       tester,
     ) async {

@@ -40,7 +40,12 @@ import 'admin_facility_dependencies.dart';
 
 /// Route của chủ sân (SCRUM-13/15/17/19). Trả về danh sách rỗng khi app chưa
 /// cấu hình repository (ví dụ trong test của feature khác).
-List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
+List<RouteBase> adminFacilityRoutes(
+  AdminFacilityDependencies? deps, {
+  bool hasPayments = false,
+  bool hasRefunds = false,
+  bool hasTransactions = false,
+}) {
   if (deps == null) return const [];
   final branches = deps.branchRepository;
   final courts = deps.courtRepository;
@@ -104,6 +109,16 @@ List<RouteBase> adminFacilityRoutes(AdminFacilityDependencies? deps) {
           onOpenImages: images == null
               ? null
               : (branch) => context.push('/admin/branches/${branch.id}/images'),
+          onOpenPayments: hasPayments
+              ? (branch) => context.push('/admin/branches/${branch.id}/payments')
+              : null,
+          onOpenRefunds: hasRefunds
+              ? (branch) => context.push('/admin/branches/${branch.id}/refunds')
+              : null,
+          onOpenTransactions: hasTransactions
+              ? (branch) =>
+                    context.push('/admin/branches/${branch.id}/transactions')
+              : null,
         ),
       ),
     ),

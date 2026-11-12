@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../domain/admin_booking.dart';
 import '../domain/admin_booking_status.dart';
 import 'admin_booking_cubit.dart';
 import 'admin_booking_state.dart';
@@ -9,7 +10,10 @@ import 'admin_booking_detail.dart';
 import 'booking_status_badge.dart';
 
 class AdminBookingManagementScreen extends StatefulWidget {
-  const AdminBookingManagementScreen({super.key});
+  const AdminBookingManagementScreen({super.key, this.onReviewPayment});
+
+  /// Mở màn duyệt biên lai của chi nhánh; null thì không hiện nút trong chi tiết đơn.
+  final void Function(AdminBooking booking)? onReviewPayment;
   @override
   State<AdminBookingManagementScreen> createState() =>
       _AdminBookingManagementScreenState();
@@ -240,7 +244,15 @@ class _AdminBookingManagementScreenState
                         onTap: () => showDialog<void>(
                           context: context,
                           builder: (_) => Dialog.fullscreen(
-                            child: AdminBookingDetail(booking: row),
+                            child: AdminBookingDetail(
+                              booking: row,
+                              onReviewPayment: widget.onReviewPayment == null
+                                  ? null
+                                  : () {
+                                      Navigator.of(context).pop();
+                                      widget.onReviewPayment!(row);
+                                    },
+                            ),
                           ),
                         ),
                         trailing: const Icon(Icons.chevron_right),
