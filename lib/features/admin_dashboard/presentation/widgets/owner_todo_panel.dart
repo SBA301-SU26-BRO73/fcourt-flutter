@@ -184,6 +184,7 @@ class _OwnerTodoPanelState extends State<OwnerTodoPanel> {
     if (_busy || repository == null) return;
     final ok = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: const Text('Duyệt biên lai?'),
         content: Text(
@@ -212,6 +213,7 @@ class _OwnerTodoPanelState extends State<OwnerTodoPanel> {
     final controller = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: const Text('Từ chối biên lai'),
         content: TextField(
