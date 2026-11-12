@@ -84,7 +84,7 @@ void main() {
         '/courts/9/slots?date=2030-01-01&courtName=Test%20Court&branchName=Test%20Branch',
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('07:00 – 08:00'));
+      await tester.tap(find.text('07:00–08:00'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Tiếp tục'));
       await tester.pumpAndSettle();

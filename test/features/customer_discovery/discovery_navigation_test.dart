@@ -143,7 +143,11 @@ void main() {
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(
-        tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+        tester
+            .widget<TextField>(find.byType(TextField).first)
+            .controller!
+            .text
+            .trim(),
         'Đường A',
       );
       expect(tester.takeException(), isNull);

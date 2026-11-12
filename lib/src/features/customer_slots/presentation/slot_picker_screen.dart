@@ -231,7 +231,7 @@ class _Filters extends StatelessWidget {
         if (multi) ...[
           const SlotSectionLabel('Sân'),
           SizedBox(
-            height: 40,
+            height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [

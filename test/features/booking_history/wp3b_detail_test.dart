@@ -6,7 +6,6 @@ import 'package:fcourt/features/booking_history/presentation/booking_detail_scre
 import 'package:fcourt/features/payment/domain/entities/booking_ticket.dart';
 import 'package:fcourt/features/payment/domain/entities/payment_checkout.dart';
 import 'package:fcourt/features/payment/domain/repositories/ticket_repository.dart';
-import 'package:fcourt/features/payment/presentation/pages/ticket_brightness_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -65,15 +64,12 @@ class _Tickets implements TicketRepository {
 }
 
 class _Saver implements TicketSaver {
-  @override
-  Future<void> save(BookingTicket ticket) async {}
-}
+  int calls = 0;
 
-class _Bright implements TicketBrightness {
   @override
-  Future<void> acquire() async {}
-  @override
-  Future<void> release() async {}
+  Future<void> save(BookingTicket ticket) async {
+    calls++;
+  }
 }
 
 void main() {
@@ -83,6 +79,7 @@ void main() {
     ) async {
       if (wp3bShotDir != null) await wp3bLoadFonts();
       final png = await wp3bFakeQrPng(tester);
+      final saver = _Saver();
       final key = await wp3bPump(
         tester,
         b,
@@ -92,15 +89,35 @@ void main() {
           id: 2418,
           cancellation: _Cancel(),
           ticketRepository: _Tickets(png),
-          ticketSaver: _Saver(),
+          ticketSaver: saver,
         ),
       );
       await tester.pumpAndSettle();
       await wp3bShot(tester, key, 'detail-order-${b.name}');
       expect(tester.takeException(), isNull);
       expect(find.text('Chi tiết đơn'), findsOneWidget);
+      expect(find.text('#FC2418'), findsOneWidget);
       expect(find.text('Vé vào sân'), findsOneWidget);
+      expect(find.text('FC2418'), findsOneWidget);
+      expect(
+        find.textContaining('12345678901234567890123456789012'),
+        findsOneWidget,
+      );
+      await tester.scrollUntilVisible(
+        find.text('Lưu vé'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Lưu vé'), findsOneWidget);
+      final saveButton = find.ancestor(
+        of: find.text('Lưu vé'),
+        matching: find.byType(FilledButton),
+      );
+      expect(tester.getSize(saveButton).height, greaterThanOrEqualTo(48));
+      await tester.tap(find.text('Lưu vé'));
+      await tester.pumpAndSettle();
+      expect(saver.calls, 1);
+      expect(find.text('Đã lưu vé PNG vào thư viện ảnh'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.text('Hủy đơn'),
         200,

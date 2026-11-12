@@ -45,9 +45,24 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Sao chép mã vé'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.textContaining('Mã check-in:'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sao chép mã vé'));
+    expect(
+      tester
+          .getSize(
+            find.ancestor(
+              of: find.textContaining('Mã check-in:'),
+              matching: find.byType(InkWell),
+            ),
+          )
+          .height,
+      greaterThanOrEqualTo(48),
+    );
+    await tester.tap(find.textContaining('Mã check-in:'));
     await tester.pumpAndSettle();
     expect(copied, '12345678901234567890123456789012');
     expect(find.text('Đã sao chép mã vé'), findsOneWidget);

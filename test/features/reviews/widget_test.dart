@@ -115,7 +115,7 @@ void main() {
       expect(repo.writes, 0);
     },
   );
-  testWidgets('branch tab renders backend summary and owner reply', (
+  testWidgets('branch review sheet renders backend summary and owner reply', (
     tester,
   ) async {
     final repo = Reviews();
@@ -135,7 +135,8 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.widgetWithText(Tab, 'Đánh giá'));
+    // WP3b opens reviews from the branch detail rating row instead of a tab.
+    await tester.tap(find.text('Xem đánh giá'));
     await tester.pumpAndSettle();
     expect(find.text('5.00/5 · 1 đánh giá'), findsOneWidget);
     expect(find.text('An N.'), findsOneWidget);

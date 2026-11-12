@@ -57,7 +57,7 @@ class SlotSectionLabel extends StatelessWidget {
 
 /// Pill for courts and durations (mock-up ".pill"): 12/600 text, 11/16
 /// padding, soft fill; the selected pill is solid accent. The tap area is
-/// 40dp high (the mock-up size).
+/// at least 48dp high while retaining the mock-up pill's visual size.
 class SlotPill extends StatelessWidget {
   const SlotPill({
     super.key,
@@ -88,7 +88,7 @@ class SlotPill extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: 40, minWidth: minWidth),
+          constraints: BoxConstraints(minHeight: 48, minWidth: minWidth),
           child: Center(
             child: AnimatedContainer(
               duration: slotMotion(context, 160),

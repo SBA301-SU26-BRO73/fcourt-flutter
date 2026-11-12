@@ -270,24 +270,24 @@ class TicketCard extends StatelessWidget {
                   }
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 6,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Mã check-in: ${ticket.checkInCode}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: muted,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Mã check-in: ${ticket.checkInCode}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: muted,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(Icons.copy, size: 12, color: colors.primary),
-                    ],
+                        const SizedBox(width: 6),
+                        Icon(Icons.copy, size: 12, color: colors.primary),
+                      ],
+                    ),
                   ),
                 ),
               ),

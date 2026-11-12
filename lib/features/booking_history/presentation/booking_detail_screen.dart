@@ -371,7 +371,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Thanh toán · Gửi biên lai'),
+              Flexible(
+                child: Text(
+                  'Thanh toán · Gửi biên lai',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               SizedBox(width: 8),
               Icon(Icons.arrow_forward, size: 18),
             ],

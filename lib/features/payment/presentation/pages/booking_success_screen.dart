@@ -123,7 +123,11 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
                       ),
                       const SizedBox(height: 20),
                     ],
-                    TicketCard(loader: _loader, brightness: widget.brightness),
+                    TicketCard(
+                      key: const ValueKey('ticket-card'),
+                      loader: _loader,
+                      brightness: widget.brightness,
+                    ),
                     if (ticket != null) ...[
                       const SizedBox(height: 17),
                       FilledButton(

@@ -137,12 +137,27 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Đặt sân thành công!'), findsOneWidget);
-      expect(find.text('12345678901234567890123456789012'), findsOneWidget);
+      expect(
+        find.textContaining('12345678901234567890123456789012'),
+        findsOneWidget,
+      );
       await tester.scrollUntilVisible(
         find.text('Lưu vé vào máy'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
+      expect(
+        tester
+            .getSize(
+              find.ancestor(
+                of: find.text('Lưu vé vào máy'),
+                matching: find.byType(FilledButton),
+              ),
+            )
+            .height,
+        greaterThanOrEqualTo(48),
+      );
+      await tester.ensureVisible(find.text('Lưu vé vào máy'));
       await tester.tap(find.text('Lưu vé vào máy'));
       await tester.pumpAndSettle();
       expect(saver.calls, 1);
@@ -178,6 +193,7 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
+      await tester.ensureVisible(find.text('Lưu vé vào máy'));
       await tester.tap(find.text('Lưu vé vào máy'));
       await tester.pumpAndSettle();
       expect(find.text('Quyền lưu ảnh bị từ chối'), findsOneWidget);

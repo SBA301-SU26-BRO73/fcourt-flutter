@@ -75,10 +75,11 @@ void main() {
     await pumpApp(tester);
     await tester.tap(find.text('Đơn của tôi').hitTestable().first);
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(ChoiceChip, 'Sắp diễn ra'), findsOneWidget);
-    expect(find.text('Thủ Đức · Sân 1'), findsOneWidget);
+    expect(find.text('Sắp diễn ra'), findsOneWidget);
+    expect(find.text('Thủ Đức'), findsOneWidget);
+    expect(find.text('Sân 1'), findsOneWidget);
     expect(
-      GoRouterState.of(tester.element(find.text('Thủ Đức · Sân 1'))).uri.path,
+      GoRouterState.of(tester.element(find.text('Thủ Đức'))).uri.path,
       '/bookings',
     );
     await tester.pumpWidget(const SizedBox());
@@ -90,7 +91,10 @@ void main() {
     await pumpApp(tester);
 
     expect(find.widgetWithText(FilledButton, 'Đăng nhập'), findsOneWidget);
-    expect(find.text('Xin chào, An Nguyen'), findsNothing);
+    expect(
+      find.textContaining(RegExp(r'^Chào buổi .*, Nguyen$')),
+      findsNothing,
+    );
   });
 
   testWidgets(
@@ -162,7 +166,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Sân nổi bật'), findsOneWidget);
-      expect(find.text('Xin chào, An Nguyen'), findsOneWidget);
+      expect(
+        find.textContaining(RegExp(r'^Chào buổi .*, Nguyen$')),
+        findsOneWidget,
+      );
       expect(find.widgetWithText(FilledButton, 'Đăng nhập'), findsNothing);
     },
   );
@@ -173,13 +180,19 @@ void main() {
     when(() => repository.restoreSession())
         .thenAnswer((_) async => customerUser);
     await pumpApp(tester);
-    expect(find.text('Xin chào, An Nguyen'), findsOneWidget);
+    expect(
+      find.textContaining(RegExp(r'^Chào buổi .*, Nguyen$')),
+      findsOneWidget,
+    );
 
     sessionExpired.add(null);
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(FilledButton, 'Đăng nhập'), findsOneWidget);
-    expect(find.text('Xin chào, An Nguyen'), findsNothing);
+    expect(
+      find.textContaining(RegExp(r'^Chào buổi .*, Nguyen$')),
+      findsNothing,
+    );
   });
 
   testWidgets('đăng xuất từ trang tài khoản đưa về màn đăng nhập', (
@@ -328,6 +341,8 @@ void main() {
     expect(find.text('Sân nổi bật'), findsOneWidget);
     expect(find.byKey(const ValueKey('discovery-search')), findsOneWidget);
 
+    await tester.tap(find.byTooltip('Tài khoản'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Cài đặt'));
     await tester.pumpAndSettle();
     expect(find.text('Chế độ hiển thị'), findsOneWidget);

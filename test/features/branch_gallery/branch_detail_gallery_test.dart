@@ -1,5 +1,6 @@
 import 'package:fcourt/src/features/branch_gallery/presentation/widgets/branch_image_carousel.dart';
 import 'package:fcourt/src/features/branch_gallery/presentation/widgets/branch_image_view.dart';
+import 'package:fcourt/app/widgets/wp3b_widgets.dart';
 import 'package:fcourt/src/features/customer_discovery/domain/discovery_repository.dart';
 import 'package:fcourt/src/features/customer_discovery/presentation/screens/branch_detail_screen.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +45,7 @@ void main() {
     (tester) async {
       await _open(tester, FakeBranchImages([image(1), image(2)]));
       expect(find.byType(BranchImageCarousel), findsOneWidget);
-      expect(find.text('Ảnh sân chưa cập nhật'), findsNothing);
+      expect(find.byType(SportPhoto), findsNothing);
       expect(find.text('Sân A'), findsOneWidget);
     },
   );
@@ -54,7 +55,7 @@ void main() {
     (tester) async {
       await _open(tester, FakeBranchImages());
       expect(find.byType(BranchImageCarousel), findsNothing);
-      expect(find.text('Ảnh sân chưa cập nhật'), findsOneWidget);
+      expect(find.byType(SportPhoto), findsOneWidget);
     },
   );
 
@@ -62,6 +63,7 @@ void main() {
     tester,
   ) async {
     await _open(tester, null);
-    expect(find.text('Ảnh sân chưa cập nhật'), findsOneWidget);
+    expect(find.byType(BranchImageCarousel), findsNothing);
+    expect(find.byType(SportPhoto), findsOneWidget);
   });
 }
