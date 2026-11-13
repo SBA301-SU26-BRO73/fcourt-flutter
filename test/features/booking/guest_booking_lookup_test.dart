@@ -6,6 +6,7 @@ import 'package:fcourt/features/booking/domain/repositories/guest_booking_lookup
 import 'package:fcourt/features/booking/presentation/guest_booking_lookup_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../helpers/fake_adapter.dart';
 
@@ -104,6 +105,68 @@ void main() {
         .map((field) => field.controller.text)
         .toList();
     expect(fields, ['FC12345678', '0912345678']);
+  });
+
+  testWidgets(
+    'awaiting confirmation from backend is shown as waiting for approval',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GuestBookingLookupPage(
+            repository: _LookupRepository(
+              () async => GuestBookingLookup(
+                bookingCode: 'FC19370260',
+                branchName: _booking.branchName,
+                courtName: _booking.courtName,
+                date: _booking.date,
+                slots: _booking.slots,
+                totalPrice: _booking.totalPrice,
+                status: 'AWAITING_CONFIRMATION',
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byTooltip('Quay lại'), findsOneWidget);
+      await tester.enterText(find.byType(TextFormField).at(0), 'FC19370260');
+      await tester.enterText(find.byType(TextFormField).at(1), '0912345678');
+      await tester.tap(find.text('Tra cứu'));
+      await tester.pumpAndSettle();
+      expect(find.text('Trạng thái: Chờ duyệt'), findsOneWidget);
+      expect(find.text('Đang cập nhật'), findsNothing);
+    },
+  );
+
+  testWidgets('round back button returns to the previous screen', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: '/home',
+      routes: [
+        GoRoute(
+          path: '/home',
+          builder: (context, _) => Scaffold(
+            body: TextButton(
+              onPressed: () => context.push('/lookup'),
+              child: const Text('Mở tra cứu'),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/lookup',
+          builder: (_, _) => GuestBookingLookupPage(
+            repository: _LookupRepository(() async => _booking),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.tap(find.text('Mở tra cứu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Quay lại'));
+    await tester.pumpAndSettle();
+    expect(find.text('Mở tra cứu'), findsOneWidget);
   });
 }
 

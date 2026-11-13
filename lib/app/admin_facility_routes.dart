@@ -28,6 +28,7 @@ import '../features/admin_facility/presentation/bloc/pricing_rule_bloc.dart';
 import '../features/admin_facility/presentation/bloc/slot_template_bloc.dart';
 import '../features/admin_facility/presentation/pages/branch_form_screen.dart';
 import '../features/admin_facility/presentation/pages/branch_list_screen.dart';
+import '../features/admin_facility/presentation/pages/owner_branch_detail_screen.dart';
 import '../features/admin_facility/presentation/pages/court_calendar_screen.dart';
 import '../features/admin_facility/presentation/pages/court_form_screen.dart';
 import '../features/admin_facility/presentation/pages/court_list_screen.dart';
@@ -101,26 +102,56 @@ List<RouteBase> adminFacilityRoutes(
               ..add(const BranchListRequested()),
         child: BranchListScreen(
           onCreateBranch: () => context.push<Branch>('/admin/branches/new'),
-          onEditBranch: (branch) =>
-              context.push<Branch>('/admin/branches/${branch.id}/edit'),
-          onOpenCourts: (branch) =>
-              context.push('/admin/branches/${branch.id}/courts'),
-          onOpenImages: images == null
-              ? null
-              : (branch) => context.push('/admin/branches/${branch.id}/images'),
-          onOpenPayments: hasPayments
-              ? (branch) =>
-                    context.push('/admin/branches/${branch.id}/payments')
-              : null,
-          onOpenRefunds: hasRefunds
-              ? (branch) => context.push('/admin/branches/${branch.id}/refunds')
-              : null,
-          onOpenTransactions: hasTransactions
-              ? (branch) =>
-                    context.push('/admin/branches/${branch.id}/transactions')
-              : null,
+          onOpenBranch: (branch) => context.push(
+            '/admin/branches/${branch.id}/manage',
+            extra: branch,
+          ),
         ),
       ),
+    ),
+    FcRoute(
+      path: '/admin/branches/:branchId/manage',
+      builder: (context, state) => _withId(state.pathParameters['branchId'], (
+        id,
+      ) {
+        Widget detail(Branch branch) => OwnerBranchDetailScreen(
+          branch: branch,
+          onBack: () =>
+              context.canPop() ? context.pop() : context.go('/admin/branches'),
+          onEdit: (_) => context.push<Branch>('/admin/branches/$id/edit'),
+          onCourts: () => context.push('/admin/branches/$id/courts'),
+          onImages: images == null
+              ? null
+              : () => context.push('/admin/branches/$id/images'),
+          onPayments: hasPayments
+              ? () => context.push('/admin/branches/$id/payments')
+              : null,
+          onRefunds: hasRefunds
+              ? () => context.push('/admin/branches/$id/refunds')
+              : null,
+          onTransactions: hasTransactions
+              ? () => context.push('/admin/branches/$id/transactions')
+              : null,
+        );
+        final passed = state.extra;
+        if (passed is Branch && passed.id == id) return detail(passed);
+        return FutureBuilder<Branch>(
+          future: branches.getBranch(id),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const Scaffold(
+                body: Center(child: Text('Không tải được chi nhánh')),
+              );
+            }
+            if (!snapshot.hasData) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+            return detail(snapshot.data!);
+          },
+        );
+      }),
     ),
     FcRoute(
       path: '/admin/branches/new',

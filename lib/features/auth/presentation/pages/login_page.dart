@@ -66,7 +66,12 @@ class _LoginPageState extends State<LoginPage> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 440),
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 23, 24, 23),
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        23,
+                        24,
+                        23 + MediaQuery.viewPaddingOf(context).bottom,
+                      ),
                       child: Form(
                         key: _formKey,
                         autovalidateMode: AutovalidateMode.onUserInteraction,

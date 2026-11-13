@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/tokens.dart';
 import '../../../app/widgets/wp3b_widgets.dart';
@@ -90,7 +91,16 @@ class _GuestBookingLookupPageState extends State<GuestBookingLookupPage> {
   Widget build(BuildContext context) {
     final booking = _booking;
     return Scaffold(
-      appBar: AppBar(title: const Text('Tra cứu đơn đặt sân')),
+      appBar: AppBar(
+        leadingWidth: 56,
+        leading: CircleIconButton(
+          icon: Icons.arrow_back,
+          tooltip: 'Quay lại',
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/home'),
+        ),
+        title: const Text('Tra cứu đơn đặt sân'),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
@@ -261,7 +271,7 @@ class _GuestBookingCard extends StatelessWidget {
 
   String _statusLabel(String status) => switch (status) {
     'PENDING_PAYMENT' => 'Chờ thanh toán',
-    'PENDING_APPROVAL' => 'Chờ duyệt',
+    'PENDING_APPROVAL' || 'AWAITING_CONFIRMATION' => 'Chờ duyệt',
     'CONFIRMED' => 'Đã xác nhận',
     'CHECKED_IN' => 'Đã nhận sân',
     'COMPLETED' => 'Đã hoàn thành',

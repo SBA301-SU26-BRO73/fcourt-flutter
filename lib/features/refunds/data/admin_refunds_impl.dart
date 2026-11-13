@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:dio/dio.dart';
 
 import '../domain/admin_refunds.dart';
@@ -17,7 +19,19 @@ class AdminRefundsImpl implements AdminRefunds {
         queryParameters: {'branchId': branchId, 'page': page, 'size': 20},
       )).data;
       if (raw == null || raw.length > 20) throw const FormatException();
-      final rows = raw.map(RefundRepositoryImpl.parse).toList();
+      final rows = <RefundRequest>[];
+      for (var i = 0; i < raw.length; i++) {
+        try {
+          rows.add(RefundRepositoryImpl.parse(raw[i], adminList: true));
+        } on FormatException catch (error, stack) {
+          developer.log(
+            'Skipping malformed refund row $i',
+            name: 'AdminRefunds',
+            error: error,
+            stackTrace: stack,
+          );
+        }
+      }
       if (rows.map((r) => r.id).toSet().length != rows.length ||
           rows.any((r) => !{'PENDING', 'APPROVED'}.contains(r.status))) {
         throw const FormatException();

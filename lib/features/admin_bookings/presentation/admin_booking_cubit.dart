@@ -52,7 +52,7 @@ class AdminBookingCubit extends Cubit<AdminBookingState> {
           branchesLoading: false,
         ),
       );
-      if (owned.isNotEmpty) await selectBranch(branchId ?? owned.first.id);
+      if (owned.isNotEmpty) await selectBranch(branchId ?? 0);
     } catch (error) {
       if (!isClosed && revision == _initialRevision) {
         emit(state.copyWith(branchesLoading: false, error: _message(error)));
@@ -61,7 +61,7 @@ class AdminBookingCubit extends Cubit<AdminBookingState> {
   }
 
   Future<void> selectBranch(int id) async {
-    if (!state.branches.any((branch) => branch.id == id)) return;
+    if (id != 0 && !state.branches.any((branch) => branch.id == id)) return;
     _courtRevision++;
     emit(
       state.copyWith(
@@ -71,12 +71,16 @@ class AdminBookingCubit extends Cubit<AdminBookingState> {
         courtsLoading: true,
       ),
     );
-    await Future.wait([refresh(), reloadCourts()]);
+    if (id == 0) {
+      await refresh();
+    } else {
+      await Future.wait([refresh(), reloadCourts()]);
+    }
   }
 
   Future<void> reloadCourts() async {
     final branchId = state.query?.branchId;
-    if (branchId == null) return;
+    if (branchId == null || branchId == 0) return;
     final revision = ++_courtRevision;
     emit(state.copyWith(courtsLoading: true, courtsError: null));
     try {
@@ -183,19 +187,30 @@ class AdminBookingCubit extends Cubit<AdminBookingState> {
   Future<void> _load(int revision, int page) async {
     final query = state.query!;
     try {
-      final result = await repository.search(query, page: page);
+      final pages = query.branchId == 0
+          ? await Future.wait([
+              for (final branch in state.branches)
+                repository.search(
+                  query.copyWith(branchId: branch.id, clearCourt: true),
+                  page: page,
+                ),
+            ])
+          : [await repository.search(query, page: page)];
       if (isClosed || revision != _revision) return;
       final items = <int, AdminBooking>{
         if (page > 0)
           for (final row in state.items) row.id: row,
-        for (final row in result.items) row.id: row,
+        for (final result in pages)
+          for (final row in result.items) row.id: row,
       };
       emit(
         state.copyWith(
-          items: List.unmodifiable(items.values),
-          page: result.page,
-          total: result.total,
-          hasMore: result.hasMore,
+          items: List.unmodifiable(
+            items.values.toList()..sort((a, b) => b.date.compareTo(a.date)),
+          ),
+          page: page,
+          total: pages.fold<int>(0, (sum, result) => sum + result.total),
+          hasMore: pages.any((result) => result.hasMore),
           loading: false,
           loadingMore: false,
         ),

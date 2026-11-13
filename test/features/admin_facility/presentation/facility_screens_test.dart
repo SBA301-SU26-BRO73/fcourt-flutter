@@ -12,6 +12,7 @@ import 'package:fcourt/features/admin_facility/presentation/bloc/court_list_bloc
 import 'package:fcourt/features/admin_facility/presentation/bloc/slot_template_bloc.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/branch_form_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/branch_list_screen.dart';
+import 'package:fcourt/features/admin_facility/presentation/pages/owner_branch_detail_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/court_form_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/court_list_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/time_slot_template_screen.dart';
@@ -80,6 +81,43 @@ void main() {
   });
 
   group('SCRUM-15 chi nhánh', () {
+    testWidgets('chi tiết chi nhánh gom các thao tác quản lý', (tester) async {
+      final opened = <String>[];
+      await _pump(
+        tester,
+        OwnerBranchDetailScreen(
+          branch: sampleBranch(),
+          onEdit: (_) async {
+            opened.add('edit');
+            return null;
+          },
+          onCourts: () => opened.add('courts'),
+          onImages: () => opened.add('images'),
+          onPayments: () => opened.add('payments'),
+          onRefunds: () => opened.add('refunds'),
+          onTransactions: () => opened.add('transactions'),
+        ),
+      );
+      for (final label in [
+        'Sân và bảng giá',
+        'Hình ảnh',
+        'Sửa thông tin chi nhánh',
+        'Biên lai chờ duyệt',
+        'Hoàn tiền',
+        'Giao dịch',
+      ]) {
+        await tester.ensureVisible(find.text(label));
+        await tester.tap(find.text(label));
+      }
+      expect(opened, [
+        'courts',
+        'images',
+        'edit',
+        'payments',
+        'refunds',
+        'transactions',
+      ]);
+    });
     testWidgets('thẻ chi nhánh có địa chỉ, giờ mở cửa và số sân; tạo mới '
         'thì tải lại và chúc mừng', (tester) async {
       when(() => branches.getBranches())
@@ -92,8 +130,7 @@ void main() {
                 ..add(const BranchListRequested()),
           child: BranchListScreen(
             onCreateBranch: () async => sampleBranch(id: 2, name: 'FCourt Mới'),
-            onEditBranch: (_) async => null,
-            onOpenCourts: (_) {},
+            onOpenBranch: (_) async {},
           ),
         ),
       );
@@ -113,7 +150,7 @@ void main() {
       verify(() => branches.getBranches()).called(2);
     });
 
-    testWidgets('thẻ chi nhánh hiện lối vào biên lai, hoàn tiền, giao dịch', (
+    testWidgets('thẻ chi nhánh mở chi tiết thay vì hiện hàng nút', (
       tester,
     ) async {
       when(() => branches.getBranches())
@@ -127,18 +164,14 @@ void main() {
                 ..add(const BranchListRequested()),
           child: BranchListScreen(
             onCreateBranch: () async => null,
-            onEditBranch: (_) async => null,
-            onOpenCourts: (_) {},
-            onOpenPayments: (b) => opened.add('payments${b.id}'),
-            onOpenRefunds: (b) => opened.add('refunds${b.id}'),
-            onOpenTransactions: (b) => opened.add('transactions${b.id}'),
+            onOpenBranch: (b) async => opened.add('branch${b.id}'),
           ),
         ),
       );
-      await tester.tap(find.text('Biên lai'));
-      await tester.tap(find.text('Hoàn tiền'));
-      await tester.tap(find.text('Giao dịch'));
-      expect(opened, ['payments1', 'refunds1', 'transactions1']);
+      expect(find.text('Biên lai'), findsNothing);
+      expect(find.text('Hoàn tiền'), findsNothing);
+      await tester.tap(find.text('FCourt Quận 7'));
+      expect(opened, ['branch1']);
     });
 
     testWidgets('form tạo mới báo lỗi các trường bắt buộc, không gọi API', (

@@ -4,7 +4,11 @@ import 'package:fcourt/app/admin_facility_dependencies.dart';
 import 'package:fcourt/core/config/app_config.dart';
 import 'package:fcourt/features/admin_bookings/domain/admin_booking_repository.dart';
 import 'package:fcourt/features/admin_bookings/domain/admin_booking_query.dart';
+import 'package:fcourt/features/admin_bookings/domain/admin_booking.dart';
+import 'package:fcourt/features/admin_bookings/domain/admin_booking_status.dart';
 import 'package:fcourt/features/admin_bookings/presentation/admin_booking_management_screen.dart';
+import 'package:fcourt/features/payment/domain/entities/pending_payment.dart';
+import 'package:fcourt/features/payment/domain/repositories/admin_payment_repository.dart';
 import 'package:fcourt/features/admin_dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:fcourt/features/admin_dashboard/domain/repositories/analytics_repository.dart';
 import 'package:fcourt/features/health/domain/repositories/health_repository.dart';
@@ -30,13 +34,69 @@ class Analytics extends Mock implements AnalyticsRepository {}
 
 class Bookings implements AdminBookingRepository {
   int calls = 0;
+  bool withPending = false;
   @override
   Future<AdminBookingPage> search(
     AdminBookingQuery query, {
     int page = 0,
   }) async {
     calls++;
-    return const AdminBookingPage([], 0, 0);
+    return AdminBookingPage(
+      withPending
+          ? [
+              AdminBooking(
+                id: 2,
+                code: 'FS-TEST',
+                branchId: 1,
+                branchName: 'Chi nhánh 1',
+                courtId: 5,
+                courtName: 'Sân 5',
+                date: DateTime(2026, 11, 14),
+                createdAt: DateTime.utc(2026, 11, 11),
+                status: AdminBookingStatus.awaitingConfirmation,
+                amount: 40000,
+                paymentStatus: 'PENDING',
+              ),
+            ]
+          : [],
+      0,
+      withPending ? 1 : 0,
+    );
+  }
+}
+
+class Payments implements AdminPaymentRepository {
+  Payments(this.bookings);
+  final Bookings bookings;
+  int confirms = 0;
+  int rejects = 0;
+  @override
+  Future<List<PendingPayment>> pending(int branchId, {int offset = 0}) async =>
+      bookings.withPending && offset == 0
+      ? [
+          PendingPayment(
+            id: 12,
+            bookingId: 2,
+            bookingCode: 'FS-TEST',
+            customerName: 'Khách test',
+            amountVnd: 40000,
+            receiptUri: Uri.parse(
+              'https://res.cloudinary.com/demo/receipt.png',
+            ),
+            submittedAt: DateTime(2026),
+          ),
+        ]
+      : [];
+  @override
+  Future<void> confirm(int paymentId) async {
+    confirms++;
+    bookings.withPending = false;
+  }
+
+  @override
+  Future<void> reject(int paymentId, String reason) async {
+    rejects++;
+    bookings.withPending = false;
   }
 }
 
@@ -49,7 +109,8 @@ void main() {
       when(() => branches.getBranches())
           .thenAnswer((_) async => [sampleBranch()]);
       when(() => courts.getCourts(1)).thenAnswer((_) async => [sampleCourt()]);
-      final bookings = Bookings();
+      final bookings = Bookings()..withPending = true;
+      final payments = Payments(bookings);
       final auth = MockAuthRepository();
       var user = adminUser;
       when(() => auth.restoreSession()).thenAnswer((_) async => user);
@@ -60,6 +121,7 @@ void main() {
         catalogRepository: MockCatalogRepository(),
         discoveryRepository: Discovery(),
         adminBookings: bookings,
+        adminPaymentRepository: payments,
         adminFacility: AdminFacilityDependencies(
           branchRepository: branches,
           courtRepository: courts,
@@ -75,10 +137,21 @@ void main() {
       await tester.tap(find.text('Đơn'));
       await tester.pumpAndSettle();
       expect(find.byType(AdminBookingManagementScreen), findsOneWidget);
-      expect(
-        bookings.calls,
-        2,
-      ); // 1 lần cho thẻ "Đơn hôm nay" ở trang chủ + 1 lần cho màn quản lý
+      expect(find.textContaining('Tất cả chi nhánh'), findsOneWidget);
+      await tester.tap(find.textContaining('FS-TEST').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Duyệt / từ chối biên lai'), findsOneWidget);
+      await tester.tap(find.text('Duyệt / từ chối biên lai'));
+      await tester.pumpAndSettle();
+      expect(find.text('Xác nhận nhận tiền'), findsOneWidget);
+      await tester.tap(find.text('Xác nhận nhận tiền'));
+      await tester.pumpAndSettle();
+      expect(payments.confirms, 1);
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminBookingManagementScreen), findsOneWidget);
+      expect(find.textContaining('FS-TEST'), findsNothing);
+      final ownerCalls = bookings.calls;
+      expect(ownerCalls, greaterThanOrEqualTo(2));
       await tester.pumpWidget(const SizedBox());
       user = customerUser;
       await tester.pumpWidget(FcourtApp(dependencies: dependencies));
@@ -88,10 +161,7 @@ void main() {
           .go('/admin/bookings');
       await tester.pumpAndSettle();
       expect(find.byType(AdminBookingManagementScreen), findsNothing);
-      expect(
-        bookings.calls,
-        2,
-      ); // 1 lần cho thẻ "Đơn hôm nay" ở trang chủ + 1 lần cho màn quản lý
+      expect(bookings.calls, ownerCalls);
       await tester.pumpWidget(const SizedBox());
     },
   );

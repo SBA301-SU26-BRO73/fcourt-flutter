@@ -26,6 +26,7 @@ const confirmed = PaymentReceipt(
 
 class Session implements ReceiptSession {
   int calls = 0;
+  int uploads = 0;
   bool closed = false;
   PaymentReceipt? result;
   Completer<PaymentReceipt?>? delay;
@@ -40,6 +41,7 @@ class Session implements ReceiptSession {
     ReceiptImage image,
     void Function(double) onProgress,
   ) async {
+    uploads++;
     onProgress(1);
     result = pending;
     return pending;
@@ -147,6 +149,14 @@ void main() {
       await tester.pump();
       await tester.pump();
       await tester.pump();
+      await tester.tap(find.text('Chọn ảnh biên lai'));
+      await tester.pump();
+      await tester.pump();
+      expect(session.uploads, 0);
+      expect(find.text('Đổi ảnh'), findsOneWidget);
+      await tester.tap(find.text('Gửi biên lai'));
+      await tester.pump();
+      await tester.pump();
       expect(find.textContaining('Đang chờ chủ sân'), findsOneWidget);
       session.result = confirmed;
       await tester.pump(const Duration(seconds: 4));
@@ -158,7 +168,7 @@ void main() {
       expect(session.closed, true);
     },
   );
-  testWidgets('opens the picker by itself and uploads without extra taps', (
+  testWidgets('shows a preview and allows changing the image before upload', (
     tester,
   ) async {
     final session = Session();
@@ -176,40 +186,55 @@ void main() {
     await tester.pump();
     await tester.pump();
     await tester.pump();
-    expect(picker.picks, 1);
-    expect(session.result, pending);
-    expect(find.text('Tải biên lai lên'), findsNothing);
-    await tester.pumpWidget(const SizedBox());
-  });
-  testWidgets('cancelled picker keeps a retry button, failed upload says retry', (
-    tester,
-  ) async {
-    final session = Session();
-    final picker = CountingPicker()..cancel = true;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: PaymentWaitingScreen(
-          repository: Repo(session),
-          picker: picker,
-          arguments: args,
-          onConfirmed: () {},
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    expect(picker.picks, 1);
-    expect(find.text('Chọn ảnh biên lai'), findsOneWidget);
-    picker.cancel = false;
+    expect(picker.picks, 0);
     await tester.tap(find.text('Chọn ảnh biên lai'));
     await tester.pump();
     await tester.pump();
+    expect(find.byType(Image), findsWidgets);
+    expect(session.uploads, 0);
+    await tester.tap(find.text('Đổi ảnh'));
+    await tester.pump();
     await tester.pump();
     expect(picker.picks, 2);
+    expect(session.uploads, 0);
+    await tester.tap(find.text('Gửi biên lai'));
+    await tester.pump();
+    await tester.pump();
+    expect(session.uploads, 1);
     expect(session.result, pending);
     await tester.pumpWidget(const SizedBox());
   });
+  testWidgets(
+    'cancelled picker keeps a retry button, failed upload says retry',
+    (tester) async {
+      final session = Session();
+      final picker = CountingPicker()..cancel = true;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PaymentWaitingScreen(
+            repository: Repo(session),
+            picker: picker,
+            arguments: args,
+            onConfirmed: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      expect(picker.picks, 0);
+      expect(find.text('Chọn ảnh biên lai'), findsOneWidget);
+      picker.cancel = false;
+      await tester.tap(find.text('Chọn ảnh biên lai'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      expect(picker.picks, 1);
+      expect(session.uploads, 0);
+      expect(find.text('Gửi biên lai'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
   testWidgets(
     'after sending the receipt the user leaves to home, not back to checkout',
     (tester) async {
@@ -229,6 +254,12 @@ void main() {
       );
       await tester.pump();
       expect(find.text('Về trang chủ'), findsNothing);
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(find.text('Chọn ảnh biên lai'));
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(find.text('Gửi biên lai'));
       await tester.pump();
       await tester.pump();
       await tester.tap(find.text('Về trang chủ'));

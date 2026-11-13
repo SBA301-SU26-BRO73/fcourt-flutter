@@ -186,25 +186,20 @@ class EmptyState extends StatelessWidget {
   }
 }
 
-/// The FCOURT mark: a flat teal tile with the court glyph.
+/// The FCOURT badminton mark used by the app icon and splash screen.
 class BrandMark extends StatelessWidget {
   const BrandMark({super.key, this.size = 56});
   final double size;
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(Radii.lg),
-        color: colors.primary,
+        color: const Color(0xFF4F3FE8),
       ),
-      child: Icon(
-        Icons.sports_tennis_outlined,
-        color: colors.onPrimary,
-        size: size * .54,
-      ),
+      child: Image.asset('assets/images/brand-racket.png'),
     );
   }
 }

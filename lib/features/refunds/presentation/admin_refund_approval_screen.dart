@@ -121,7 +121,7 @@ class _AdminRefundApprovalScreenState extends State<AdminRefundApprovalScreen> {
               child: ListTile(
                 title: Text('Đơn #${r.bookingId} · ${vnd(r.amount)}'),
                 subtitle: Text(
-                  '${r.accountName}\n${r.status == 'APPROVED' ? 'Đã tiếp nhận' : 'Chờ tiếp nhận'}',
+                  '${r.bankBin.isEmpty ? 'Khách chưa nhập tài khoản' : r.accountName}\n${r.status == 'APPROVED' ? 'Đã tiếp nhận' : 'Chờ tiếp nhận'}',
                 ),
                 onTap: () => _open(r),
               ),
@@ -255,7 +255,9 @@ class _AdminRefundDecisionState extends State<AdminRefundDecision> {
             ],
           ),
           Text(
-            '${_refund.bankName}\n${_refund.accountNumber}\n${_refund.accountName}',
+            _refund.bankBin.isEmpty
+                ? 'Khách chưa nhập tài khoản'
+                : '${_refund.bankName}\n${_refund.accountNumber}\n${_refund.accountName}',
           ),
           Text('Lý do: ${_refund.reason}'),
           const Text(

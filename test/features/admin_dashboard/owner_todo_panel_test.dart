@@ -49,23 +49,28 @@ class FakePayments implements AdminPaymentRepository {
 
 class FakeRefunds implements AdminRefunds {
   int count = 0;
+  bool fail = false;
   @override
-  Future<List<RefundRequest>> pending(int branchId, {int page = 0}) async => [
-    for (var i = 0; i < count; i++)
-      RefundRequest(
-        id: i,
-        bookingId: 1,
-        amount: 1,
-        status: 'PENDING',
-        bankName: 'b',
-        bankBin: '1',
-        accountNumber: '1',
-        accountName: 'n',
-        reason: 'r',
-        createdAt: DateTime(2026),
-        updatedAt: DateTime(2026),
-      ),
-  ];
+  Future<List<RefundRequest>> pending(int branchId, {int page = 0}) async {
+    if (fail) throw const FormatException('Bad refund row');
+    return [
+      for (var i = 0; i < count; i++)
+        RefundRequest(
+          id: i,
+          bookingId: 1,
+          amount: 1,
+          status: 'PENDING',
+          bankName: 'b',
+          bankBin: '1',
+          accountNumber: '1',
+          accountName: 'n',
+          reason: 'r',
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        ),
+    ];
+  }
+
   @override
   Future<RefundRequest> approve(int id) => throw UnimplementedError();
   @override
@@ -103,8 +108,8 @@ void main() {
     bookings = FakeBookings();
   });
 
-  Widget app({void Function(int)? onReceipts}) => MaterialApp(
-    home: Scaffold(
+  Widget app({void Function(int)? onReceipts, bool nested = false}) {
+    final owner = Scaffold(
       body: SingleChildScrollView(
         child: OwnerTodoPanel(
           loader: OwnerTodoLoader(
@@ -116,8 +121,16 @@ void main() {
           onReceipts: onReceipts,
         ),
       ),
-    ),
-  );
+    );
+    return MaterialApp(
+      home: nested
+          ? Navigator(
+              onGenerateRoute: (_) =>
+                  MaterialPageRoute<void>(builder: (_) => owner),
+            )
+          : owner,
+    );
+  }
 
   void tall(WidgetTester tester) {
     tester.view.physicalSize = const Size(800, 1800);
@@ -159,6 +172,15 @@ void main() {
     expect(opened, 1);
   });
 
+  testWidgets('refund failure does not hide pending receipts', (tester) async {
+    tall(tester);
+    refunds.fail = true;
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('todo-receipt-1')), findsOneWidget);
+    expect(find.text('Không tải được việc cần làm.'), findsNothing);
+  });
+
   testWidgets('approves a receipt in two taps from the card', (tester) async {
     tall(tester);
     await tester.pumpWidget(app());
@@ -189,5 +211,37 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Từ chối'));
     await tester.pumpAndSettle();
     expect(payments.rejected, {2: 'Sai số tiền'});
+  });
+
+  testWidgets('owner shell remains visible after approval and rejection', (
+    tester,
+  ) async {
+    tall(tester);
+    await tester.pumpWidget(app(nested: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('approve-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Duyệt').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('owner-todo')), findsOneWidget);
+    expect(find.byKey(const ValueKey('todo-receipt-1')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('reject-2')));
+    await tester.pumpAndSettle();
+    expect(find.text('Từ chối biên lai'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Ảnh không hợp lệ');
+    await tester.pump();
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Từ chối'))
+          .onPressed,
+      isNotNull,
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Từ chối'));
+    await tester.pumpAndSettle();
+    expect(payments.rejected, {2: 'Ảnh không hợp lệ'});
+    expect(find.byKey(const ValueKey('owner-todo')), findsOneWidget);
+    expect(find.byKey(const ValueKey('todo-receipt-2')), findsNothing);
+    expect(find.text('Không có biên lai nào đang chờ duyệt'), findsOneWidget);
+    expect(payments.confirmed, [1]);
   });
 }
