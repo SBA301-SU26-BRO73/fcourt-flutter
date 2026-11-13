@@ -1,0 +1,410 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../domain/schedule.dart';
+import 'schedule_cubit.dart';
+import 'scanner_page.dart';
+import '../domain/counter.dart';
+import 'walk_in_sheet.dart';
+import 'checkout_dialog.dart';
+import 'available_court_slots.dart';
+import 'week_board.dart';
+import 'manual_check_in.dart';
+import '../../offline/data/offline_runtime.dart';
+import '../../offline/presentation/offline_panel.dart';
+import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/fc_widgets.dart';
+import '../../../app/widgets/filter_pill.dart';
+import '../../../app/widgets/pill_search_field.dart';
+import '../../../app/widgets/wp3b_widgets.dart';
+import 'appointment_row.dart';
+
+class SchedulePage extends StatelessWidget {
+  const SchedulePage({
+    super.key,
+    required this.repository,
+    this.counter,
+    this.offline,
+  });
+  final OperationsRepository repository;
+  final CounterRepository? counter;
+  final OfflineRuntime? offline;
+  @override
+  Widget build(BuildContext context) => BlocProvider(
+    create: (_) => ScheduleCubit(repository)..load(),
+    child: ScheduleBoard(counter: counter, offline: offline),
+  );
+}
+
+class ScheduleBoard extends StatefulWidget {
+  const ScheduleBoard({super.key, this.counter, this.offline});
+  final CounterRepository? counter;
+  final OfflineRuntime? offline;
+  @override
+  State<ScheduleBoard> createState() => _ScheduleBoardState();
+}
+
+class _ScheduleBoardState extends State<ScheduleBoard>
+    with WidgetsBindingObserver {
+  Future<void> _manual() async {
+    final cubit = context.read<ScheduleCubit>();
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ManualCheckIn(repository: cubit.repository),
+    );
+    if (mounted && result == true) await cubit.refresh();
+  }
+
+  Timer? _poll;
+  String _filter = '';
+
+  /// Khớp tên khách hoặc SĐT (gõ vài số cuối là đủ).
+  bool _matches(CourtSession session) {
+    final q = _filter.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return session.phone.contains(q) || session.name.toLowerCase().contains(q);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _poll?.cancel();
+    _poll = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted &&
+          ModalRoute.of(context)?.isCurrent == true &&
+          !context.read<ScheduleCubit>().state.loading) {
+        context.read<ScheduleCubit>().refresh();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startPolling();
+      context.read<ScheduleCubit>().refresh();
+    } else {
+      _poll?.cancel();
+    }
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final cubit = context.read<ScheduleCubit>();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: cubit.state.anchor ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (mounted && date != null) await cubit.loadWeek(date);
+  }
+
+  final Map<int, Map<String, String>> _recentGuestsByBranch = {};
+  int _availabilityGeneration = 0;
+  Future<void> _walkIn(CourtSchedule court, {int? initialSlotId}) async {
+    final cubit = context.read<ScheduleCubit>();
+    final branchId = cubit.state.data?.branchId;
+    if (branchId == null) return;
+    final recentGuests = _recentGuestsByBranch.putIfAbsent(branchId, () => {});
+    final result = await showModalBottomSheet<bool>(
+      useRootNavigator: true,
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      isDismissible: false,
+      builder: (_) => WalkInSheet(
+        repository: widget.counter!,
+        courtId: court.id,
+        courtName: court.name,
+        date: businessToday(),
+        initialSlotId: initialSlotId,
+        recentGuests: recentGuests,
+        onBooked: (phone, name) {
+          if (mounted) {
+            setState(() {
+              recentGuests[phone] = name;
+              if (recentGuests.length > 50) {
+                recentGuests.remove(recentGuests.keys.first);
+              }
+              _availabilityGeneration++;
+            });
+          }
+          cubit.refresh();
+        },
+      ),
+    );
+    if (mounted && result == true) await cubit.refresh();
+  }
+
+  Future<void> _checkout(CourtSession session) async {
+    final cubit = context.read<ScheduleCubit>();
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => CheckoutDialog(
+        repository: widget.counter!,
+        bookingId: session.bookingId,
+      ),
+    );
+    if (mounted && result == true) {
+      setState(() => _availabilityGeneration++);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Đã trả sân')));
+      await cubit.refresh();
+    }
+  }
+
+  Future<void> _scan() async {
+    final cubit = context.read<ScheduleCubit>();
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ScannerPage(repository: cubit.repository),
+      ),
+    );
+    if (!mounted || result != true) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Nhận sân thành công'),
+        backgroundColor: ChartColors.success,
+      ),
+    );
+    await cubit.refresh();
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) => BlocBuilder<ScheduleCubit, ScheduleState>(
+    builder: (context, state) {
+      final cubit = context.read<ScheduleCubit>();
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(state.weekly ? 'Lịch sân theo tuần' : 'Lịch sân hôm nay'),
+          actions: [
+            CircleIconButton(
+              onPressed: _scan,
+              tooltip: 'Quét vé',
+              icon: Icons.qr_code_scanner,
+            ),
+            CircleIconButton(
+              onPressed: state.loading ? null : cubit.refresh,
+              tooltip: 'Làm mới lịch',
+              icon: Icons.refresh,
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _manual,
+          icon: const Icon(Icons.keyboard_outlined),
+          label: const Text('Nhập mã vé'),
+        ),
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: cubit.refresh,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, Gap.fabClearance),
+              children: [
+                if (state.loading) const LinearProgressIndicator(),
+                if (widget.offline != null)
+                  OfflinePanel(runtime: widget.offline!),
+                Row(
+                  children: [
+                    FilterPill(
+                      'Hôm nay',
+                      selected: !state.weekly,
+                      onTap: state.loading || !state.weekly
+                          ? () {}
+                          : cubit.load,
+                    ),
+                    const SizedBox(width: 7),
+                    FilterPill(
+                      'Cả tuần',
+                      selected: state.weekly,
+                      onTap: state.loading || state.weekly
+                          ? () {}
+                          : () => cubit.loadWeek(DateTime.now()),
+                    ),
+                  ],
+                ),
+                if (!state.weekly)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: PillSearchField(
+                      key: const ValueKey('schedule-search'),
+                      hint: 'Tìm khách theo SĐT hoặc tên',
+                      onChanged: (value) => setState(() => _filter = value),
+                    ),
+                  ),
+                if (state.weekly)
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      IconButton(
+                        tooltip: 'Tuần trước',
+                        onPressed: state.loading
+                            ? null
+                            : () => cubit.loadWeek(
+                                state.anchor!.subtract(const Duration(days: 7)),
+                              ),
+                        icon: const Icon(Icons.chevron_left),
+                      ),
+                      TextButton(
+                        onPressed: state.loading
+                            ? null
+                            : () => cubit.loadWeek(DateTime.now()),
+                        child: const Text('Tuần hiện tại'),
+                      ),
+                      IconButton(
+                        tooltip: 'Chọn ngày',
+                        onPressed: state.loading ? null : _pickDate,
+                        icon: const Icon(Icons.calendar_month),
+                      ),
+                      IconButton(
+                        tooltip: 'Tuần sau',
+                        onPressed: state.loading
+                            ? null
+                            : () => cubit.loadWeek(
+                                state.anchor!.add(const Duration(days: 7)),
+                              ),
+                        icon: const Icon(Icons.chevron_right),
+                      ),
+                    ],
+                  ),
+                if (state.error != null)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Text(
+                          state.error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: cubit.refresh,
+                          child: const Text('Thử lại'),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (state.data case final data?) ...[
+                  if (data.courts.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text('Chưa có sân trong lịch hôm nay.'),
+                    ),
+                  if (state.weekly)
+                    WeekBoard(
+                      key: ValueKey('${data.branchId}-${state.anchor}'),
+                      data: data,
+                      start: state.anchor!,
+                    ),
+                  if (!state.weekly)
+                    ...data.courts.map(
+                      (court) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 22, bottom: 12),
+                            child: Text(
+                              court.name,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -.5,
+                                  ),
+                            ),
+                          ),
+                          if (court.sessions.isEmpty)
+                            const Text('Chưa có ca đặt sân.')
+                          else if (!court.sessions.any(_matches))
+                            const Text('Không có khách phù hợp.'),
+                          if (widget.counter != null)
+                            FilledButton.tonalIcon(
+                              onPressed: () => _walkIn(court),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Đặt tại quầy'),
+                            ),
+                          if (widget.counter != null)
+                            AvailableCourtSlots(
+                              key: ValueKey(
+                                '${court.id}-$_availabilityGeneration',
+                              ),
+                              repository: widget.counter!,
+                              refreshVersion: state.refreshVersion,
+                              courtId: court.id,
+                              sessions: court.sessions,
+                              date: businessToday(),
+                              onSelected: (slot) =>
+                                  _walkIn(court, initialSlotId: slot.id),
+                            ),
+                          ...court.sessions
+                              .where(_matches)
+                              .map(
+                                (session) => AppointmentRow(
+                                  start: session.start,
+                                  end: session.end,
+                                  title: session.name.isEmpty
+                                      ? 'Khách vãng lai'
+                                      : session.name,
+                                  reference: '#${session.bookingId}',
+                                  line: session.phone,
+                                  tag: sessionLabel(session.status),
+                                  tone: switch (session.status) {
+                                    'CHECKED_IN' => context.fc.info,
+                                    'CONFIRMED' => context.fc.success,
+                                    'CANCELLED' => context.fc.danger,
+                                    'COMPLETED' => context.fc.neutral,
+                                    _ => context.fc.warning,
+                                  },
+                                  action:
+                                      session.playing && widget.counter != null
+                                      ? AppointmentAction(
+                                          label: 'Trả sân',
+                                          icon: Icons.logout,
+                                          onPressed: () => _checkout(session),
+                                        )
+                                      : null,
+                                ),
+                              ),
+                        ],
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+String sessionLabel(String status) => switch (status) {
+  'CONFIRMED' => 'Chờ nhận sân',
+  'CHECKED_IN' => 'Đang chơi',
+  'COMPLETED' => 'Đã trả sân',
+  'CANCELLED' => 'Đã hủy',
+  'PENDING_PAYMENT' => 'Chờ thanh toán',
+  'AWAITING_CONFIRMATION' => 'Chờ duyệt thanh toán',
+  _ => 'Cần kiểm tra trạng thái',
+};

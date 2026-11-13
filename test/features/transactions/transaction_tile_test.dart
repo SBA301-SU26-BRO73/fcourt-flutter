@@ -1,0 +1,52 @@
+import 'package:fcourt/app/theme/tokens.dart';
+import 'package:fcourt/features/admin_dashboard/presentation/widgets/owner_ui.dart';
+import 'package:fcourt/features/transactions/data/customer_transactions_impl.dart';
+import 'package:fcourt/features/transactions/presentation/transaction_widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'customer_transactions_test.dart' show rawTransaction;
+
+Future<void> pumpTile(WidgetTester tester, String status) => tester.pumpWidget(
+  MaterialApp(
+    home: Scaffold(
+      body: TransactionTile(
+        entry: CustomerTransactionsImpl.parse({
+          ...rawTransaction(),
+          'status': status,
+        }),
+      ),
+    ),
+  ),
+);
+
+void main() {
+  testWidgets('pending payment amount has no plus sign and is not green', (
+    tester,
+  ) async {
+    await pumpTile(tester, 'PENDING');
+    final text = tester.widget<Text>(find.textContaining('300.000'));
+    expect(text.data, isNot(startsWith('+')));
+    expect(text.style?.color, isNot(FcTokens.light.success.color));
+  });
+
+  testWidgets('successful payment keeps the plus sign and green', (
+    tester,
+  ) async {
+    await pumpTile(tester, 'SUCCESS');
+    final text = tester.widget<Text>(find.textContaining('300.000'));
+    expect(text.data, startsWith('+'));
+    expect(text.style?.color, FcTokens.light.success.color);
+  });
+
+  testWidgets('cards are separated vertically', (tester) async {
+    await pumpTile(tester, 'SUCCESS');
+    expect(find.byType(OwnerCard), findsOneWidget);
+    final pad = tester.widget<Padding>(
+      find
+          .ancestor(of: find.byType(OwnerCard), matching: find.byType(Padding))
+          .first,
+    );
+    expect(pad.padding, const EdgeInsets.only(bottom: 12));
+  });
+}

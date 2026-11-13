@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../bloc/health_bloc.dart';
+import '../../../../app/theme/tokens.dart';
 
 /// Màn hình mẫu: gọi API health của BE để kiểm tra kết nối.
 /// Xóa hoặc thay bằng màn hình thật khi có feature đầu tiên.
@@ -29,26 +31,39 @@ class HealthPage extends StatelessWidget {
               const SizedBox(height: 24),
               BlocBuilder<HealthBloc, HealthState>(
                 builder: (context, state) => switch (state) {
-                  HealthInitial() || HealthLoading() =>
-                    const CircularProgressIndicator(),
+                  HealthInitial() ||
+                  HealthLoading() => const CircularProgressIndicator(),
                   HealthSuccess(:final status) => _Result(
-                      icon: status.isUp ? Icons.check_circle : Icons.error,
-                      color: status.isUp ? Colors.green : Colors.orange,
-                      text: 'Máy chủ: ${status.status}',
-                    ),
+                    icon: status.isUp ? Icons.check_circle : Icons.error,
+                    color: status.isUp ? context.fc.success.color : context.fc.warning.color,
+                    text: 'Máy chủ: ${status.status}',
+                  ),
                   HealthFailure(:final message) => _Result(
-                      icon: Icons.cloud_off,
-                      color: Theme.of(context).colorScheme.error,
-                      text: message,
-                    ),
+                    icon: Icons.cloud_off,
+                    color: Theme.of(context).colorScheme.error,
+                    text: message,
+                  ),
                 },
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
-                onPressed: () =>
-                    context.read<HealthBloc>().add(const HealthCheckRequested()),
+                onPressed: () => context.read<HealthBloc>().add(
+                  const HealthCheckRequested(),
+                ),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Kiểm tra lại'),
+              ),
+              TextButton(
+                onPressed: () => context.push('/admin/staff'),
+                child: const Text('Quản lý nhân viên'),
+              ),
+              TextButton(
+                onPressed: () => context.push('/staff/schedule'),
+                child: const Text('Vận hành sân'),
+              ),
+              TextButton(
+                onPressed: () => context.push('/staff/pos'),
+                child: const Text('Quầy dịch vụ POS'),
               ),
             ],
           ),

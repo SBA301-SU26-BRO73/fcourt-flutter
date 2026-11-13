@@ -1,0 +1,27 @@
+name: Setup Flutter (pinned)
+description: >
+  Cài Flutter đúng một phiên bản cho mọi workflow, cache SDK, pub cache và native assets
+  của build hook (sqlite3). Đổi phiên bản Flutter chỉ cần sửa `flutter-version` ở đây.
+
+inputs:
+  flutter-version:
+    description: Phiên bản Flutter stable. Phải khớp với README và `environment.sdk` trong pubspec.yaml.
+    default: '3.47.7'
+
+runs:
+  using: composite
+  steps:
+    - uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ inputs.flutter-version }}
+        channel: stable
+        cache: true
+    # Hook của package:sqlite3 tải libsqlite3.*.so từ GitHub Releases mỗi lần chạy trên runner sạch.
+    # Khi GitHub trả lỗi tạm thời, hook báo "Hash of downloaded file ... expected ..." và làm hỏng
+    # cả test lẫn build Android. Cache thư mục output dùng chung để hook tái sử dụng file đã kiểm hash.
+    - uses: actions/cache@v4
+      with:
+        path: .dart_tool/hooks_runner/shared
+        key: native-assets-${{ runner.os }}-${{ inputs.flutter-version }}-${{ hashFiles('pubspec.lock') }}
+        restore-keys: |
+          native-assets-${{ runner.os }}-${{ inputs.flutter-version }}-

@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'app/app.dart';
 import 'app/app_dependencies.dart';
 import 'core/config/app_config.dart';
+import 'features/offline/data/offline_runtime.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+    } catch (_) {
+      // iOS dev builds have no GoogleService-Info.plist: run without push
+      // instead of crashing on launch.
+    }
+  }
+  await initializeOfflineWorker();
   final dependencies = AppDependencies.create(AppConfig.fromEnvironment());
   runApp(FcourtApp(dependencies: dependencies));
 }

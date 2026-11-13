@@ -1,0 +1,103 @@
+name: Android release
+
+on:
+  pull_request:
+    branches: [main, dev]
+    paths: ['android/**', 'tool/*android*', '.github/workflows/flutter-build-android.yml']
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Chỉ hủy lần chạy cũ của PR. Push vào main (có job release) không bao giờ bị hủy giữa chừng.
+concurrency:
+  group: android-release-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  signing-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+      - uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '15859902'
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: false
+      - uses: ./.github/actions/setup-flutter
+      - name: Bound Gradle resources on the hosted runner
+        run: |
+          printf '\norg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g -XX:ReservedCodeCacheSize=256m\norg.gradle.workers.max=2\norg.gradle.parallel=false\n' >> android/gradle.properties
+      - run: bash .github/scripts/retry-on-network-error.sh flutter pub get
+      # Trên PR, workflow CI đã analyze + test cùng commit; chỉ chạy lại cho push vào main
+      # và chạy tay để không build trùng.
+      - name: Analyze
+        if: github.event_name != 'pull_request'
+        run: flutter analyze --fatal-infos --fatal-warnings
+      - name: Test
+        if: github.event_name != 'pull_request'
+        run: bash .github/scripts/retry-on-network-error.sh flutter test
+      - name: Test release signature verification
+        run: python3 -m unittest discover -s tool -p 'test_*.py' -v
+      - name: Add placeholder google-services.json
+        run: bash .github/scripts/write-ci-google-services.sh
+      - name: Verify missing-key guard and signed fixtures
+        run: bash .github/scripts/retry-on-network-error.sh python3 tool/android_signing_smoke.py
+
+  release:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: signing-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      PRODUCTION_API_BASE_URL: ${{ vars.PRODUCTION_API_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '15859902'
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: false
+      - uses: ./.github/actions/setup-flutter
+      - name: Prepare private release inputs
+        run: python3 tool/prepare_android_release.py
+      - name: Bound Gradle resources on the hosted runner
+        run: |
+          printf '\norg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g -XX:ReservedCodeCacheSize=256m\norg.gradle.workers.max=2\norg.gradle.parallel=false\n' >> android/gradle.properties
+      - run: bash .github/scripts/retry-on-network-error.sh flutter pub get
+      - name: Build signed APK and AAB
+        run: |
+          bash .github/scripts/retry-on-network-error.sh flutter build apk --release --dart-define-from-file="$FCOURT_PRODUCTION_ENV_FILE"
+          bash .github/scripts/retry-on-network-error.sh flutter build appbundle --release --dart-define-from-file="$FCOURT_PRODUCTION_ENV_FILE"
+      - name: Verify actual release signer
+        run: python3 tool/verify_android_release.py --keystore "$FCOURT_KEYSTORE_FILE" --alias "$ANDROID_KEY_ALIAS"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fcourt-android-release-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+      - name: Remove signing inputs
+        if: always()
+        run: python3 -c 'import os, pathlib, shutil; shutil.rmtree(pathlib.Path(os.environ["RUNNER_TEMP"]) / "fcourt-release-signing", ignore_errors=True)'
