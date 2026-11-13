@@ -43,7 +43,14 @@ class PushService {
       coordinator.onTokenRefresh();
     });
     _foregroundSubscription = FirebaseMessaging.onMessage.listen(
-      (message) => _emit(message.data),
+      (message) => _payloads.add(
+        PushPayload.fromMap(
+          message.data,
+          title: message.notification?.title,
+          body: message.notification?.body,
+          foreground: true,
+        ),
+      ),
     );
     _openedSubscription = FirebaseMessaging.onMessageOpenedApp.listen(
       (message) => _emit(message.data),

@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -32,6 +31,7 @@ class _FcourtAppState extends State<FcourtApp> {
   late final AuthBloc _authBloc;
   late final AuthRefreshNotifier _refresh;
   late final GoRouter _router;
+  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
   late final StreamSubscription<void> _sessionExpired;
   late final StreamSubscription<AuthState> _offlineLifecycle;
   late final StreamSubscription<AuthState>? _pushLifecycle;
@@ -66,10 +66,7 @@ class _FcourtAppState extends State<FcourtApp> {
       pushCoordinator.onAuthenticationChanged(
         _authBloc.state.status == AuthStatus.authenticated,
       );
-      _pushPayloads = pushService.payloads.listen((payload) {
-        final route = payload.route;
-        if (route != null && route.startsWith('/')) _router.go(route);
-      });
+      _pushPayloads = pushService.payloads.listen(_onPush);
       unawaited(_initializePush(pushService, pushCoordinator));
     } else {
       _pushLifecycle = null;
@@ -85,6 +82,31 @@ class _FcourtAppState extends State<FcourtApp> {
         widget.dependencies.offline?.pause();
       }
     });
+  }
+
+  void _onPush(PushPayload payload) {
+    final route = payload.route;
+    final canOpen = route != null && route.startsWith('/');
+    if (!payload.foreground) {
+      if (canOpen) _router.go(route);
+      return;
+    }
+    final text = [
+      payload.title,
+      payload.body,
+    ].where((part) => part != null && part.trim().isNotEmpty).join(' · ');
+    _messengerKey.currentState
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(text.isEmpty ? 'Bạn có thông báo mới' : text),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 6),
+          action: canOpen
+              ? SnackBarAction(label: 'Xem', onPressed: () => _router.go(route))
+              : null,
+        ),
+      );
   }
 
   @override
@@ -127,6 +149,7 @@ class _FcourtAppState extends State<FcourtApp> {
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             routerConfig: _router,
+            scaffoldMessengerKey: _messengerKey,
           ),
         ),
       ),
