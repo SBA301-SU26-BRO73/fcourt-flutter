@@ -49,9 +49,7 @@ void main() {
                 ..add(const BranchListRequested()),
           child: BranchListScreen(
             onCreateBranch: () async => null,
-            onEditBranch: (_) async => null,
-            onOpenCourts: (_) {},
-            onOpenImages: (_) {},
+            onOpenBranch: (_) async {},
           ),
         ),
         navIndex: 2,

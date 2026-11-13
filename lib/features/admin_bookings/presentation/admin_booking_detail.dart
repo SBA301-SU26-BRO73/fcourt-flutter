@@ -25,7 +25,7 @@ class AdminBookingDetail extends StatelessWidget {
   final AdminBooking booking;
   final Widget Function(Uri)? receiptBuilder;
 
-  /// Chỉ hiện khi biên lai đang chờ duyệt: chuyển tới màn Duyệt/Từ chối của chi nhánh.
+  /// Chỉ hiện khi biên lai đang chờ duyệt: xử lý ngay trên luồng chi tiết đơn.
   final VoidCallback? onReviewPayment;
 
   static String _paymentLabel(String? status) => switch (status) {

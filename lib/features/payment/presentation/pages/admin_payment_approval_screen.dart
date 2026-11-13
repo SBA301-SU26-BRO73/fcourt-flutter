@@ -8,6 +8,27 @@ import '../../../../app/widgets/fc_widgets.dart';
 import '../../../admin_dashboard/presentation/widgets/owner_todo_panel.dart';
 import '../../../admin_dashboard/presentation/widgets/owner_ui.dart';
 
+Future<bool> showPaymentApprovalSheet(
+  BuildContext context, {
+  required AdminPaymentRepository repository,
+  required PendingPayment payment,
+  Widget Function(Uri)? receiptBuilder,
+}) async =>
+    await showModalBottomSheet<bool>(
+      useRootNavigator: true,
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      useSafeArea: true,
+      builder: (_) => _ApprovalSheet(
+        repository: repository,
+        payment: payment,
+        receiptBuilder: receiptBuilder,
+      ),
+    ) ??
+    false;
+
 class AdminPaymentApprovalScreen extends StatefulWidget {
   const AdminPaymentApprovalScreen({
     super.key,
@@ -84,18 +105,11 @@ class _AdminPaymentApprovalScreenState
 
   Future<void> _review(PendingPayment payment) async {
     final generation = _generation;
-    final result = await showModalBottomSheet<bool>(
-      useRootNavigator: true,
-      context: context,
-      isScrollControlled: true,
-      isDismissible: false,
-      enableDrag: false,
-      useSafeArea: true,
-      builder: (_) => _ApprovalSheet(
-        repository: widget.repository,
-        payment: payment,
-        receiptBuilder: widget.receiptBuilder,
-      ),
+    final result = await showPaymentApprovalSheet(
+      context,
+      repository: widget.repository,
+      payment: payment,
+      receiptBuilder: widget.receiptBuilder,
     );
     if (!mounted || generation != _generation || result != true) return;
     setState(() => _payments.removeWhere((p) => p.id == payment.id));

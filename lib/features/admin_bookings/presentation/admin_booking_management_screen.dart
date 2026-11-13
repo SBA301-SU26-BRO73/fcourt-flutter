@@ -11,12 +11,15 @@ import 'admin_booking_cubit.dart';
 import 'admin_booking_state.dart';
 import 'admin_booking_detail.dart';
 import 'booking_status_badge.dart';
+import '../../payment/domain/entities/payment_checkout.dart';
+import '../../payment/domain/entities/pending_payment.dart';
+import '../../payment/domain/repositories/admin_payment_repository.dart';
+import '../../payment/presentation/pages/admin_payment_approval_screen.dart';
 
 class AdminBookingManagementScreen extends StatefulWidget {
-  const AdminBookingManagementScreen({super.key, this.onReviewPayment});
+  const AdminBookingManagementScreen({super.key, this.paymentRepository});
 
-  /// Mở màn duyệt biên lai của chi nhánh; null thì không hiện nút trong chi tiết đơn.
-  final void Function(AdminBooking booking)? onReviewPayment;
+  final AdminPaymentRepository? paymentRepository;
   @override
   State<AdminBookingManagementScreen> createState() =>
       _AdminBookingManagementScreenState();
@@ -47,19 +50,62 @@ class _AdminBookingManagementScreenState
     }
   }
 
-  Future<void> _openDetail(BuildContext context, AdminBooking row) async {
+  Future<void> _openDetail(AdminBooking row) async {
     final review = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => Dialog.fullscreen(
         child: AdminBookingDetail(
           booking: row,
-          onReviewPayment: widget.onReviewPayment == null
+          onReviewPayment: widget.paymentRepository == null
               ? null
               : () => Navigator.of(dialogContext).pop(true),
         ),
       ),
     );
-    if (mounted && review == true) widget.onReviewPayment?.call(row);
+    if (!mounted || review != true || widget.paymentRepository == null) return;
+    try {
+      PendingPayment? payment;
+      var offset = 0;
+      while (payment == null) {
+        final rows = await widget.paymentRepository!.pending(
+          row.branchId,
+          offset: offset,
+        );
+        for (final item in rows) {
+          if (item.bookingId == row.id) payment = item;
+        }
+        if (rows.length < 50) break;
+        offset += rows.length;
+      }
+      if (!mounted) return;
+      if (payment == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Biên lai đã được xử lý. Đang tải lại đơn.'),
+          ),
+        );
+        await context.read<AdminBookingCubit>().refresh();
+        return;
+      }
+      final updated = await showPaymentApprovalSheet(
+        context,
+        repository: widget.paymentRepository!,
+        payment: payment,
+      );
+      if (mounted && updated) {
+        await context.read<AdminBookingCubit>().refresh();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đã cập nhật thanh toán')),
+          );
+        }
+      }
+    } on PaymentFailure catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    }
   }
 
   Future<void> _openFilters(
@@ -106,60 +152,67 @@ class _AdminBookingManagementScreenState
                             isExpanded: true,
                             style: textStyle,
                             decoration: ownerInput(),
-                            items: state.branches
-                                .map(
-                                  (branch) => DropdownMenuItem(
-                                    value: branch.id,
-                                    child: Text(branch.name),
-                                  ),
-                                )
-                                .toList(),
+                            items: [
+                              const DropdownMenuItem<int>(
+                                value: 0,
+                                child: Text('Tất cả chi nhánh'),
+                              ),
+                              ...state.branches.map(
+                                (branch) => DropdownMenuItem(
+                                  value: branch.id,
+                                  child: Text(branch.name),
+                                ),
+                              ),
+                            ],
                             onChanged: (id) {
                               if (id != null) cubit.selectBranch(id);
                             },
                           ),
                         ),
                       if (query != null) ...[
-                        OwnerField(
-                          label: 'Sân',
-                          child: DropdownButtonFormField<int>(
-                            key: ValueKey(
-                              'court-${query.branchId}-${query.courtId}',
-                            ),
-                            initialValue: query.courtId,
-                            isExpanded: true,
-                            style: textStyle,
-                            decoration: ownerInput(),
-                            items: [
-                              const DropdownMenuItem<int>(
-                                value: null,
-                                child: Text('Tất cả sân'),
+                        if (query.branchId != 0) ...[
+                          OwnerField(
+                            label: 'Sân',
+                            child: DropdownButtonFormField<int>(
+                              key: ValueKey(
+                                'court-${query.branchId}-${query.courtId}',
                               ),
-                              ...state.courts.map(
-                                (court) => DropdownMenuItem(
-                                  value: court.id,
-                                  child: Text(court.name),
+                              initialValue: query.courtId,
+                              isExpanded: true,
+                              style: textStyle,
+                              decoration: ownerInput(),
+                              items: [
+                                const DropdownMenuItem<int>(
+                                  value: null,
+                                  child: Text('Tất cả sân'),
                                 ),
-                              ),
-                            ],
-                            onChanged:
-                                state.courtsLoading || state.courtsError != null
-                                ? null
-                                : cubit.setCourt,
+                                ...state.courts.map(
+                                  (court) => DropdownMenuItem(
+                                    value: court.id,
+                                    child: Text(court.name),
+                                  ),
+                                ),
+                              ],
+                              onChanged:
+                                  state.courtsLoading ||
+                                      state.courtsError != null
+                                  ? null
+                                  : cubit.setCourt,
+                            ),
                           ),
-                        ),
-                        if (state.courtsLoading)
-                          const LinearProgressIndicator(),
-                        if (state.courtsError != null) ...[
-                          OwnerNote(
-                            state.courtsError!,
-                            size: 12,
-                            color: colors.error,
-                          ),
-                          TextButton(
-                            onPressed: cubit.reloadCourts,
-                            child: const Text('Tải lại danh sách sân'),
-                          ),
+                          if (state.courtsLoading)
+                            const LinearProgressIndicator(),
+                          if (state.courtsError != null) ...[
+                            OwnerNote(
+                              state.courtsError!,
+                              size: 12,
+                              color: colors.error,
+                            ),
+                            TextButton(
+                              onPressed: cubit.reloadCourts,
+                              child: const Text('Tải lại danh sách sân'),
+                            ),
+                          ],
                         ],
                         OwnerField(
                           label: 'Trạng thái',
@@ -238,157 +291,154 @@ class _AdminBookingManagementScreenState
   );
 
   @override
-  Widget build(BuildContext context) =>
-      BlocConsumer<AdminBookingCubit, AdminBookingState>(
-        listenWhen: (old, current) =>
-            old.query?.branchId != current.query?.branchId,
-        listener: (_, _) => _search.clear(),
-        builder: (context, state) {
-          final cubit = context.read<AdminBookingCubit>();
-          final query = state.query;
-          final colors = Theme.of(context).colorScheme;
-          const pillPad = EdgeInsets.symmetric(horizontal: 13, vertical: 10);
-          return Scaffold(
-            appBar: AppBar(title: const Text('Quản lý đơn đặt sân')),
-            body: RefreshIndicator(
-              onRefresh: query == null ? cubit.initialize : cubit.refresh,
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: ownerPad),
-                    sliver: SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (state.branchesLoading)
-                            const LinearProgressIndicator(),
-                          if (query != null) ...[
-                            const SizedBox(height: 7),
-                            _SearchField(
-                              controller: _search,
-                              onChanged: cubit.search,
-                              onSubmitted: cubit.refresh,
-                            ),
-                            const SizedBox(height: 14),
-                            Wrap(
-                              spacing: 7,
-                              runSpacing: 7,
-                              children: [
-                                OwnerPill(
-                                  'Cần xử lý',
-                                  key: const ValueKey('chip-pending'),
-                                  fontSize: 11,
-                                  padding: pillPad,
-                                  selected:
-                                      query.status ==
-                                      AdminBookingStatus.awaitingConfirmation,
-                                  onTap: () => cubit.setStatus(
-                                    AdminBookingStatus.awaitingConfirmation,
-                                  ),
-                                ),
-                                OwnerPill(
-                                  'Tất cả',
-                                  key: const ValueKey('chip-all'),
-                                  fontSize: 11,
-                                  padding: pillPad,
-                                  selected: query.status == null,
-                                  onTap: () => cubit.setStatus(null),
-                                ),
-                                OwnerPill(
-                                  'Bộ lọc',
-                                  key: const ValueKey('open-filters'),
-                                  fontSize: 11,
-                                  padding: pillPad,
-                                  trailing: Icon(
-                                    Icons.tune,
-                                    size: 14,
-                                    color: colors.primary,
-                                  ),
-                                  onTap: () => _openFilters(cubit),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            OwnerNote(
-                              state.loading
-                                  ? 'Đang tải đơn…'
-                                  : '${state.total} đơn đặt sân',
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                          if (state.loading) const LinearProgressIndicator(),
-                          if (state.error != null) ...[
-                            const SizedBox(height: 12),
-                            OwnerNote(
-                              state.error!,
-                              color: colors.error,
-                              size: 12,
-                            ),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton(
-                                onPressed: query == null
-                                    ? cubit.initialize
-                                    : state.items.isEmpty
-                                    ? cubit.refresh
-                                    : cubit.loadMore,
-                                child: const Text('Thử lại'),
+  Widget build(
+    BuildContext context,
+  ) => BlocConsumer<AdminBookingCubit, AdminBookingState>(
+    listenWhen: (old, current) =>
+        old.query?.branchId != current.query?.branchId,
+    listener: (_, _) => _search.clear(),
+    builder: (context, state) {
+      final cubit = context.read<AdminBookingCubit>();
+      final query = state.query;
+      final colors = Theme.of(context).colorScheme;
+      const pillPad = EdgeInsets.symmetric(horizontal: 13, vertical: 10);
+      return Scaffold(
+        appBar: AppBar(title: const Text('Quản lý đơn đặt sân')),
+        body: RefreshIndicator(
+          onRefresh: query == null ? cubit.initialize : cubit.refresh,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: ownerPad),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (state.branchesLoading)
+                        const LinearProgressIndicator(),
+                      if (query != null) ...[
+                        const SizedBox(height: 7),
+                        _SearchField(
+                          controller: _search,
+                          onChanged: cubit.search,
+                          onSubmitted: cubit.refresh,
+                        ),
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 7,
+                          runSpacing: 7,
+                          children: [
+                            OwnerPill(
+                              'Cần xử lý',
+                              key: const ValueKey('chip-pending'),
+                              fontSize: 11,
+                              padding: pillPad,
+                              selected:
+                                  query.status ==
+                                  AdminBookingStatus.awaitingConfirmation,
+                              onTap: () => cubit.setStatus(
+                                AdminBookingStatus.awaitingConfirmation,
                               ),
                             ),
+                            OwnerPill(
+                              'Tất cả',
+                              key: const ValueKey('chip-all'),
+                              fontSize: 11,
+                              padding: pillPad,
+                              selected: query.status == null,
+                              onTap: () => cubit.setStatus(null),
+                            ),
+                            OwnerPill(
+                              'Bộ lọc',
+                              key: const ValueKey('open-filters'),
+                              fontSize: 11,
+                              padding: pillPad,
+                              trailing: Icon(
+                                Icons.tune,
+                                size: 14,
+                                color: colors.primary,
+                              ),
+                              onTap: () => _openFilters(cubit),
+                            ),
                           ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (!state.branchesLoading &&
-                      !state.loading &&
-                      state.error == null &&
-                      state.items.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: OwnerMessage(
-                        icon: Icons.receipt_long_outlined,
-                        text: state.branches.isEmpty
-                            ? 'Chưa có chi nhánh để quản lý'
-                            : 'Không có đơn đặt sân phù hợp',
-                      ),
-                    ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: ownerPad),
-                    sliver: SliverList.builder(
-                      itemCount: state.items.length,
-                      itemBuilder: (context, index) {
-                        final row = state.items[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 15),
-                          child: _OrderCard(
-                            row: row,
-                            onTap: () => _openDetail(context, row),
+                        ),
+                        const SizedBox(height: 14),
+                        OwnerNote(
+                          state.loading
+                              ? 'Đang tải đơn…'
+                              : '${state.total} đơn đặt sân · ${query.branchId == 0 ? 'Tất cả chi nhánh' : state.branches.where((branch) => branch.id == query.branchId).first.name}',
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (state.loading) const LinearProgressIndicator(),
+                      if (state.error != null) ...[
+                        const SizedBox(height: 12),
+                        OwnerNote(state.error!, color: colors.error, size: 12),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton(
+                            onPressed: query == null
+                                ? cubit.initialize
+                                : state.items.isEmpty
+                                ? cubit.refresh
+                                : cubit.loadMore,
+                            child: const Text('Thử lại'),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      ],
+                    ],
                   ),
-                  if (state.loadingMore || state.hasMore)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: state.loadingMore
-                            ? const Center(child: CircularProgressIndicator())
-                            : TextButton(
-                                onPressed: cubit.loadMore,
-                                child: const Text('Xem thêm'),
-                              ),
-                      ),
-                    ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+              if (!state.branchesLoading &&
+                  !state.loading &&
+                  state.error == null &&
+                  state.items.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: OwnerMessage(
+                    icon: Icons.receipt_long_outlined,
+                    text: state.branches.isEmpty
+                        ? 'Chưa có chi nhánh để quản lý'
+                        : 'Không có đơn đặt sân phù hợp',
+                  ),
+                ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: ownerPad),
+                sliver: SliverList.builder(
+                  itemCount: state.items.length,
+                  itemBuilder: (context, index) {
+                    final row = state.items[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 15),
+                      child: _OrderCard(
+                        row: row,
+                        onTap: () => _openDetail(row),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              if (state.loadingMore || state.hasMore)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: state.loadingMore
+                        ? const Center(child: CircularProgressIndicator())
+                        : TextButton(
+                            onPressed: cubit.loadMore,
+                            child: const Text('Xem thêm'),
+                          ),
+                  ),
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
+          ),
+        ),
       );
+    },
+  );
 }
 
 /// Ô tìm kiếm pill 48 cao (mockup `.search`).

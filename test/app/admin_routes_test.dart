@@ -11,6 +11,7 @@ import 'package:fcourt/features/admin_dashboard/presentation/pages/admin_dashboa
 import 'package:fcourt/features/admin_dashboard/presentation/pages/analytics_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/branch_form_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/branch_list_screen.dart';
+import 'package:fcourt/features/admin_facility/presentation/pages/owner_branch_detail_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/court_form_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/court_list_screen.dart';
 import 'package:fcourt/features/admin_facility/presentation/pages/pricing_rule_config_screen.dart';
@@ -190,10 +191,40 @@ void main() {
     expect(find.text('Việc cần làm'), findsWidgets);
   });
 
+  testWidgets('branch detail opens receipts and back returns to branch', (
+    tester,
+  ) async {
+    await pumpAt(
+      tester,
+      admin,
+      '/admin/branches',
+      payments: _PendingPayments(),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(sampleBranch().name));
+    await tester.pumpAndSettle();
+    expect(find.byType(OwnerBranchDetailScreen), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Biên lai chờ duyệt'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Biên lai chờ duyệt'));
+    await tester.pumpAndSettle();
+    expect(find.text('Duyệt biên lai'), findsOneWidget);
+    await tester.tap(find.byTooltip('Quay lại'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OwnerBranchDetailScreen), findsOneWidget);
+    await tester.tap(find.byTooltip('Quay lại'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BranchListScreen), findsOneWidget);
+  });
+
   final cases = <String, Type>{
     '/admin/dashboard': AdminDashboardScreen,
     '/admin/analytics': AnalyticsScreen,
     '/admin/branches': BranchListScreen,
+    '/admin/branches/1/manage': OwnerBranchDetailScreen,
     '/admin/branches/new': BranchFormScreen,
     '/admin/branches/1/edit': BranchFormScreen,
     '/admin/branches/1/courts': CourtListScreen,

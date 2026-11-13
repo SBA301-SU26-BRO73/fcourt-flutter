@@ -66,13 +66,38 @@ class Bookings implements AdminBookingRepository {
 }
 
 class Payments implements AdminPaymentRepository {
+  Payments(this.bookings);
+  final Bookings bookings;
+  int confirms = 0;
+  int rejects = 0;
   @override
   Future<List<PendingPayment>> pending(int branchId, {int offset = 0}) async =>
-      [];
+      bookings.withPending && offset == 0
+      ? [
+          PendingPayment(
+            id: 12,
+            bookingId: 2,
+            bookingCode: 'FS-TEST',
+            customerName: 'Khách test',
+            amountVnd: 40000,
+            receiptUri: Uri.parse(
+              'https://res.cloudinary.com/demo/receipt.png',
+            ),
+            submittedAt: DateTime(2026),
+          ),
+        ]
+      : [];
   @override
-  Future<void> confirm(int paymentId) async {}
+  Future<void> confirm(int paymentId) async {
+    confirms++;
+    bookings.withPending = false;
+  }
+
   @override
-  Future<void> reject(int paymentId, String reason) async {}
+  Future<void> reject(int paymentId, String reason) async {
+    rejects++;
+    bookings.withPending = false;
+  }
 }
 
 void main() {
@@ -85,6 +110,7 @@ void main() {
           .thenAnswer((_) async => [sampleBranch()]);
       when(() => courts.getCourts(1)).thenAnswer((_) async => [sampleCourt()]);
       final bookings = Bookings()..withPending = true;
+      final payments = Payments(bookings);
       final auth = MockAuthRepository();
       var user = adminUser;
       when(() => auth.restoreSession()).thenAnswer((_) async => user);
@@ -95,7 +121,7 @@ void main() {
         catalogRepository: MockCatalogRepository(),
         discoveryRepository: Discovery(),
         adminBookings: bookings,
-        adminPaymentRepository: Payments(),
+        adminPaymentRepository: payments,
         adminFacility: AdminFacilityDependencies(
           branchRepository: branches,
           courtRepository: courts,
@@ -111,15 +137,19 @@ void main() {
       await tester.tap(find.text('Đơn'));
       await tester.pumpAndSettle();
       expect(find.byType(AdminBookingManagementScreen), findsOneWidget);
+      expect(find.textContaining('Tất cả chi nhánh'), findsOneWidget);
       await tester.tap(find.textContaining('FS-TEST').first);
       await tester.pumpAndSettle();
+      expect(find.text('Duyệt / từ chối biên lai'), findsOneWidget);
       await tester.tap(find.text('Duyệt / từ chối biên lai'));
       await tester.pumpAndSettle();
-      expect(find.text('Duyệt biên lai'), findsOneWidget);
-      expect(find.byType(AdminBookingManagementScreen), findsNothing);
-      await tester.tap(find.byTooltip('Quay lại'));
+      expect(find.text('Xác nhận nhận tiền'), findsOneWidget);
+      await tester.tap(find.text('Xác nhận nhận tiền'));
       await tester.pumpAndSettle();
-      expect(find.text('Việc cần làm'), findsWidgets);
+      expect(payments.confirms, 1);
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminBookingManagementScreen), findsOneWidget);
+      expect(find.textContaining('FS-TEST'), findsNothing);
       final ownerCalls = bookings.calls;
       expect(ownerCalls, greaterThanOrEqualTo(2));
       await tester.pumpWidget(const SizedBox());

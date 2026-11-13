@@ -10,31 +10,17 @@ import '../widgets/facility_formatters.dart';
 
 /// SCRUM-15: danh sách chi nhánh của chủ sân (mockup 07).
 ///
-/// Điều hướng được truyền vào qua callback để màn hình không phụ thuộc router
-/// (dễ test); callback trả về chi nhánh đã lưu, hoặc `null` khi người dùng hủy.
+/// Danh sách chỉ chọn chi nhánh; các thao tác quản lý nằm trong màn chi tiết.
+/// Callback tạo chi nhánh trả về bản đã lưu, hoặc `null` khi hủy.
 class BranchListScreen extends StatelessWidget {
   const BranchListScreen({
     super.key,
     required this.onCreateBranch,
-    required this.onEditBranch,
-    required this.onOpenCourts,
-    this.onOpenImages,
-    this.onOpenPayments,
-    this.onOpenRefunds,
-    this.onOpenTransactions,
+    required this.onOpenBranch,
   });
 
   final Future<Branch?> Function() onCreateBranch;
-  final Future<Branch?> Function(Branch branch) onEditBranch;
-  final void Function(Branch branch) onOpenCourts;
-
-  /// Mở màn quản lý ảnh chi nhánh (SCRUM-48); null thì không hiện nút.
-  final void Function(Branch branch)? onOpenImages;
-
-  /// Duyệt/từ chối biên lai, hoàn tiền và sổ giao dịch của từng chi nhánh (null thì ẩn).
-  final void Function(Branch branch)? onOpenPayments;
-  final void Function(Branch branch)? onOpenRefunds;
-  final void Function(Branch branch)? onOpenTransactions;
+  final Future<void> Function(Branch branch) onOpenBranch;
 
   Future<void> _create(BuildContext context) async {
     final created = await onCreateBranch();
@@ -55,15 +41,6 @@ class BranchListScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Future<void> _edit(BuildContext context, Branch branch) async {
-    final updated = await onEditBranch(branch);
-    if (updated == null || !context.mounted) return;
-    context.read<BranchListBloc>().add(const BranchListRequested());
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Đã cập nhật chi nhánh "${updated.name}"')),
     );
   }
 
@@ -119,20 +96,14 @@ class BranchListScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 16),
                       child: BranchCard(
                         branch: branch,
-                        onTap: () => onOpenCourts(branch),
-                        onEdit: () => _edit(context, branch),
-                        onImages: onOpenImages == null
-                            ? null
-                            : () => onOpenImages!(branch),
-                        onPayments: onOpenPayments == null
-                            ? null
-                            : () => onOpenPayments!(branch),
-                        onRefunds: onOpenRefunds == null
-                            ? null
-                            : () => onOpenRefunds!(branch),
-                        onTransactions: onOpenTransactions == null
-                            ? null
-                            : () => onOpenTransactions!(branch),
+                        onTap: () async {
+                          await onOpenBranch(branch);
+                          if (context.mounted) {
+                            context.read<BranchListBloc>().add(
+                              const BranchListRequested(),
+                            );
+                          }
+                        },
                       ),
                     );
                   },
@@ -259,27 +230,12 @@ class _AddButton extends StatelessWidget {
   }
 }
 
-/// Thẻ chi nhánh (mockup `.branch-card`): ảnh 153 với chip môn thể thao và
-/// trạng thái, tên, số sân, địa chỉ rồi hàng nút mềm.
+/// Thẻ chi nhánh: ảnh, trạng thái, tên, số sân và địa chỉ.
 class BranchCard extends StatelessWidget {
-  const BranchCard({
-    super.key,
-    required this.branch,
-    required this.onTap,
-    required this.onEdit,
-    this.onImages,
-    this.onPayments,
-    this.onRefunds,
-    this.onTransactions,
-  });
+  const BranchCard({super.key, required this.branch, required this.onTap});
 
   final Branch branch;
   final VoidCallback onTap;
-  final VoidCallback onEdit;
-  final VoidCallback? onImages;
-  final VoidCallback? onPayments;
-  final VoidCallback? onRefunds;
-  final VoidCallback? onTransactions;
 
   static const _sportNames = {
     SportKind.badminton: 'Cầu lông',
@@ -297,13 +253,6 @@ class BranchCard extends StatelessWidget {
     // Chi nhánh chưa có ảnh riêng ở danh sách: lấy ảnh theo môn suy ra từ tên.
     final kind = sportKindOf(branch.name);
     final sport = _sportNames[kind];
-    final extra = [
-      if (onPayments != null)
-        ('Biên lai', Icons.fact_check_outlined, onPayments),
-      if (onRefunds != null) ('Hoàn tiền', Icons.currency_exchange, onRefunds),
-      if (onTransactions != null)
-        ('Giao dịch', Icons.account_balance_wallet_outlined, onTransactions),
-    ];
     return OwnerCard(
       radius: 23,
       padding: EdgeInsets.zero,
@@ -363,6 +312,8 @@ class BranchCard extends StatelessWidget {
                             ),
                           ),
                           OwnerNote('${branch.courtCount} sân'),
+                          const SizedBox(width: 4),
+                          Icon(Icons.chevron_right, color: colors.primary),
                         ],
                       ),
                       const SizedBox(height: 3),
@@ -372,67 +323,6 @@ class BranchCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(13, 0, 13, 13),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: colors.outlineVariant)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _SoftAction(
-                            label: 'Sửa',
-                            icon: Icons.edit_outlined,
-                            onTap: onEdit,
-                          ),
-                        ),
-                        if (onImages != null) ...[
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _SoftAction(
-                              label: 'Ảnh',
-                              icon: Icons.photo_library_outlined,
-                              onTap: onImages!,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _SoftAction(
-                            label: 'Sân',
-                            icon: Icons.grid_view_rounded,
-                            onTap: onTap,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (extra.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          for (final (i, e) in extra.indexed) ...[
-                            if (i > 0) const SizedBox(width: 8),
-                            Expanded(
-                              child: _SoftAction(
-                                label: e.$1,
-                                icon: e.$2,
-                                onTap: e.$3!,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
             ),
           ),
         ],
@@ -461,51 +351,4 @@ class _StatusChip extends StatelessWidget {
       ),
     ),
   );
-}
-
-class _SoftAction extends StatelessWidget {
-  const _SoftAction({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: colors.surfaceContainer,
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 14, color: colors.primary),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    height: 1.3,
-                    color: colors.onSurface,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

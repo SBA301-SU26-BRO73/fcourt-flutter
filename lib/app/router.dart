@@ -427,7 +427,9 @@ GoRouter createRouter(
               return AdminPaymentApprovalScreen(
                 repository: repository,
                 branchId: id,
-                onBack: () => context.go(AppRoutes.home),
+                onBack: () => context.canPop()
+                    ? context.pop()
+                    : context.go(AppRoutes.home),
                 onRefunds: dependencies.adminRefunds == null
                     ? null
                     : () => context.push('/admin/branches/$id/refunds'),
@@ -676,11 +678,7 @@ GoRouter createRouter(
                   defaultStatus: AdminBookingStatus.awaitingConfirmation,
                 )..initialize(),
                 child: AdminBookingManagementScreen(
-                  onReviewPayment: dependencies.adminPaymentRepository == null
-                      ? null
-                      : (booking) => context.push(
-                          '/admin/branches/${booking.branchId}/payments',
-                        ),
+                  paymentRepository: dependencies.adminPaymentRepository,
                 ),
               );
             },

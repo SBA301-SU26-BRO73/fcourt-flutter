@@ -15,6 +15,7 @@ class AdminBookingQuery {
   final String search;
 
   AdminBookingQuery copyWith({
+    int? branchId,
     int? courtId,
     bool clearCourt = false,
     AdminBookingStatus? status,
@@ -23,7 +24,7 @@ class AdminBookingQuery {
     bool clearDate = false,
     String? search,
   }) => AdminBookingQuery(
-    branchId: branchId,
+    branchId: branchId ?? this.branchId,
     courtId: clearCourt ? null : courtId ?? this.courtId,
     status: clearStatus ? null : status ?? this.status,
     date: clearDate ? null : date ?? this.date,

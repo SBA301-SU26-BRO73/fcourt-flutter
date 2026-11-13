@@ -71,7 +71,7 @@ Future<void> initialize(
   AdminBookingCubit cubit,
   PendingBookings repository,
 ) async {
-  final pending = cubit.initialize();
+  final pending = cubit.initialize(branchId: 1);
   await tester.pump();
   repository.calls.last.result.complete(
     AdminBookingPage([bookingRow(1)], 0, 41),
@@ -81,6 +81,25 @@ Future<void> initialize(
 
 void main() {
   defaultStatusTests();
+  testWidgets('defaults to all branches and combines both booking lists', (
+    tester,
+  ) async {
+    final (cubit, repository, _, _) = setup();
+    final loading = cubit.initialize();
+    await tester.pump();
+    expect(repository.calls.map((call) => call.query.branchId), [1, 2]);
+    repository.calls[0].result.complete(
+      AdminBookingPage([bookingRow(1)], 0, 1),
+    );
+    repository.calls[1].result.complete(
+      AdminBookingPage([bookingRow(2, branchId: 2)], 0, 1),
+    );
+    await loading;
+    expect(cubit.state.query!.branchId, 0);
+    expect(cubit.state.total, 2);
+    expect(cubit.state.items.map((row) => row.id), [1, 2]);
+    await cubit.close();
+  });
   testWidgets(
     'unowned and empty branch selection never sends a booking query',
     (tester) async {

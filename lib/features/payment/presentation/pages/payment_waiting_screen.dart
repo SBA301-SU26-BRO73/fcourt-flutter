@@ -42,7 +42,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
   PaymentReceipt? _receipt;
   Timer? _timer, _limitTimer;
   DateTime? _deadline;
-  bool _timedOut = false, _rejectionShown = false, _autoPicked = false;
+  bool _timedOut = false, _rejectionShown = false;
   int _failures = 0;
   String? _error;
   bool _busy = false, _loading = true, _paused = false, _navigated = false;
@@ -60,7 +60,6 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
     _deadline = null;
     _timedOut = false;
     _rejectionShown = false;
-    _autoPicked = false;
     _failures = 0;
     _session = widget.repository.open(widget.arguments);
     _loading = true;
@@ -124,14 +123,6 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
       _error = null;
       _failures = 0;
     });
-    // No receipt yet: open the gallery straight away, so "Gửi biên lai" on the
-    // checkout page is the only tap before choosing the image.
-    if (receipt == null && _image == null && !_autoPicked) {
-      _autoPicked = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _receipt == null && _image == null) unawaited(_pick());
-      });
-    }
     if (receipt?.status == ReceiptStatus.pending && _deadline == null) {
       _deadline = DateTime.now().add(const Duration(minutes: 10));
       _limitTimer = Timer(const Duration(minutes: 10), _stopPolling);
@@ -266,7 +257,6 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
     } finally {
       if (_active(generation)) setState(() => _busy = false);
     }
-    if (_active(generation) && selected != null) unawaited(_upload());
   }
 
   Future<void> _upload() async {
@@ -444,7 +434,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                     ),
                 ] else ...[
                   Text(
-                    'Ảnh chuyển khoản, tối đa 5 MB. Chọn xong sẽ tự gửi.',
+                    'Chọn ảnh chuyển khoản (tối đa 5 MB), kiểm tra lại rồi bấm Gửi.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -464,23 +454,30 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen>
                         ),
                       ),
                     ),
-                  if (!_busy && _error != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: _image == null
+                        ? FilledButton.icon(
+                            onPressed: _busy ? null : _pick,
+                            icon: const Icon(
+                              Icons.add_photo_alternate_outlined,
+                            ),
+                            label: const Text('Chọn ảnh biên lai'),
+                          )
+                        : OutlinedButton.icon(
+                            onPressed: _busy ? null : _pick,
+                            icon: const Icon(Icons.swap_horiz),
+                            label: const Text('Đổi ảnh'),
+                          ),
+                  ),
+                  if (_image != null) ...[
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _image == null ? _pick : _upload,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Thử lại'),
-                      ),
-                    ),
-                  ] else ...[
-                    SizedBox(
-                      width: double.infinity,
                       child: FilledButton.icon(
-                        onPressed: _busy ? null : _pick,
-                        icon: const Icon(Icons.upload),
-                        label: const Text('Chọn ảnh biên lai'),
+                        onPressed: _busy ? null : _upload,
+                        icon: const Icon(Icons.send_outlined),
+                        label: const Text('Gửi biên lai'),
                       ),
                     ),
                   ],
